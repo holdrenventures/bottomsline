@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
+import { getProductBySlug } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
 import ProductPurchase from './ProductPurchase';
 
@@ -28,12 +29,16 @@ const productDetails = [
   ['Shipping', 'Estimated 5–7 business days — placeholder timing'],
 ];
 
-export default function SupportLocalBottomsPage() {
+export default async function SupportLocalBottomsPage() {
+  const product = await getProductBySlug('support-local-bottoms');
+
+  if (!product) return null;
+
   return (
     <>
       <SiteHeader />
       <main className="product-page">
-        <div className="shell product-back-row"><a href="/#shop">← Back to the line</a><span>Community Outreach / 001</span></div>
+        <div className="shell product-back-row"><a href="/shop">← Back to the line</a><span>Community Outreach / 001</span></div>
 
         <section className="product-detail shell">
           <div className="product-detail__visual">
@@ -48,12 +53,12 @@ export default function SupportLocalBottomsPage() {
             <div className="product-title-row"><h1>Support Local<br /><em>Bottoms</em></h1><p>$32</p></div>
             <p className="product-description">A public service announcement.<br />Support locally.</p>
             <p className="product-aside">The right people will read it twice.</p>
-            <ProductPurchase />
+            <ProductPurchase product={product} />
 
             <div className="product-specs">
               {productDetails.map(([label, value], index) => <div key={label}><span className="product-specs__index">0{index + 1}</span><span className="product-specs__label">{label}</span><p>{value}</p></div>)}
             </div>
-            <a className="continue-shopping" href="/#shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
+            <a className="continue-shopping" href="/shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
           </div>
         </section>
 
@@ -61,7 +66,7 @@ export default function SupportLocalBottomsPage() {
           <div className="shell"><p>Community support<br />looks good <em>on you.</em></p><span>Wear locally.</span></div>
         </section>
       </main>
-      <footer className="product-footer"><div className="shell"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><a href="/#shop">Return to shopping ↗</a></div></footer>
+      <footer className="product-footer"><div className="shell"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><a href="/shop">Return to shopping ↗</a></div></footer>
     </>
   );
 }

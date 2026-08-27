@@ -1,19 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import type { CatalogProduct } from '../../data/products';
+import { addCartItem } from '../../lib/cart';
 
-const sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+type PurchaseProduct = Pick<CatalogProduct, 'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'stripeProductId' | 'stripePriceId'>;
 
-export default function ProductPurchase() {
+export default function ProductPurchase({ product }: { product: PurchaseProduct }) {
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   function addToBag() {
     if (!size) return;
-    const current = Number(window.localStorage.getItem('bottoms-line-bag-count') || 0);
-    window.localStorage.setItem('bottoms-line-bag-count', String(current + quantity));
-    window.dispatchEvent(new Event('bottoms-line-bag-updated'));
+    addCartItem({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      unitPrice: product.price,
+      size,
+      quantity,
+      stripeProductId: product.stripeProductId,
+      stripePriceId: product.stripePriceId,
+    });
     setAdded(true);
   }
 
@@ -21,7 +30,7 @@ export default function ProductPurchase() {
     <div className="purchase-controls">
       <fieldset className="size-selector">
         <legend><span>Choose a size</span><button type="button" className="size-guide">Size guide</button></legend>
-        <div>{sizes.map((option) => <button key={option} type="button" className={size === option ? 'is-selected' : ''} aria-pressed={size === option} onClick={() => { setSize(option); setAdded(false); }}>{option}</button>)}</div>
+        <div>{product.availableSizes.map((option) => <button key={option} type="button" className={size === option ? 'is-selected' : ''} aria-pressed={size === option} onClick={() => { setSize(option); setAdded(false); }}>{option}</button>)}</div>
       </fieldset>
 
       <div className="purchase-row">

@@ -48,7 +48,7 @@ export default function Home() {
           <h1>Skip the<br /><em>Small Talk.</em></h1>
           <p className="hero__lead">Wear something worth talking about.</p>
           <p className="hero__body">Bottom’s Line makes conversation-starting apparel for people who would rather be honest than boring.</p>
-          <a className="button button--primary" href="#shop">Shop the collection <span aria-hidden="true">↗</span></a>
+          <a className="button button--primary" href="/shop">Shop the collection <span aria-hidden="true">↗</span></a>
         </div>
         <div className="hero__visual">
           <span className="hero__line" aria-hidden="true"><Clothespin /></span>
@@ -76,7 +76,7 @@ export default function Home() {
                 </div>
                 <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
                 <h3>{product.name}</h3>
-                <a href={product.href || '#shop'} aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
+                <a href={product.href || '/shop'} aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
               </article>
             ))}
           </div>
@@ -108,7 +108,7 @@ export default function Home() {
           <div className="section-heading section-heading--collections"><div><p className="eyebrow"><span /> Pick your poison</p><h2>Shop by<br /><em>mood.</em></h2></div><p>There’s a shirt for that.</p></div>
           <div className="collection-list">
             {collections.map((collection) => (
-              <a href="#shop" className="collection-row" key={collection.name}><span className="collection-row__number">{collection.number}</span><h3>{collection.name}</h3><p>{collection.note}</p><span className="collection-row__arrow" aria-hidden="true">↗</span></a>
+              <a href="/shop" className="collection-row" key={collection.name}><span className="collection-row__number">{collection.number}</span><h3>{collection.name}</h3><p>{collection.note}</p><span className="collection-row__arrow" aria-hidden="true">↗</span></a>
             ))}
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function Home() {
       <footer>
         <div className="shell footer__top">
           <p>Still here? You’re probably<br /><em>our kind of people.</em></p>
-          <div className="footer__links"><div><span>Browse</span><a href="#shop">Shop all</a><a href="#shop">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="#top">Instagram</a><a href="#top">TikTok</a></div></div>
+          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="#top">Instagram</a><a href="#top">TikTok</a></div></div>
         </div>
         <div className="shell footer__bottom"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>© 2026 Bottom’s Line Clothing <span>Made with poor judgment.</span></p></div>
       </footer>

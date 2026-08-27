@@ -29,13 +29,19 @@ function Clothespin({ compact = false }: { compact?: boolean }) {
   return <span className={`clothespin ${compact ? 'clothespin--compact' : ''}`} aria-hidden="true"><i /></span>;
 }
 
-function PinnedEditorial() {
+function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snapshot' }: { imageSrc?: string; imageAlt?: string }) {
   return (
     <figure className="pinned-editorial">
       <Clothespin />
       <div className="pinned-editorial__image">
-        <span className="pinned-editorial__ghost">BL</span>
-        <Shirt art={['FOUND', 'EACH', 'OTHER']} tone="cream" />
+        {imageSrc ? (
+          <img src={imageSrc} alt={imageAlt} />
+        ) : (
+          <div className="pinned-editorial__placeholder" aria-label="Future phone photo placeholder">
+            <span className="pinned-editorial__ghost">BL</span>
+            <Shirt art={['FOUND', 'EACH', 'OTHER']} tone="cream" />
+          </div>
+        )}
       </div>
       <figcaption><span>proof of concept</span> / phone photo goes here</figcaption>
     </figure>

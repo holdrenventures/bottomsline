@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Clothespin, Shirt } from '../../BrandVisuals';
+import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import SiteHeader from '../../SiteHeader';
 import ProductPurchase from './ProductPurchase';
 
@@ -38,7 +38,7 @@ export default function SupportLocalBottomsPage() {
         <section className="product-detail shell">
           <div className="product-detail__visual">
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
-            <span className="product-detail__annotation">A public service,<br />more or less.</span>
+            <ProductAnnotation>A public service,<br />more or less.</ProductAnnotation>
             <span className="product-detail__index">BL / 001</span>
             <Shirt art={['SUPPORT', 'LOCAL', 'BOTTOMS']} tone="coral" detail />
           </div>
@@ -46,14 +46,14 @@ export default function SupportLocalBottomsPage() {
           <div className="product-detail__info">
             <p className="eyebrow"><span /> Community Outreach</p>
             <div className="product-title-row"><h1>Support Local<br /><em>Bottoms</em></h1><p>$32</p></div>
-            <p className="product-description">A wearable public service announcement for people who understand that supporting your community can take many forms.</p>
+            <p className="product-description">A public service announcement.<br />Support locally.</p>
             <p className="product-aside">The right people will read it twice.</p>
             <ProductPurchase />
 
             <div className="product-specs">
-              {productDetails.map(([label, value]) => <div key={label}><span>{label}</span><p>{value}</p></div>)}
+              {productDetails.map(([label, value], index) => <div key={label}><span className="product-specs__index">0{index + 1}</span><span className="product-specs__label">{label}</span><p>{value}</p></div>)}
             </div>
-            <a className="continue-shopping" href="/#shop">Keep looking. We won’t judge. <span>↗</span></a>
+            <a className="continue-shopping" href="/#shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
           </div>
         </section>
 

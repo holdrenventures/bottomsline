@@ -58,8 +58,8 @@ export default function ShopCatalog({ products }: { products: CatalogProduct[] }
                   <div className="catalog-product__visual">
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}
-                    {product.imageUrl
-                      ? <img className="catalog-product__image" src={product.imageUrl} alt={product.name} />
+                    {product.catalogImage
+                      ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} />
                       : <Shirt art={product.art} tone={product.tone} />}
                   </div>
                   <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>${product.price}</span></div>

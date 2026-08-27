@@ -237,7 +237,7 @@ footer { padding:92px 0 28px; background:var(--coral); color:var(--ink); }
 .catalog-product__visual { position:relative; z-index:1; display:grid; place-items:start center; height:clamp(300px,29vw,420px); padding-top:34px; transform:rotate(var(--catalog-rotate)); transform-origin:50% 12px; transition:transform .28s ease; }
 .catalog-product__visual .clothespin { top:-2px; }
 .catalog-product__visual .shirt { width:min(82%,260px); }
-.catalog-product__image { width:min(82%,260px); height:100%; object-fit:contain; }
+.catalog-product__image { width:min(92%,290px); height:calc(100% + 30px); margin-top:-30px; object-fit:contain; object-position:center top; }
 .catalog-product__placeholder { position:absolute; z-index:4; top:30px; right:2px; color:#777; font-size:7px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; }
 .catalog-product__meta { display:flex; justify-content:space-between; gap:12px; padding-top:14px; border-top:1px solid var(--line); color:var(--coral); font-size:8px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; }
 .catalog-product__meta span { color:var(--paper); }

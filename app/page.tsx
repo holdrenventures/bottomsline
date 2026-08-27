@@ -1,7 +1,9 @@
 import EmailSignup from './EmailSignup';
+import { Clothespin, Shirt } from './BrandVisuals';
+import SiteHeader from './SiteHeader';
 
 const products = [
-  { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral' },
+  { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral', href: '/products/support-local-bottoms' },
   { name: 'Cum Dump', label: 'Advanced Placement', price: '$32', art: ['CUM', 'DUMP'], tone: 'cream' },
   { name: 'Buss-ee’s', label: 'Roadside Attraction', price: '$34', art: ['BUSS', 'EE’S'], tone: 'charcoal' },
   { name: 'Spread Your Legs, It’s the Nashville Way', label: 'Southern Hospitality', price: '$34', art: ['SPREAD', 'YOUR', 'LEGS'], tone: 'red' },
@@ -15,19 +17,6 @@ const collections = [
   { name: 'Pride', number: '05', note: 'Year-round behavior.' },
   { name: 'New Drops', number: '06', note: 'Freshly inappropriate.' },
 ];
-
-function Shirt({ art, tone, featured = false }: { art: string[]; tone: string; featured?: boolean }) {
-  return (
-    <div className={`shirt shirt--${tone} ${featured ? 'shirt--featured' : ''}`} aria-label={`${art.join(' ')} shirt mockup placeholder`}>
-      <div className="shirt__neck" />
-      <div className="shirt__print">{art.map((line) => <span key={line}>{line}</span>)}</div>
-    </div>
-  );
-}
-
-function Clothespin({ compact = false }: { compact?: boolean }) {
-  return <span className={`clothespin ${compact ? 'clothespin--compact' : ''}`} aria-hidden="true"><i /></span>;
-}
 
 function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snapshot' }: { imageSrc?: string; imageAlt?: string }) {
   return (
@@ -51,11 +40,7 @@ function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snaps
 export default function Home() {
   return (
     <main>
-      <header className="site-header shell">
-        <a className="wordmark" href="#top" aria-label="Bottom’s Line home">BOTTOM’S <span>LINE</span></a>
-        <nav aria-label="Primary navigation"><a href="#shop">Shop</a><a href="#story">Our deal</a></nav>
-        <a className="bag-link" href="#shop">Bag <span>(0)</span></a>
-      </header>
+      <SiteHeader />
 
       <section className="hero shell" id="top">
         <div className="hero__copy">
@@ -91,7 +76,7 @@ export default function Home() {
                 </div>
                 <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
                 <h3>{product.name}</h3>
-                <a href="#shop" aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
+                <a href={product.href || '#shop'} aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
               </article>
             ))}
           </div>

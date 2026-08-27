@@ -25,6 +25,23 @@ function Shirt({ art, tone, featured = false }: { art: string[]; tone: string; f
   );
 }
 
+function Clothespin({ compact = false }: { compact?: boolean }) {
+  return <span className={`clothespin ${compact ? 'clothespin--compact' : ''}`} aria-hidden="true"><i /></span>;
+}
+
+function PinnedEditorial() {
+  return (
+    <figure className="pinned-editorial">
+      <Clothespin />
+      <div className="pinned-editorial__image">
+        <span className="pinned-editorial__ghost">BL</span>
+        <Shirt art={['FOUND', 'EACH', 'OTHER']} tone="cream" />
+      </div>
+      <figcaption><span>proof of concept</span> / phone photo goes here</figcaption>
+    </figure>
+  );
+}
+
 export default function Home() {
   return (
     <main>
@@ -43,6 +60,7 @@ export default function Home() {
           <a className="button button--primary" href="#shop">Shop the collection <span aria-hidden="true">↗</span></a>
         </div>
         <div className="hero__visual">
+          <span className="hero__line" aria-hidden="true"><Clothespin /></span>
           <span className="scribble scribble--top">GOOD FROM<br />EVERY ANGLE</span>
           <Shirt art={['SUPPORT', 'LOCAL', 'BOTTOMS']} tone="coral" featured />
           <span className="scribble scribble--bottom">Wear responsibly.<br />Or don’t.</span>
@@ -56,15 +74,21 @@ export default function Home() {
           <div><p className="eyebrow"><span /> Featured troublemakers</p><h2>Wear your<br /><em>inside voice.</em></h2></div>
           <p>Four ways to make eye contact easier.</p>
         </div>
-        <div className="product-grid">
-          {products.map((product, index) => (
-            <article className="product-card" key={product.name}>
-              <div className="product-card__image"><span className="product-card__number">0{index + 1}</span><Shirt art={product.art} tone={product.tone} /></div>
-              <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
-              <h3>{product.name}</h3>
-              <a href="#shop" aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
-            </article>
-          ))}
+        <div className="product-rail" aria-label="Featured shirts hanging on the Bottom’s Line clothesline">
+          <div className="product-grid">
+            {products.map((product, index) => (
+              <article className="product-card" key={product.name}>
+                <div className="product-card__image">
+                  <Clothespin />
+                  <span className="product-card__number">0{index + 1}</span>
+                  <div className="product-card__media"><Shirt art={product.art} tone={product.tone} /></div>
+                </div>
+                <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
+                <h3>{product.name}</h3>
+                <a href="#shop" aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -76,8 +100,10 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="clothesline-divider shell" aria-hidden="true"><Clothespin compact /><span>hold this thought</span></div>
+
       <section className="story shell section" id="story">
-        <div className="story__side"><p className="eyebrow"><span /> The origin story</p><span className="story__stamp">ONE JOKE<br />TOO MANY</span></div>
+        <div className="story__side"><p className="eyebrow"><span /> The origin story</p><PinnedEditorial /></div>
         <div className="story__copy">
           <h2>It started with<br /><em>one joke.</em></h2>
           <p>I made one shirt because I couldn’t stop laughing at a joke. Then I made another. Then my friends wanted them. Then strangers did.</p>

@@ -142,8 +142,8 @@ h1 em,h2 em,.manifesto em,.footer__top em { color:var(--coral); font-family:Geor
 .signup__success { padding:22px; border:1px solid var(--coral); color:var(--white); text-transform:uppercase; font-size:11px; font-weight:900; letter-spacing:1.5px; }
 .signup__success span { float:right; color:var(--coral); }
 
-footer { padding:92px 0 0; overflow:hidden; background:var(--coral); color:var(--ink); }
-.footer__top { display:grid; grid-template-columns:1.5fr .5fr; gap:80px; align-items:end; padding-bottom:100px; }
+footer { padding:clamp(44px,4.5vw,64px) 0 0; overflow:hidden; background:var(--coral); color:var(--ink); }
+.footer__top { display:grid; grid-template-columns:1.5fr .5fr; gap:80px; align-items:end; padding-bottom:clamp(46px,4.5vw,64px); }
 .footer__top>p { font-size:clamp(50px,6vw,92px); }
 .footer__top>p em { color:var(--ink); }
 .footer__links { display:grid; grid-template-columns:1fr 1fr; gap:30px; }
@@ -312,8 +312,8 @@ footer { padding:92px 0 0; overflow:hidden; background:var(--coral); color:var(-
   .collection-row p { display:none; }
   .collection-row h3 { font-size:24px; }
   .signup h2 { font-size:13vw; }
-  footer { padding-top:72px; }
-  .footer__top { padding-bottom:72px; }
+  footer { padding-top:42px; }
+  .footer__top { padding-bottom:44px; }
   .footer__links { margin-top:20px; }
   .footer__bottom { display:block; padding-block:26px; }
   .footer__bottom>p:last-child { margin-top:30px; display:flex; flex-direction:column; gap:8px; }

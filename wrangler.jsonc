@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "bottoms-line-storefront",
-  "compatibility_date": "2026-09-21",
+  "compatibility_date": "2026-05-15",
   "compatibility_flags": ["nodejs_compat"],
   "main": "vinext/server/app-router-entry",
   "preview_urls": true,

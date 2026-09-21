@@ -11,9 +11,6 @@
   "vars": {
     "SUPABASE_URL": "https://agfbtxdikdwhlhcfvcer.supabase.co"
   },
-  "secrets": {
-    "required": ["SUPABASE_SECRET_KEY"]
-  },
   "observability": {
     "enabled": true
   }

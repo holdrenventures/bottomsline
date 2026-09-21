@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bottoms-line-storefront",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/app-router-entry",
+  "preview_urls": true,
+  "assets": {
+    "not_found_handling": "none"
+  },
+  "vars": {
+    "SUPABASE_URL": "https://agfbtxdikdwhlhcfvcer.supabase.co"
+  },
+  "secrets": {
+    "required": ["SUPABASE_SECRET_KEY"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}

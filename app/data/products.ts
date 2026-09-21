@@ -1,4 +1,15 @@
+import { getSupabaseCatalogProducts } from './supabase-products';
+
 export type ProductCollection = 'Support Local Bottoms' | 'Cruising' | 'Parodies' | 'Nashville' | 'Pride' | 'New Drops';
+
+export type CatalogVariant = {
+  id: string;
+  size: string;
+  price: number;
+  inventoryQuantity: number | null;
+  stripeProductId: string | null;
+  stripePriceId: string | null;
+};
 
 export type CatalogProduct = {
   id: string;
@@ -10,6 +21,7 @@ export type CatalogProduct = {
   collection: ProductCollection;
   catalogImage: string | null;
   availableSizes: string[];
+  variants?: CatalogVariant[];
   active: boolean;
   featured: boolean;
   isNewDrop: boolean;
@@ -22,9 +34,9 @@ export type CatalogProduct = {
 
 const standardSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
-// MOCK CATALOG PROVIDER — replace this array with the normalized result of a
-// server-side Airtable read. Airtable tokens and Stripe secrets must never be
-// added here or exposed to browser code. Placeholder records demonstrate scale.
+// LOCAL FALLBACK CATALOG — used for development and previews until the Worker
+// has Supabase credentials and live product rows. Never add secrets here.
+// Placeholder records demonstrate how the shop behaves at catalog scale.
 const mockProducts: CatalogProduct[] = [
   { id:'prod_mock_001', name:'Support Local Bottoms', slug:'support-local-bottoms', price:32, editorialDescriptor:'Community Outreach', description:'A public service announcement. Support locally.', collection:'Support Local Bottoms', catalogImage:'https://res.cloudinary.com/bihiyho3/image/upload/e_background_removal/v1787869598/ChatGPT_Image_Aug_27_2026_05_18_54_PM_1.png', availableSizes:standardSizes, active:true, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['SUPPORT','LOCAL','BOTTOMS'], tone:'coral' },
   { id:'prod_mock_002', name:'Cum Dump', slug:'cum-dump', price:32, editorialDescriptor:'Advanced Placement', description:'Product description pending.', collection:'Cruising', catalogImage:null, availableSizes:standardSizes, active:true, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['CUM','DUMP'], tone:'cream' },
@@ -40,14 +52,16 @@ const mockProducts: CatalogProduct[] = [
   { id:'prod_placeholder_012', name:'Catalog Placeholder 12', slug:'placeholder-12', price:34, editorialDescriptor:'Catalog Placeholder', description:'Replace with confirmed catalog copy.', collection:'New Drops', catalogImage:null, availableSizes:standardSizes, active:true, featured:false, isNewDrop:true, stripeProductId:null, stripePriceId:null, art:['FUTURE','SHIRT','12'], tone:'red', isPlaceholder:true },
 ];
 
-// Data-access boundary: a future Airtable adapter can replace these functions
-// without changing the Shop or PDP component contracts.
+// Data-access boundary: pages keep the same product contract whether their data
+// came from Supabase or the local prototype catalog.
 export async function getCatalogProducts() {
-  return mockProducts.filter((product) => product.active);
+  const products = await getSupabaseCatalogProducts();
+  return products?.length ? products : mockProducts.filter((product) => product.active);
 }
 
 export async function getProductBySlug(slug: string) {
-  return mockProducts.find((product) => product.active && product.slug === slug) ?? null;
+  const products = await getCatalogProducts();
+  return products.find((product) => product.active && product.slug === slug) ?? null;
 }
 
 export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'New Drops'] as const;

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { CatalogProduct } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
 
-type PurchaseProduct = Pick<CatalogProduct, 'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'stripeProductId' | 'stripePriceId'>;
+type PurchaseProduct = Pick<CatalogProduct, 'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'variants' | 'stripeProductId' | 'stripePriceId'>;
 
 export default function ProductPurchase({ product }: { product: PurchaseProduct }) {
   const [size, setSize] = useState<string | null>(null);
@@ -13,15 +13,16 @@ export default function ProductPurchase({ product }: { product: PurchaseProduct 
 
   function addToBag() {
     if (!size) return;
+    const selectedVariant = product.variants?.find((variant) => variant.size === size);
     addCartItem({
       productId: product.id,
       slug: product.slug,
       name: product.name,
-      unitPrice: product.price,
+      unitPrice: selectedVariant?.price ?? product.price,
       size,
       quantity,
-      stripeProductId: product.stripeProductId,
-      stripePriceId: product.stripePriceId,
+      stripeProductId: selectedVariant?.stripeProductId ?? product.stripeProductId,
+      stripePriceId: selectedVariant?.stripePriceId ?? product.stripePriceId,
     });
     setAdded(true);
   }

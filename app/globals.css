@@ -46,6 +46,12 @@ h1 em,h2 em,.manifesto em,.footer__top em { color:var(--coral); font-family:Geor
 .shirt__print span:nth-child(even) { color:var(--coral); font-family:Georgia,serif; font-style:italic; font-weight:700; }
 .shirt--featured { width:60%; max-width:370px; transform:rotate(-3deg) translateY(38px); }
 .shirt--featured .shirt__print { font-size:clamp(24px,4.8vw,52px); }
+/* Hero product image — matches the sizing/rotation the SVG shirt used to have. */
+.hero-shirt { position:relative; z-index:2; width:60%; max-width:370px; height:auto; display:block; transform:rotate(-3deg) translateY(38px); filter:drop-shadow(0 20px 30px rgba(0,0,0,.35)); }
+@media (max-width:900px) {
+  .hero-shirt { width:68%; transform:rotate(-3deg) translateY(30px); }
+}
+
 .shirt--detail { width:58%; max-width:480px; transform:rotate(-1.2deg) translateY(46px); }
 .shirt--detail .shirt__print { font-size:clamp(30px,4.5vw,60px); }
 .shirt--coral { --shirt-color:var(--coral); }

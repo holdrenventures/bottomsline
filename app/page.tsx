@@ -72,7 +72,7 @@ export default async function Home() {
         <div className="hero__visual">
           <span className="hero__line" aria-hidden="true"><Clothespin /></span>
           <span className="scribble scribble--top">GOOD FROM<br />EVERY ANGLE</span>
-          <Shirt art={['SUPPORT', 'LOCAL', 'BOTTOMS']} tone="coral" featured />
+          <img className="hero-shirt" src="https://res.cloudinary.com/bihiyho3/image/upload/v1787870450/ChatGPT_Image_Aug_27_2026_05_18_54_PM_1.png" alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" />
           <span className="scribble scribble--bottom">Wear responsibly.<br />Or don’t.</span>
         </div>
       </section>

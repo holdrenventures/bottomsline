@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import { getProductBySlug } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
@@ -32,7 +33,7 @@ const productDetails = [
 export default async function SupportLocalBottomsPage() {
   const product = await getProductBySlug('support-local-bottoms');
 
-  if (!product) return null;
+  if (!product) notFound();
 
   return (
     <>

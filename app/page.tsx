@@ -6,13 +6,6 @@ import { getCatalogProducts } from './data/products';
 import { pinShift, pinSlant } from './lib/pin-shift';
 import { trimMockup } from './lib/cloudinary';
 
-const fallbackProducts = [
-  { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral', href: '/products/support-local-bottoms' },
-  { name: 'Cum Dump', label: 'Advanced Placement', price: '$32', art: ['CUM', 'DUMP'], tone: 'cream', href: '/products/cum-dump' },
-  { name: 'Buss-ee’s', label: 'Roadside Attraction', price: '$34', art: ['BUSS', 'EE’S'], tone: 'charcoal', href: '/products/buss-ees' },
-  { name: 'Spread Your Legs, It’s the Nashville Way', label: 'Southern Hospitality', price: '$34', art: ['SPREAD', 'YOUR', 'LEGS'], tone: 'red', href: '/products/spread-your-legs-nashville' },
-];
-
 const collections = [
   { name: 'Support Local Bottoms', number: '01', note: 'Civic-minded, mostly.' },
   { name: 'Cruising', number: '02', note: 'No destination required.' },
@@ -43,20 +36,19 @@ function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snaps
 
 export default async function Home() {
   const catalog = await getCatalogProducts();
-  // Prefer real featured products from the loaded catalog; fall back to the
-  // hand-tuned four when Supabase is not configured.
-  const featured = catalog.filter((p) => p.featured).slice(0, 4);
-  const products = featured.length === 4
-    ? featured.map((p) => ({
-        name: p.name,
-        label: p.editorialDescriptor,
-        price: `$${Math.round(p.price)}`,
-        art: p.art,
-        tone: p.tone,
-        href: `/products/${p.slug}`,
-        image: p.catalogImage,
-      }))
-    : fallbackProducts;
+  const featured = catalog.filter((product) => product.featured);
+  const featuredIds = new Set(featured.map((product) => product.id));
+  const products = [...featured, ...catalog.filter((product) => !featuredIds.has(product.id))]
+    .slice(0, 4)
+    .map((product) => ({
+      name: product.name,
+      label: product.editorialDescriptor,
+      price: `$${Math.round(product.price)}`,
+      art: product.art,
+      tone: product.tone,
+      href: `/products/${product.slug}`,
+      image: product.catalogImage,
+    }));
 
   return (
     <main>
@@ -80,7 +72,7 @@ export default async function Home() {
 
       <div className="ticker" aria-hidden="true"><div>FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span> FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span></div></div>
 
-      <section className="products shell section" id="shop">
+      {products.length > 0 && <section className="products shell section" id="shop">
         <div className="section-heading">
           <div><p className="eyebrow"><span /> Featured troublemakers</p><h2>Wear your<br /><em>inside voice.</em></h2></div>
           <p>Four ways to make eye contact easier.</p>
@@ -92,7 +84,7 @@ export default async function Home() {
                 <a className="product-card__image" href={product.href || '/shop'} aria-label={`Shop ${product.name}`}>
                   <Clothespin />
                   <span className="product-card__number">0{index + 1}</span>
-                  <div className="product-card__media">{(('image' in product) && product.image) ? <img src={product.image as string} alt={product.name} /> : <Shirt art={product.art} tone={product.tone as any} />}</div>
+                  <div className="product-card__media">{product.image ? <img src={product.image} alt={product.name} /> : <Shirt art={product.art} tone={product.tone} />}</div>
                 </a>
                 <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
                 <h3>{product.name}</h3>
@@ -101,7 +93,7 @@ export default async function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       <section className="manifesto section">
         <div className="shell manifesto__inner">

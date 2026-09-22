@@ -68,11 +68,12 @@ const mockProducts: CatalogProduct[] = [
 ];
 
 // Data-access boundary: pages keep the same product contract whether their data
-// came from Supabase or the local prototype catalog. Drafts are included so the
-// freshly-loaded catalog is visible while copy and pricing are finalized.
+// came from Supabase or the local prototype catalog. Null means Supabase is not
+// configured, while an empty array means it is configured but has no live
+// products. Do not replace that intentional empty state with prototype data.
 export async function getCatalogProducts() {
   const products = await getSupabaseCatalogProducts();
-  return products?.length ? products : mockProducts;
+  return products === null ? mockProducts : products;
 }
 
 export async function getProductBySlug(slug: string) {

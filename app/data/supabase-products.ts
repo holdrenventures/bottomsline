@@ -144,10 +144,9 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
  * sb_secret_* key belongs in Cloudflare's encrypted secrets, never NEXT_PUBLIC_*.
  * A missing configuration returns null so local previews keep using mock data.
  *
- * We deliberately do NOT filter on `products.active` here: the freshly-loaded
- * catalog is all draft (active=false), and the storefront needs to show it
- * while copy and pricing are finalized. Purchase-time gating happens on the
- * per-variant `active` flag once Stripe IDs are wired.
+ * Public storefront reads include active products only. The Product Desk uses
+ * its own authenticated endpoint so drafts remain editable without leaking
+ * into the shop, homepage, or public product routes.
  */
 export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | null> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -163,6 +162,7 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
   ].join(',');
   const endpoint = new URL('/rest/v1/products', supabaseUrl);
   endpoint.searchParams.set('select', select);
+  endpoint.searchParams.set('active', 'eq.true');
   endpoint.searchParams.set('order', 'created_at.desc');
 
   const response = await fetch(endpoint, {

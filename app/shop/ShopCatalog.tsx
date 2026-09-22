@@ -3,7 +3,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Clothespin, Shirt } from '../BrandVisuals';
 import { catalogCollections, type CatalogProduct } from '../data/products';
-import { pinShift } from '../lib/pin-shift';
+import { pinShift, pinSlant } from '../lib/pin-shift';
 
 type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'name';
 
@@ -55,7 +55,7 @@ export default function ShopCatalog({ products }: { products: CatalogProduct[] }
             {row.map((product, productIndex) => {
               const href = `/products/${product.slug}`;
               return (
-                <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg`, '--pin-shift': pinShift(product.slug) } as CSSProperties} key={product.slug}>
+                <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg`, '--pin-shift': pinShift(product.slug), '--pin-slant': pinSlant(product.slug) } as CSSProperties} key={product.slug}>
                   <div className="catalog-product__visual">
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}

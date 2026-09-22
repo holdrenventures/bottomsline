@@ -3,7 +3,7 @@ import EmailSignup from './EmailSignup';
 import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
 import { getCatalogProducts } from './data/products';
-import { pinShift } from './lib/pin-shift';
+import { pinShift, pinSlant } from './lib/pin-shift';
 
 const fallbackProducts = [
   { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral', href: '/products/support-local-bottoms' },
@@ -87,7 +87,7 @@ export default async function Home() {
         <div className="product-rail" aria-label="Featured shirts hanging on the Bottom’s Line clothesline">
           <div className="product-grid">
             {products.map((product, index) => (
-              <article className="product-card" key={product.name} style={{ ["--pin-shift" as string]: pinShift(product.name) } as CSSProperties}>
+              <article className="product-card" key={product.name} style={{ ["--pin-shift" as string]: pinShift(product.name), ["--pin-slant" as string]: pinSlant(product.name) } as CSSProperties}>
                 <div className="product-card__image">
                   <Clothespin />
                   <span className="product-card__number">0{index + 1}</span>

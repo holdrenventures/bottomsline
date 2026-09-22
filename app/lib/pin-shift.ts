@@ -1,16 +1,35 @@
 /**
- * Pick a clothespin horizontal offset for a card. Deterministic in the input
- * string so server and client render the same value (no hydration mismatch)
- * while distributing left/right across products in a visually random-looking
- * way — no alternating pattern.
+ * Deterministic per-card pin geometry.
  *
- * The offset lands the pin just to the left or right of the shirt's collar.
+ * Both helpers hash the same key (usually the product slug) with djb2 so the
+ * value is stable across SSR and client renders — no hydration mismatch —
+ * while the distribution across products looks random, not alternating.
+ *
+ *   pinShift  → horizontal offset from center in px. The clothespin ends up
+ *               just to the left or right of the shirt collar.
+ *   pinSlant  → rotation applied to the whole card visual, pivoted at the pin.
+ *               The pin corner is the high point and the opposite corner
+ *               droops, as if gravity is pulling the shirt off the line.
+ *               Two subtle magnitudes so cards don't all tilt identically.
  */
-export function pinShift(key: string): string {
-  // 32-bit djb2 hash — cheap, well-distributed for short slugs.
-  let hash = 5381 >>> 0;
+function djb2(key: string): number {
+  let h = 5381 >>> 0;
   for (let i = 0; i < key.length; i++) {
-    hash = ((hash * 33) ^ key.charCodeAt(i)) >>> 0;
+    h = ((h * 33) ^ key.charCodeAt(i)) >>> 0;
   }
-  return hash % 2 === 0 ? '-32px' : '32px';
+  return h;
+}
+
+export function pinShift(key: string): string {
+  return djb2(key) % 2 === 0 ? '-50px' : '50px';
+}
+
+export function pinSlant(key: string): string {
+  const h = djb2(key);
+  // Pin left (shift -32) → shirt tilts clockwise (+deg), high corner on the left.
+  // Pin right (shift +32) → shirt tilts counterclockwise (-deg), high corner on the right.
+  const sign = h % 2 === 0 ? 1 : -1;
+  // Two magnitudes for variety across a row.
+  const magnitude = ((h >>> 3) & 1) === 0 ? 1 : 1.6;
+  return `${(sign * magnitude).toFixed(2)}deg`;
 }

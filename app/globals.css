@@ -200,6 +200,13 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .product-detail__image { display:block; width:min(100%, 520px); margin:0 auto; background:transparent; }
 .purchase-hero { margin:0 0 24px; background:#111; border:1px solid var(--line); }
 .purchase-hero img { display:block; width:100%; height:auto; }
+.style-selector { margin:0 0 22px; padding:0; border:0; }
+.style-selector legend { margin-bottom:14px; text-transform:uppercase; font-size:9px; font-weight:900; letter-spacing:1.7px; }
+.style-selector>div { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); border:1px solid var(--line); }
+.style-selector button { min-height:48px; border:0; border-right:1px solid var(--line); background:transparent; color:var(--white); font-size:10px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; cursor:pointer; transition:background .2s ease,color .2s ease; }
+.style-selector button:last-child { border-right:0; }
+.style-selector button:hover { background:#1e1e1e; }
+.style-selector button.is-selected { background:var(--white); color:var(--ink); }
 .color-selector { margin:0 0 22px; padding:0; border:0; }
 .color-selector legend { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; text-transform:uppercase; font-size:9px; font-weight:900; letter-spacing:1.7px; }
 .color-selector__count { color:var(--muted); }

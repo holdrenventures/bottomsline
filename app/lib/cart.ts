@@ -7,11 +7,13 @@ export type CartItem = {
   quantity: number;
   stripeProductId: string | null;
   stripePriceId: string | null;
-  // Optional colorway. Size is the SKU dimension; color is captured so
-  // order_items.sku (free text) can encode the combined selection at checkout.
+  // Optional garment/colorway selection. colorId is the stable choice ID;
+  // the readable fields are retained for the future bag and order snapshot.
   color?: string | null;
   colorId?: string | null;
   colorMockup?: string | null;
+  style?: string | null;
+  garment?: string | null;
 };
 
 export const CART_STORAGE_KEY = 'bottoms-line-cart-v1';
@@ -28,12 +30,13 @@ export function readCart(): CartItem[] {
 
 export function addCartItem(nextItem: CartItem) {
   const cart = readCart();
-  // Same product + size + color folds into one line; different color is a
-  // different line even at the same size.
+  // Same product + size + exact colorway folds into one line. A tee and tank
+  // remain distinct even when they share the same color name.
   const existing = cart.find((item) =>
     item.productId === nextItem.productId
     && item.size === nextItem.size
-    && (item.color ?? null) === (nextItem.color ?? null)
+    && (item.colorId ?? null) === (nextItem.colorId ?? null)
+    && (item.style ?? null) === (nextItem.style ?? null)
   );
   if (existing) existing.quantity += nextItem.quantity;
   else cart.push(nextItem);

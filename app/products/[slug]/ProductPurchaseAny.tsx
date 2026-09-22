@@ -13,19 +13,32 @@ function slugify(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'color';
 }
 
+function styleName(color: CatalogColor) {
+  return color.style?.trim() || 'Tee';
+}
+
 export default function ProductPurchaseAny({ product }: { product: PurchaseProduct }) {
   const displayColors = useMemo(
     () => product.colors.filter((color) => color.active),
     [product.colors],
   );
-  const [colorId, setColorId] = useState<string | null>(displayColors[0]?.id ?? null);
+  const styles = useMemo(
+    () => Array.from(new Set(displayColors.map(styleName))),
+    [displayColors],
+  );
+  const [style, setStyle] = useState<string | null>(styles[0] ?? null);
+  const colorsForStyle = useMemo(
+    () => displayColors.filter((color) => styleName(color) === style),
+    [displayColors, style],
+  );
+  const [colorId, setColorId] = useState<string | null>(colorsForStyle[0]?.id ?? null);
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   const selectedColor: CatalogColor | null = useMemo(
-    () => displayColors.find((color) => color.id === colorId) ?? null,
-    [displayColors, colorId],
+    () => colorsForStyle.find((color) => color.id === colorId) ?? null,
+    [colorsForStyle, colorId],
   );
 
   const heroImage = selectedColor?.mockupUrl ?? product.catalogImage ?? null;
@@ -34,7 +47,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
     if (!size) return;
     const selectedVariant = product.variants?.find((variant) => variant.size === size);
     const composedSku = selectedColor
-      ? `blc-${product.slug}-${slugify(selectedColor.color)}-${size.toLowerCase()}`
+      ? `blc-${product.slug}-${slugify(styleName(selectedColor))}-${slugify(selectedColor.color)}-${size.toLowerCase()}`
       : null;
 
     addCartItem({
@@ -49,6 +62,8 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       color: selectedColor?.color ?? null,
       colorId: selectedColor?.id ?? null,
       colorMockup: selectedColor?.mockupUrl ?? null,
+      style: selectedColor ? styleName(selectedColor) : null,
+      garment: selectedColor?.garment ?? null,
     });
     if (composedSku && typeof console !== 'undefined') {
       // Recorded on the client for now; the Worker will re-derive this at checkout.
@@ -65,11 +80,34 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
         </div>
       )}
 
-      {displayColors.length > 0 && (
+      {styles.length > 1 && (
+        <fieldset className="style-selector">
+          <legend>Choose a style</legend>
+          <div>
+            {styles.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={style === option ? 'is-selected' : ''}
+                aria-pressed={style === option}
+                onClick={() => {
+                  setStyle(option);
+                  setColorId(displayColors.find((color) => styleName(color) === option)?.id ?? null);
+                  setAdded(false);
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {colorsForStyle.length > 0 && (
         <fieldset className="color-selector">
-          <legend><span>Choose a color</span><span className="color-selector__count">{displayColors.length}</span></legend>
+          <legend><span>Choose a color</span><span className="color-selector__count">{colorsForStyle.length}</span></legend>
           <div className="color-selector__grid">
-            {displayColors.map((color) => (
+            {colorsForStyle.map((color) => (
               <button
                 key={color.id}
                 type="button"
@@ -113,7 +151,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
         </div>
         <button className="add-to-bag" type="button" disabled={!size} onClick={addToBag}>
           {added
-            ? `Added — ${selectedColor ? `${selectedColor.color} · ` : ''}${size} × ${quantity}`
+            ? `Added — ${selectedColor ? `${styleName(selectedColor)} · ${selectedColor.color} · ` : ''}${size} × ${quantity}`
             : 'Add to bag'} <span aria-hidden="true">↗</span>
         </button>
       </div>

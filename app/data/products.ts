@@ -1,4 +1,5 @@
 import { getSupabaseCatalogProducts } from './supabase-products';
+import { trimMockup } from '../lib/cloudinary';
 
 export type ProductCollection = 'Support Local Bottoms' | 'Cruising' | 'Parodies' | 'Nashville' | 'Pride' | 'New Drops';
 
@@ -52,7 +53,7 @@ const standardSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 // has Supabase credentials and live product rows. Never add secrets here.
 // Placeholder records demonstrate how the shop behaves at catalog scale.
 const mockProducts: CatalogProduct[] = [
-  { id:'prod_mock_001', name:'Support Local Bottoms', slug:'support-local-bottoms', price:32, editorialDescriptor:'Community Outreach', description:'A public service announcement. Support locally.', collection:'Support Local Bottoms', catalogImage:'https://res.cloudinary.com/bihiyho3/image/upload/e_background_removal/v1787869598/ChatGPT_Image_Aug_27_2026_05_18_54_PM_1.png', availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['SUPPORT','LOCAL','BOTTOMS'], tone:'coral' },
+  { id:'prod_mock_001', name:'Support Local Bottoms', slug:'support-local-bottoms', price:32, editorialDescriptor:'Community Outreach', description:'A public service announcement. Support locally.', collection:'Support Local Bottoms', catalogImage: trimMockup('https://res.cloudinary.com/bihiyho3/image/upload/e_background_removal/v1787869598/ChatGPT_Image_Aug_27_2026_05_18_54_PM_1.png'), availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['SUPPORT','LOCAL','BOTTOMS'], tone:'coral' },
   { id:'prod_mock_002', name:'Cum Dump', slug:'cum-dump', price:32, editorialDescriptor:'Advanced Placement', description:'Product description pending.', collection:'Cruising', catalogImage:null, availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['CUM','DUMP'], tone:'cream' },
   { id:'prod_mock_003', name:'Buss-ee’s', slug:'buss-ees', price:34, editorialDescriptor:'Roadside Attraction', description:'Product description pending.', collection:'Parodies', catalogImage:null, availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['BUSS','EE’S'], tone:'charcoal' },
   { id:'prod_mock_004', name:'Spread Your Legs, It’s the Nashville Way', slug:'spread-your-legs-nashville', price:34, editorialDescriptor:'Southern Hospitality', description:'Product description pending.', collection:'Nashville', catalogImage:null, availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, stripeProductId:null, stripePriceId:null, art:['SPREAD','YOUR','LEGS'], tone:'red' },

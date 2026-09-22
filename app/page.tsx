@@ -4,6 +4,7 @@ import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
 import { getCatalogProducts } from './data/products';
 import { pinShift, pinSlant } from './lib/pin-shift';
+import { trimMockup } from './lib/cloudinary';
 
 const fallbackProducts = [
   { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral', href: '/products/support-local-bottoms' },
@@ -72,7 +73,7 @@ export default async function Home() {
         <div className="hero__visual">
           <span className="hero__line" aria-hidden="true"><Clothespin /></span>
           <span className="scribble scribble--top">GOOD FROM<br />EVERY ANGLE</span>
-          <img className="hero-shirt" src="https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png" alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" />
+          <img className="hero-shirt" src={trimMockup('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png') ?? undefined} alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" />
           <span className="scribble scribble--bottom">Wear responsibly.<br />Or don’t.</span>
         </div>
       </section>

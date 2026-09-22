@@ -1,4 +1,5 @@
 import type { CatalogColor, CatalogProduct, CatalogVariant, ProductCollection } from './products';
+import { trimMockup } from '../lib/cloudinary';
 
 type SupabaseCollection = {
   name: string;
@@ -103,7 +104,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
       color: color.color,
       style: color.style,
       garment: color.garment,
-      mockupUrl: color.mockup_url,
+      mockupUrl: trimMockup(color.mockup_url),
       sortOrder: color.sort_order,
       active: color.active,
     }));
@@ -113,6 +114,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
 
   // Fall back to the first colorway's mockup when catalog_image is empty.
   const firstColorMockup = colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? null;
+  const trimmedCatalog = trimMockup(product.catalog_image);
 
   return {
     id: product.id,
@@ -122,7 +124,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     editorialDescriptor: product.editorial_descriptor ?? 'Conversation Starter',
     description: product.description ?? '',
     collection: firstCollection(product),
-    catalogImage: product.catalog_image ?? firstColorMockup,
+    catalogImage: trimmedCatalog ?? firstColorMockup,
     availableSizes: variants.map((variant) => variant.size),
     variants,
     colors,

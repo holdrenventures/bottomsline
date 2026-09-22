@@ -260,7 +260,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .catalog-line { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(18px,2.4vw,38px); margin-bottom:clamp(86px,9vw,132px); }
 .catalog-line::before { content:""; position:absolute; z-index:0; top:14px; left:-3vw; width:calc(100% + 6vw); height:2px; background:#b7a998; box-shadow:0 1px 0 rgba(255,255,255,.1); transform:rotate(-.1deg); }
 .catalog-product { position:relative; min-width:0; }
-.catalog-product__visual { position:relative; z-index:1; display:flex; justify-content:center; align-items:flex-start; height:440px; padding-top:8px; overflow:hidden; transform:rotate(var(--pin-slant, var(--catalog-rotate))); transform-origin:calc(50% + var(--pin-shift, 0px)) 12px; transition:transform .28s ease; }
+.catalog-product__visual { position:relative; z-index:1; display:flex; justify-content:center; align-items:flex-start; height:clamp(300px,30vw,360px); padding-top:8px; overflow:hidden; transform:rotate(var(--pin-slant, var(--catalog-rotate))); transform-origin:calc(50% + var(--pin-shift, 0px)) 12px; transition:transform .28s ease; }
 .catalog-product__visual .clothespin { top:-2px; }
 /* Per-card clothespin offset — --pin-shift is set inline per card so each
    pin clips just to the left or right of the shirt collar with no visible
@@ -271,7 +271,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 }
 
 .catalog-product__visual .shirt { width:min(82%,260px); }
-.catalog-product__image { width:82%; max-width:260px; aspect-ratio:3/4; height:auto; max-height:86%; object-fit:contain; object-position:center top; }
+.catalog-product__image { width:82%; max-width:260px; aspect-ratio:3/4; height:auto; max-height:96%; object-fit:contain; object-position:center top; }
 .catalog-product__placeholder { position:absolute; z-index:4; top:30px; right:2px; color:#777; font-size:7px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; }
 .catalog-product__meta { display:flex; justify-content:space-between; gap:12px; padding-top:14px; border-top:1px solid var(--line); color:var(--coral); font-size:8px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; }
 .catalog-product__meta span { color:var(--paper); }
@@ -313,7 +313,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
   .catalog-line { grid-template-columns:repeat(2,minmax(0,1fr)); gap:70px 30px; }
   .catalog-line::before { display:none; }
   .catalog-product::before { content:""; position:absolute; top:14px; left:-15px; width:calc(100% + 30px); height:2px; background:#b7a998; }
-  .catalog-product__visual { height:clamp(320px,48vw,470px); }
+  .catalog-product__visual { height:clamp(280px,40vw,360px); }
 }
 
 @media (max-width:680px) {
@@ -383,7 +383,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
   .catalog-count { margin:32px 0 28px; }
   .catalog-line { gap:52px 14px; margin-bottom:76px; }
   .catalog-product::before { left:-7px; width:calc(100% + 14px); }
-  .catalog-product__visual { height:clamp(230px,64vw,300px); padding-top:8px; }
+  .catalog-product__visual { height:clamp(220px,60vw,290px); padding-top:8px; }
   .catalog-product__visual .shirt,.catalog-product__image { width:90%; }
   .catalog-product__placeholder { top:26px; font-size:6px; }
   .catalog-product__meta { display:grid; gap:5px; }

@@ -30,6 +30,6 @@ export function pinSlant(key: string): string {
   // Pin right (shift +32) → shirt tilts counterclockwise (-deg), high corner on the right.
   const sign = h % 2 === 0 ? 1 : -1;
   // Two magnitudes for variety across a row.
-  const magnitude = ((h >>> 3) & 1) === 0 ? 1 : 1.6;
+  const magnitude = ((h >>> 3) & 1) === 0 ? 1.4 : 2.2;
   return `${(sign * magnitude).toFixed(2)}deg`;
 }

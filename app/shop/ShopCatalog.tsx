@@ -56,13 +56,13 @@ export default function ShopCatalog({ products }: { products: CatalogProduct[] }
               const href = `/products/${product.slug}`;
               return (
                 <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg`, '--pin-shift': pinShift(product.slug), '--pin-slant': pinSlant(product.slug) } as CSSProperties} key={product.slug}>
-                  <div className="catalog-product__visual">
+                  <a className="catalog-product__visual" href={href} aria-label={`Shop ${product.name}`}>
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}
                     {product.catalogImage
                       ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} />
                       : <Shirt art={product.art} tone={product.tone} />}
-                  </div>
+                  </a>
                   <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>${product.price}</span></div>
                   <h2><a href={href}>{product.name}</a></h2>
                   <div className="catalog-product__action"><a href={href}>Read the shirt <span>↗</span></a></div>

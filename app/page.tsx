@@ -7,9 +7,9 @@ import { pinShift, pinSlant } from './lib/pin-shift';
 
 const fallbackProducts = [
   { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral', href: '/products/support-local-bottoms' },
-  { name: 'Cum Dump', label: 'Advanced Placement', price: '$32', art: ['CUM', 'DUMP'], tone: 'cream' },
-  { name: 'Buss-ee’s', label: 'Roadside Attraction', price: '$34', art: ['BUSS', 'EE’S'], tone: 'charcoal' },
-  { name: 'Spread Your Legs, It’s the Nashville Way', label: 'Southern Hospitality', price: '$34', art: ['SPREAD', 'YOUR', 'LEGS'], tone: 'red' },
+  { name: 'Cum Dump', label: 'Advanced Placement', price: '$32', art: ['CUM', 'DUMP'], tone: 'cream', href: '/products/cum-dump' },
+  { name: 'Buss-ee’s', label: 'Roadside Attraction', price: '$34', art: ['BUSS', 'EE’S'], tone: 'charcoal', href: '/products/buss-ees' },
+  { name: 'Spread Your Legs, It’s the Nashville Way', label: 'Southern Hospitality', price: '$34', art: ['SPREAD', 'YOUR', 'LEGS'], tone: 'red', href: '/products/spread-your-legs-nashville' },
 ];
 
 const collections = [
@@ -77,7 +77,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <div className="ticker" aria-hidden="true"><div>FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span> FLIRT RESPONSIBLY <span>✦</span></div></div>
+      <div className="ticker" aria-hidden="true"><div>FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span> FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span></div></div>
 
       <section className="products shell section" id="shop">
         <div className="section-heading">
@@ -88,11 +88,11 @@ export default async function Home() {
           <div className="product-grid">
             {products.map((product, index) => (
               <article className="product-card" key={product.name} style={{ ["--pin-shift" as string]: pinShift(product.name), ["--pin-slant" as string]: pinSlant(product.name) } as CSSProperties}>
-                <div className="product-card__image">
+                <a className="product-card__image" href={product.href || '/shop'} aria-label={`Shop ${product.name}`}>
                   <Clothespin />
                   <span className="product-card__number">0{index + 1}</span>
                   <div className="product-card__media">{(('image' in product) && product.image) ? <img src={product.image as string} alt={product.name} /> : <Shirt art={product.art} tone={product.tone as any} />}</div>
-                </div>
+                </a>
                 <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
                 <h3>{product.name}</h3>
                 <a href={product.href || '/shop'} aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>

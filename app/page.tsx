@@ -1,8 +1,9 @@
 import EmailSignup from './EmailSignup';
 import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
+import { getCatalogProducts } from './data/products';
 
-const products = [
+const fallbackProducts = [
   { name: 'Support Local Bottoms', label: 'Community Outreach', price: '$32', art: ['SUPPORT', 'LOCAL', 'BOTTOMS'], tone: 'coral', href: '/products/support-local-bottoms' },
   { name: 'Cum Dump', label: 'Advanced Placement', price: '$32', art: ['CUM', 'DUMP'], tone: 'cream' },
   { name: 'Buss-ee’s', label: 'Roadside Attraction', price: '$34', art: ['BUSS', 'EE’S'], tone: 'charcoal' },
@@ -37,7 +38,23 @@ function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snaps
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const catalog = await getCatalogProducts();
+  // Prefer real featured products from the loaded catalog; fall back to the
+  // hand-tuned four when Supabase is not configured.
+  const featured = catalog.filter((p) => p.featured).slice(0, 4);
+  const products = featured.length === 4
+    ? featured.map((p) => ({
+        name: p.name,
+        label: p.editorialDescriptor,
+        price: `$${Math.round(p.price)}`,
+        art: p.art,
+        tone: p.tone,
+        href: `/products/${p.slug}`,
+        image: p.catalogImage,
+      }))
+    : fallbackProducts;
+
   return (
     <main>
       <SiteHeader />
@@ -72,7 +89,7 @@ export default function Home() {
                 <div className="product-card__image">
                   <Clothespin />
                   <span className="product-card__number">0{index + 1}</span>
-                  <div className="product-card__media"><Shirt art={product.art} tone={product.tone} /></div>
+                  <div className="product-card__media">{(('image' in product) && product.image) ? <img src={product.image as string} alt={product.name} /> : <Shirt art={product.art} tone={product.tone as any} />}</div>
                 </div>
                 <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
                 <h3>{product.name}</h3>

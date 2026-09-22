@@ -187,6 +187,20 @@ footer { padding:clamp(44px,4.5vw,64px) 0 0; overflow:hidden; background:var(--c
 .size-selector>div button:last-child { border-right:0; }
 .size-selector>div button:hover { background:#1e1e1e; }
 .size-selector>div button.is-selected { background:var(--white); color:var(--ink); }
+
+.product-detail__image { display:block; width:min(100%, 520px); margin:0 auto; background:transparent; }
+.purchase-hero { margin:0 0 24px; background:#111; border:1px solid var(--line); }
+.purchase-hero img { display:block; width:100%; height:auto; }
+.color-selector { margin:0 0 22px; padding:0; border:0; }
+.color-selector legend { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; text-transform:uppercase; font-size:9px; font-weight:900; letter-spacing:1.7px; }
+.color-selector__count { color:var(--muted); }
+.color-selector__grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(78px, 1fr)); gap:8px; }
+.color-swatch { display:flex; flex-direction:column; align-items:stretch; gap:6px; padding:6px; background:#141414; border:1px solid var(--line); color:var(--white); text-transform:uppercase; font-size:9px; font-weight:800; letter-spacing:.7px; text-align:left; cursor:pointer; transition:border-color .2s ease, background .2s ease; }
+.color-swatch:hover { background:#1e1e1e; }
+.color-swatch.is-selected { border-color:var(--coral); background:#1c1614; }
+.color-swatch img { display:block; width:100%; aspect-ratio:1/1; object-fit:cover; background:#0a0a0a; }
+.color-swatch__placeholder { display:flex; align-items:center; justify-content:center; aspect-ratio:1/1; background:#222; font-size:14px; font-weight:900; }
+.color-swatch__label { display:block; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .purchase-row { display:grid; grid-template-columns:auto 1fr; gap:12px; margin-top:16px; }
 .quantity-selector { display:grid; grid-template-columns:auto 34px 30px 34px; align-items:center; min-height:58px; padding-inline:15px 8px; border:1px solid var(--line); }
 .quantity-selector>span { padding-right:11px; color:var(--muted); text-transform:uppercase; font-size:8px; font-weight:900; letter-spacing:1.4px; }

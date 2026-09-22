@@ -52,7 +52,7 @@ export default function ShopCatalog({ products }: { products: CatalogProduct[] }
         <div key={`${collection}-${query}-${sort}-${rowIndex}`}>
           <div className="catalog-line">
             {row.map((product, productIndex) => {
-              const href = product.slug === 'support-local-bottoms' ? '/products/support-local-bottoms' : null;
+              const href = `/products/${product.slug}`;
               return (
                 <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg` } as CSSProperties} key={product.slug}>
                   <div className="catalog-product__visual">
@@ -63,8 +63,8 @@ export default function ShopCatalog({ products }: { products: CatalogProduct[] }
                       : <Shirt art={product.art} tone={product.tone} />}
                   </div>
                   <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>${product.price}</span></div>
-                  <h2>{href ? <a href={href}>{product.name}</a> : product.name}</h2>
-                  <div className="catalog-product__action">{href ? <a href={href}>Read the shirt <span>↗</span></a> : <span>PDP coming later</span>}</div>
+                  <h2><a href={href}>{product.name}</a></h2>
+                  <div className="catalog-product__action"><a href={href}>Read the shirt <span>↗</span></a></div>
                 </article>
               );
             })}

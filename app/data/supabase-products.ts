@@ -1,8 +1,18 @@
-import type { CatalogProduct, CatalogVariant, ProductCollection } from './products';
+import type { CatalogColor, CatalogProduct, CatalogVariant, ProductCollection } from './products';
 
 type SupabaseCollection = {
   name: string;
   slug: string;
+  active: boolean;
+};
+
+type SupabaseColor = {
+  id: string;
+  color: string;
+  style: string | null;
+  garment: string | null;
+  mockup_url: string | null;
+  sort_order: number;
   active: boolean;
 };
 
@@ -15,6 +25,7 @@ type SupabaseProduct = {
   base_price_cents: number;
   currency: string;
   catalog_image: string | null;
+  active: boolean;
   featured: boolean;
   new_drop: boolean;
   created_at: string;
@@ -31,6 +42,7 @@ type SupabaseProduct = {
     sort_order: number;
     collections: SupabaseCollection | SupabaseCollection[] | null;
   }>;
+  product_colors: SupabaseColor[];
 };
 
 const supportedCollections: ProductCollection[] = [
@@ -42,6 +54,13 @@ const supportedCollections: ProductCollection[] = [
   'New Drops',
 ];
 
+// Preferred size order for display; unknown sizes append at the end alphabetically.
+const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
+function sizeRank(size: string) {
+  const idx = sizeOrder.indexOf(size);
+  return idx === -1 ? sizeOrder.length : idx;
+}
+
 function isProductCollection(value: string): value is ProductCollection {
   return supportedCollections.includes(value as ProductCollection);
 }
@@ -50,7 +69,6 @@ function firstCollection(product: SupabaseProduct): ProductCollection {
   const names = [...product.product_collections]
     .sort((a, b) => a.sort_order - b.sort_order)
     .flatMap((link) => Array.isArray(link.collections) ? link.collections : link.collections ? [link.collections] : [])
-    .filter((collection) => collection.active)
     .map((collection) => collection.name);
 
   const supported = names.find(isProductCollection);
@@ -64,8 +82,10 @@ function productArt(name: string) {
 }
 
 function normalizeProduct(product: SupabaseProduct, index: number): CatalogProduct {
-  const variants: CatalogVariant[] = product.product_variants
-    .filter((variant) => variant.active && variant.inventory_quantity !== 0)
+  // Sizes are the SKU dimension. Show all size rows for the product; the
+  // per-variant `active` flag becomes purchase-time gating later.
+  const variants: CatalogVariant[] = [...product.product_variants]
+    .sort((a, b) => sizeRank(a.size) - sizeRank(b.size))
     .map((variant) => ({
       id: variant.id,
       size: variant.size,
@@ -73,9 +93,26 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
       inventoryQuantity: variant.inventory_quantity,
       stripeProductId: variant.stripe_product_id,
       stripePriceId: variant.stripe_price_id,
+      active: variant.active,
     }));
+
+  const colors: CatalogColor[] = [...(product.product_colors ?? [])]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((color) => ({
+      id: color.id,
+      color: color.color,
+      style: color.style,
+      garment: color.garment,
+      mockupUrl: color.mockup_url,
+      sortOrder: color.sort_order,
+      active: color.active,
+    }));
+
   const checkoutVariant = variants[0];
   const tones: CatalogProduct['tone'][] = ['coral', 'cream', 'charcoal', 'red'];
+
+  // Fall back to the first colorway's mockup when catalog_image is empty.
+  const firstColorMockup = colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? null;
 
   return {
     id: product.id,
@@ -85,10 +122,12 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     editorialDescriptor: product.editorial_descriptor ?? 'Conversation Starter',
     description: product.description ?? '',
     collection: firstCollection(product),
-    catalogImage: product.catalog_image,
+    catalogImage: product.catalog_image ?? firstColorMockup,
     availableSizes: variants.map((variant) => variant.size),
     variants,
-    active: true,
+    colors,
+    active: product.active,
+    draft: !product.active,
     featured: product.featured,
     isNewDrop: product.new_drop,
     stripeProductId: checkoutVariant?.stripeProductId ?? null,
@@ -99,9 +138,14 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
 }
 
 /**
- * Reads the private catalog from Supabase from server code only. The new
+ * Reads the private catalog from Supabase from server code only. The
  * sb_secret_* key belongs in Cloudflare's encrypted secrets, never NEXT_PUBLIC_*.
  * A missing configuration returns null so local previews keep using mock data.
+ *
+ * We deliberately do NOT filter on `products.active` here: the freshly-loaded
+ * catalog is all draft (active=false), and the storefront needs to show it
+ * while copy and pricing are finalized. Purchase-time gating happens on the
+ * per-variant `active` flag once Stripe IDs are wired.
  */
 export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | null> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -110,18 +154,19 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
 
   const select = [
     'id', 'name', 'slug', 'editorial_descriptor', 'description',
-    'base_price_cents', 'currency', 'catalog_image', 'featured', 'new_drop', 'created_at',
+    'base_price_cents', 'currency', 'catalog_image', 'active', 'featured', 'new_drop', 'created_at',
     'product_variants(id,size,active,inventory_quantity,stripe_product_id,stripe_price_id,price_cents)',
     'product_collections(sort_order,collections(name,slug,active))',
+    'product_colors(id,color,style,garment,mockup_url,sort_order,active)',
   ].join(',');
   const endpoint = new URL('/rest/v1/products', supabaseUrl);
   endpoint.searchParams.set('select', select);
-  endpoint.searchParams.set('active', 'eq.true');
   endpoint.searchParams.set('order', 'created_at.desc');
 
   const response = await fetch(endpoint, {
     headers: {
       apikey: secretKey,
+      Authorization: `Bearer ${secretKey}`,
       Accept: 'application/json',
     },
     cache: 'no-store',

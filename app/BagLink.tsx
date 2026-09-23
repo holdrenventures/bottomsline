@@ -10,8 +10,12 @@ export default function BagLink() {
     const readCount = () => setCount(getCartQuantity(readCart()));
     readCount();
     window.addEventListener(CART_UPDATED_EVENT, readCount);
-    return () => window.removeEventListener(CART_UPDATED_EVENT, readCount);
+    window.addEventListener('storage', readCount);
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, readCount);
+      window.removeEventListener('storage', readCount);
+    };
   }, []);
 
-  return <a className="bag-link" href="/shop">Bag <span>({count})</span></a>;
+  return <a className="bag-link" href="/bag">Bag <span>({count})</span></a>;
 }

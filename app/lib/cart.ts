@@ -24,10 +24,29 @@ export const CART_UPDATED_EVENT = 'bottoms-line-bag-updated';
 export function readCart(): CartItem[] {
   try {
     const stored = window.localStorage.getItem(CART_STORAGE_KEY);
-    return stored ? JSON.parse(stored) as CartItem[] : [];
+    if (!stored) return [];
+    const parsed = JSON.parse(stored) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is CartItem => Boolean(
+      item
+      && typeof item === 'object'
+      && typeof (item as CartItem).productId === 'string'
+      && typeof (item as CartItem).slug === 'string'
+      && typeof (item as CartItem).name === 'string'
+      && typeof (item as CartItem).size === 'string'
+      && Number.isFinite((item as CartItem).unitPrice)
+      && Number.isInteger((item as CartItem).quantity)
+      && (item as CartItem).quantity > 0,
+    ));
   } catch {
     return [];
   }
+}
+
+export function writeCart(cart: CartItem[]) {
+  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  window.dispatchEvent(new Event(CART_UPDATED_EVENT));
+  return cart;
 }
 
 export function addCartItem(nextItem: CartItem) {
@@ -43,9 +62,25 @@ export function addCartItem(nextItem: CartItem) {
   );
   if (existing) existing.quantity += nextItem.quantity;
   else cart.push(nextItem);
-  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-  window.dispatchEvent(new Event(CART_UPDATED_EVENT));
-  return cart;
+  return writeCart(cart);
+}
+
+export function updateCartItem(index: number, quantity: number) {
+  const cart = readCart();
+  if (!cart[index]) return cart;
+  cart[index].quantity = Math.max(1, Math.min(9, Math.floor(quantity)));
+  return writeCart(cart);
+}
+
+export function removeCartItem(index: number) {
+  const cart = readCart();
+  if (!cart[index]) return cart;
+  cart.splice(index, 1);
+  return writeCart(cart);
+}
+
+export function clearCart() {
+  return writeCart([]);
 }
 
 export function getCartQuantity(cart = readCart()) {

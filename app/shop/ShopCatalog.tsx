@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Clothespin, Shirt } from '../BrandVisuals';
-import { catalogCollections, type CatalogProduct } from '../data/products';
+import { catalogCollections, productPriceLabel, type CatalogProduct } from '../data/products';
 import { pinShift, pinSlant } from '../lib/pin-shift';
 
 type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'name';
@@ -11,16 +11,33 @@ function chunkProducts(products: CatalogProduct[], size: number) {
   return Array.from({ length: Math.ceil(products.length / size) }, (_, index) => products.slice(index * size, index * size + size));
 }
 
-export default function ShopCatalog({ products }: { products: CatalogProduct[] }) {
-  const [collection, setCollection] = useState<(typeof catalogCollections)[number]>('All');
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<SortOption>('featured');
+type ShopCatalogProps = {
+  products: CatalogProduct[];
+  initialCollection: (typeof catalogCollections)[number];
+  initialQuery: string;
+  initialSort: SortOption;
+};
+
+export default function ShopCatalog({ products, initialCollection, initialQuery, initialSort }: ShopCatalogProps) {
+  const [collection, setCollection] = useState<(typeof catalogCollections)[number]>(initialCollection);
+  const [query, setQuery] = useState(initialQuery);
+  const [sort, setSort] = useState<SortOption>(initialSort);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (collection !== 'All') params.set('collection', collection.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    if (query.trim()) params.set('q', query.trim());
+    if (sort !== 'featured') params.set('sort', sort);
+    const search = params.toString();
+    window.history.replaceState(null, '', `/shop${search ? `?${search}` : ''}#catalog`);
+  }, [collection, query, sort]);
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const filtered = products.filter((product) => {
-      const matchesCollection = collection === 'All' || product.collection === collection;
-      const matchesQuery = !normalizedQuery || `${product.name} ${product.collection} ${product.editorialDescriptor}`.toLowerCase().includes(normalizedQuery);
+      const productCollections = product.collections ?? [product.collection];
+      const matchesCollection = collection === 'All' || productCollections.includes(collection);
+      const matchesQuery = !normalizedQuery || `${product.name} ${productCollections.join(' ')} ${product.editorialDescriptor}`.toLowerCase().includes(normalizedQuery);
       return matchesCollection && matchesQuery;
     });
 
@@ -63,7 +80,7 @@ export default function ShopCatalog({ products }: { products: CatalogProduct[] }
                       ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} />
                       : <Shirt art={product.art} tone={product.tone} />}
                   </a>
-                  <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>${product.price}</span></div>
+                  <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>
                   <h2><a href={href}>{product.name}</a></h2>
                   <div className="catalog-product__action"><a href={href}>Read the shirt <span>↗</span></a></div>
                 </article>

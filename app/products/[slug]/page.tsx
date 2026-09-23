@@ -1,17 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
-import { getProductBySlug } from '../../data/products';
+import { getProductBySlug, productPriceLabel } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
 import ProductPurchaseAny from './ProductPurchaseAny';
-
-// V1 PLACEHOLDER SPECS: replace with confirmed production details before live sales.
-const productDetails = [
-  ['Material', 'Midweight cotton tee — placeholder specification'],
-  ['Fit', 'Relaxed unisex fit — placeholder fit guidance'],
-  ['Care', 'Wash cold, inside out. Dry low. Keep the joke intact.'],
-  ['Shipping', 'Estimated 5–7 business days — placeholder timing'],
-];
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -37,7 +29,13 @@ export default async function ProductPage({ params }: PageProps) {
   if (!product) notFound();
 
   const eyebrow = product.editorialDescriptor || 'Conversation Starter';
-  const priceLabel = `$${Math.round(product.price)}`;
+  const priceLabel = productPriceLabel(product);
+  const productDetails = [
+    ['Material', product.material],
+    ['Fit', product.fitNotes],
+    ['Care', product.careInstructions],
+    ['Shipping', product.shippingNote],
+  ].filter((detail): detail is [string, string] => Boolean(detail[1]));
   const nameParts = product.name.split(' ');
   const nameHead = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : product.name;
   const nameTail = nameParts.length > 1 ? nameParts.slice(-1)[0] : '';
@@ -54,7 +52,7 @@ export default async function ProductPage({ params }: PageProps) {
         <section className="product-detail shell">
           <div className="product-detail__visual">
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
-            <ProductAnnotation>Read the shirt.<br />Twice, if needed.</ProductAnnotation>
+            <ProductAnnotation>{product.productAnnotation || <>Read the shirt.<br />Twice, if needed.</>}</ProductAnnotation>
             <span className="product-detail__index">BL / {product.slug}</span>
             {product.catalogImage
               ? <img className="product-detail__image" src={product.catalogImage} alt={product.name} />
@@ -72,7 +70,7 @@ export default async function ProductPage({ params }: PageProps) {
 
             <ProductPurchaseAny product={product} />
 
-            <div className="product-specs">
+            {productDetails.length > 0 && <div className="product-specs">
               {productDetails.map(([label, value], index) => (
                 <div key={label}>
                   <span className="product-specs__index">0{index + 1}</span>
@@ -80,7 +78,7 @@ export default async function ProductPage({ params }: PageProps) {
                   <p>{value}</p>
                 </div>
               ))}
-            </div>
+            </div>}
             <a className="continue-shopping" href="/shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
           </div>
         </section>

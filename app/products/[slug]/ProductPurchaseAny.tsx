@@ -6,7 +6,7 @@ import { addCartItem } from '../../lib/cart';
 
 type PurchaseProduct = Pick<
   CatalogProduct,
-  'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'variants' | 'colors' | 'stripeProductId' | 'stripePriceId' | 'catalogImage'
+  'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'variants' | 'colors' | 'stripeProductId' | 'stripePriceId' | 'catalogImage' | 'sizeGuideUrl'
 >;
 
 function slugify(input: string) {
@@ -69,6 +69,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
     && (!hasConfiguredVariants || selectedVariant)
     && (!displayColors.length || selectedColor),
   );
+  const selectedPrice = selectedVariant?.price ?? product.price;
 
   function addToBag() {
     if (!size || !selectionReady) return;
@@ -155,7 +156,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       )}
 
       <fieldset className="size-selector">
-        <legend><span>Choose a size</span><button type="button" className="size-guide">Size guide</button></legend>
+        <legend><span>Choose a size</span>{product.sizeGuideUrl && <a className="size-guide" href={product.sizeGuideUrl} target="_blank" rel="noreferrer">Size guide ↗</a>}</legend>
         <div>
           {sizesForStyle.map((option) => (
             <button
@@ -181,7 +182,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
         <button className="add-to-bag" type="button" disabled={!selectionReady} onClick={addToBag}>
           {added
             ? `Added — ${selectedColor ? `${styleName(selectedColor)} · ${selectedColor.color} · ` : ''}${size} × ${quantity}`
-            : 'Add to bag'} <span aria-hidden="true">↗</span>
+            : `Add to bag — $${selectedPrice.toFixed(2)}`} <span aria-hidden="true">↗</span>
         </button>
       </div>
       <p className={`purchase-note ${added ? 'purchase-note--success' : ''}`} role="status">

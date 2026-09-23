@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import SiteHeader from '../SiteHeader';
-import { getCatalogProducts } from '../data/products';
+import { collectionFromParam, getCatalogProducts } from '../data/products';
 import ShopCatalog from './ShopCatalog';
 
 export const metadata: Metadata = {
@@ -8,8 +8,16 @@ export const metadata: Metadata = {
   description: 'Conversation-starting shirts. Say it with your chest.',
 };
 
-export default async function ShopPage() {
+type ShopPageProps = {
+  searchParams: Promise<{ collection?: string; q?: string; sort?: string }>;
+};
+
+const validSorts = ['featured', 'newest', 'price-asc', 'price-desc', 'name'] as const;
+
+export default async function ShopPage({ searchParams }: ShopPageProps) {
   const products = await getCatalogProducts();
+  const filters = await searchParams;
+  const initialSort = validSorts.find((sort) => sort === filters.sort) ?? 'featured';
   return (
     <>
       <SiteHeader />
@@ -18,7 +26,7 @@ export default async function ShopPage() {
           <p className="eyebrow"><span /> The full collection</p>
           <div><h1>Shop<br /><em>the line.</em></h1><p>Say it with your chest.</p></div>
         </section>
-        <ShopCatalog products={products} />
+        <ShopCatalog products={products} initialCollection={collectionFromParam(filters.collection)} initialQuery={filters.q ?? ''} initialSort={initialSort} />
       </main>
       <footer className="shop-footer"><div className="shell"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>End of the line. For now.</p></div></footer>
     </>

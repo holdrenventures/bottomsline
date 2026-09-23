@@ -35,7 +35,14 @@ export type CatalogProduct = {
   price: number;
   editorialDescriptor: string;
   description: string;
+  productAnnotation?: string | null;
+  material?: string | null;
+  fitNotes?: string | null;
+  careInstructions?: string | null;
+  shippingNote?: string | null;
+  sizeGuideUrl?: string | null;
   collection: ProductCollection;
+  collections?: ProductCollection[];
   catalogImage: string | null;
   availableSizes: string[];
   variants?: CatalogVariant[];
@@ -86,3 +93,22 @@ export async function getProductBySlug(slug: string) {
 }
 
 export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'New Drops'] as const;
+
+export function collectionSlug(collection: string) {
+  return collection.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+export function collectionFromParam(value?: string) {
+  if (!value) return 'All' as const;
+  return catalogCollections.find((collection) => collectionSlug(collection) === collectionSlug(value)) ?? 'All';
+}
+
+export function productPriceLabel(product: CatalogProduct) {
+  const prices = (product.variants ?? [])
+    .filter((variant) => variant.active && (variant.inventoryQuantity === null || variant.inventoryQuantity > 0))
+    .map((variant) => variant.price);
+  if (!prices.length) return `$${product.price.toFixed(2)}`;
+  const minimum = Math.min(...prices);
+  const maximum = Math.max(...prices);
+  return minimum === maximum ? `$${minimum.toFixed(2)}` : `From $${minimum.toFixed(2)}`;
+}

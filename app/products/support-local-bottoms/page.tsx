@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
-import { getProductBySlug } from '../../data/products';
+import { getProductBySlug, productPriceLabel } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
 import ProductPurchase from './ProductPurchase';
 
@@ -21,19 +21,16 @@ export const metadata: Metadata = {
   },
 };
 
-// V1 PLACEHOLDER CONTENT: replace these specifications and shipping estimates
-// with confirmed production details before this page is used for live sales.
-const productDetails = [
-  ['Material', 'Midweight cotton tee — placeholder specification'],
-  ['Fit', 'Relaxed unisex fit — placeholder fit guidance'],
-  ['Care', 'Wash cold, inside out. Dry low. Keep the joke intact.'],
-  ['Shipping', 'Estimated 5–7 business days — placeholder timing'],
-];
-
 export default async function SupportLocalBottomsPage() {
   const product = await getProductBySlug('support-local-bottoms');
 
   if (!product) notFound();
+  const productDetails = [
+    ['Material', product.material],
+    ['Fit', product.fitNotes],
+    ['Care', product.careInstructions],
+    ['Shipping', product.shippingNote],
+  ].filter((detail): detail is [string, string] => Boolean(detail[1]));
 
   return (
     <>
@@ -51,14 +48,14 @@ export default async function SupportLocalBottomsPage() {
 
           <div className="product-detail__info">
             <p className="eyebrow"><span /> Community Outreach</p>
-            <div className="product-title-row"><h1>Support Local<br /><em>Bottoms</em></h1><p>$32</p></div>
+            <div className="product-title-row"><h1>Support Local<br /><em>Bottoms</em></h1><p>{productPriceLabel(product)}</p></div>
             <p className="product-description">A public service announcement.<br />Support locally.</p>
             <p className="product-aside">The right people will read it twice.</p>
             <ProductPurchase product={product} />
 
-            <div className="product-specs">
+            {productDetails.length > 0 && <div className="product-specs">
               {productDetails.map(([label, value], index) => <div key={label}><span className="product-specs__index">0{index + 1}</span><span className="product-specs__label">{label}</span><p>{value}</p></div>)}
-            </div>
+            </div>}
             <a className="continue-shopping" href="/shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
           </div>
         </section>

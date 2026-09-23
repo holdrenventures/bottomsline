@@ -18,6 +18,9 @@ Migrations applied to production, in order:
    product + style + size, adds optional garment fulfillment data, permits one
    Stripe Price to be reused across sizes, and snapshots the selected style,
    color, garment and colorway on paid order items.
+4. `202609230002_product_details.sql` — adds optional, editable product-page
+   annotation, material, fit, care, shipping and size-guide fields. Empty
+   fields are intentionally omitted from public product pages.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor

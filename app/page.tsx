@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import EmailSignup from './EmailSignup';
 import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
-import { getCatalogProducts } from './data/products';
+import { collectionSlug, getCatalogProducts, productPriceLabel } from './data/products';
 import { pinShift, pinSlant } from './lib/pin-shift';
 import { trimMockup } from './lib/cloudinary';
 
@@ -43,7 +43,7 @@ export default async function Home() {
     .map((product) => ({
       name: product.name,
       label: product.editorialDescriptor,
-      price: `$${Math.round(product.price)}`,
+      price: productPriceLabel(product),
       art: product.art,
       tone: product.tone,
       href: `/products/${product.slug}`,
@@ -120,7 +120,7 @@ export default async function Home() {
           <div className="section-heading section-heading--collections"><div><p className="eyebrow"><span /> Pick your poison</p><h2>Shop by<br /><em>mood.</em></h2></div><p>There’s a shirt for that.</p></div>
           <div className="collection-list">
             {collections.map((collection) => (
-              <a href="/shop" className="collection-row" key={collection.name}><span className="collection-row__number">{collection.number}</span><h3>{collection.name}</h3><p>{collection.note}</p><span className="collection-row__arrow" aria-hidden="true">↗</span></a>
+              <a href={`/shop?collection=${collectionSlug(collection.name)}#catalog`} className="collection-row" key={collection.name}><span className="collection-row__number">{collection.number}</span><h3>{collection.name}</h3><p>{collection.note}</p><span className="collection-row__arrow" aria-hidden="true">↗</span></a>
             ))}
           </div>
         </div>
@@ -134,7 +134,7 @@ export default async function Home() {
       <footer>
         <div className="shell footer__top">
           <p>Still here? You’re probably<br /><em>our kind of people.</em></p>
-          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="#top">Instagram</a><a href="#top">TikTok</a></div></div>
+          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="#top">Instagram</a><a href="#top">TikTok</a></div></div>
         </div>
         <div className="shell footer__bottom"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>© 2026 Bottom’s Line Clothing <span>Made with poor judgment.</span></p></div>
       </footer>

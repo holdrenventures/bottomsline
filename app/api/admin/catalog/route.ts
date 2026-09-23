@@ -31,6 +31,12 @@ type ProductInput = {
   slug?: string;
   editorial_descriptor?: string | null;
   description?: string | null;
+  product_annotation?: string | null;
+  material?: string | null;
+  fit_notes?: string | null;
+  care_instructions?: string | null;
+  shipping_note?: string | null;
+  size_guide_url?: string | null;
   base_price_cents?: number;
   currency?: string;
   catalog_image?: string | null;
@@ -95,6 +101,12 @@ export async function POST(request: Request) {
       slug,
       editorial_descriptor: cleanNullable(input.editorial_descriptor),
       description: cleanNullable(input.description),
+      product_annotation: cleanNullable(input.product_annotation),
+      material: cleanNullable(input.material),
+      fit_notes: cleanNullable(input.fit_notes),
+      care_instructions: cleanNullable(input.care_instructions),
+      shipping_note: cleanNullable(input.shipping_note),
+      size_guide_url: cleanNullable(input.size_guide_url),
       base_price_cents: price,
       currency,
       catalog_image: cleanNullable(input.catalog_image),

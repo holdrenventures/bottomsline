@@ -13,6 +13,12 @@ type Product = {
   slug: string;
   editorial_descriptor: string | null;
   description: string | null;
+  product_annotation: string | null;
+  material: string | null;
+  fit_notes: string | null;
+  care_instructions: string | null;
+  shipping_note: string | null;
+  size_guide_url: string | null;
   base_price_cents: number;
   currency: string;
   catalog_image: string | null;
@@ -28,7 +34,7 @@ type Product = {
 };
 
 const blankProduct = (): Product => ({
-  name: '', slug: '', editorial_descriptor: '', description: '', base_price_cents: 3200, currency: 'usd', catalog_image: '',
+  name: '', slug: '', editorial_descriptor: '', description: '', product_annotation: '', material: '', fit_notes: '', care_instructions: '', shipping_note: '', size_guide_url: '', base_price_cents: 3200, currency: 'usd', catalog_image: '',
   active: false, featured: false, new_drop: false, product_variants: [], product_colors: [], product_collections: [], collection_ids: [],
 });
 
@@ -138,7 +144,16 @@ export default function AdminCatalog() {
             <label>Price in cents<input type="number" min="0" step="1" required value={draft.base_price_cents} onChange={(event) => patch('base_price_cents', Number(event.target.value))} /></label>
             <label>Currency<input maxLength={3} value={draft.currency} onChange={(event) => patch('currency', event.target.value.toLowerCase())} /></label>
             <label className="admin-field--wide">Description<textarea rows={3} value={draft.description ?? ''} onChange={(event) => patch('description', event.target.value)} /></label>
+            <label className="admin-field--wide">Image annotation<input value={draft.product_annotation ?? ''} onChange={(event) => patch('product_annotation', event.target.value)} placeholder="A public service, more or less." /></label>
           </div><div className="admin-checks"><label><input type="checkbox" checked={draft.active} onChange={(event) => patch('active', event.target.checked)} /> Active product</label><label><input type="checkbox" checked={draft.featured} onChange={(event) => patch('featured', event.target.checked)} /> Featured</label><label><input type="checkbox" checked={draft.new_drop} onChange={(event) => patch('new_drop', event.target.checked)} /> New drop</label></div></section>
+
+          <section className="admin-section"><h3>Product details</h3><p className="admin-section__help">Optional. Empty details stay off the public page.</p><div className="admin-fields admin-fields--two">
+            <label>Material<input value={draft.material ?? ''} onChange={(event) => patch('material', event.target.value)} /></label>
+            <label>Fit<input value={draft.fit_notes ?? ''} onChange={(event) => patch('fit_notes', event.target.value)} /></label>
+            <label>Care<input value={draft.care_instructions ?? ''} onChange={(event) => patch('care_instructions', event.target.value)} /></label>
+            <label>Shipping note<input value={draft.shipping_note ?? ''} onChange={(event) => patch('shipping_note', event.target.value)} /></label>
+            <label className="admin-field--wide">Size guide URL<input type="url" value={draft.size_guide_url ?? ''} onChange={(event) => patch('size_guide_url', event.target.value)} placeholder="https://…" /></label>
+          </div></section>
 
           <section className="admin-section"><h3>Catalog image</h3><div className="admin-image-field"><label>Cloudinary image URL<input type="url" value={draft.catalog_image ?? ''} onChange={(event) => patch('catalog_image', event.target.value)} /></label>{draft.catalog_image && <img src={draft.catalog_image} alt="Catalog preview" />}</div></section>
 

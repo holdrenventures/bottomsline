@@ -23,6 +23,12 @@ type SupabaseProduct = {
   slug: string;
   editorial_descriptor: string | null;
   description: string | null;
+  product_annotation: string | null;
+  material: string | null;
+  fit_notes: string | null;
+  care_instructions: string | null;
+  shipping_note: string | null;
+  size_guide_url: string | null;
   base_price_cents: number;
   currency: string;
   catalog_image: string | null;
@@ -69,15 +75,15 @@ function isProductCollection(value: string): value is ProductCollection {
   return supportedCollections.includes(value as ProductCollection);
 }
 
-function firstCollection(product: SupabaseProduct): ProductCollection {
+function productCollections(product: SupabaseProduct): ProductCollection[] {
   const names = [...product.product_collections]
     .sort((a, b) => a.sort_order - b.sort_order)
     .flatMap((link) => Array.isArray(link.collections) ? link.collections : link.collections ? [link.collections] : [])
     .map((collection) => collection.name);
 
-  const supported = names.find(isProductCollection);
-  if (supported) return supported;
-  return product.new_drop ? 'New Drops' : 'Support Local Bottoms';
+  const supported = names.filter(isProductCollection);
+  if (product.new_drop && !supported.includes('New Drops')) supported.push('New Drops');
+  return supported.length ? supported : ['Support Local Bottoms'];
 }
 
 function productArt(name: string) {
@@ -116,6 +122,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     }));
 
   const checkoutVariant = variants[0];
+  const collections = productCollections(product);
   const tones: CatalogProduct['tone'][] = ['coral', 'cream', 'charcoal', 'red'];
 
   // Fall back to the first colorway's mockup when catalog_image is empty.
@@ -129,7 +136,14 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     price: product.base_price_cents / 100,
     editorialDescriptor: product.editorial_descriptor ?? 'Conversation Starter',
     description: product.description ?? '',
-    collection: firstCollection(product),
+    productAnnotation: product.product_annotation,
+    material: product.material,
+    fitNotes: product.fit_notes,
+    careInstructions: product.care_instructions,
+    shippingNote: product.shipping_note,
+    sizeGuideUrl: product.size_guide_url,
+    collection: collections[0],
+    collections,
     catalogImage: trimmedCatalog ?? firstColorMockup,
     availableSizes: Array.from(new Set(variants.map((variant) => variant.size))),
     variants,
@@ -161,6 +175,7 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
 
   const select = [
     'id', 'name', 'slug', 'editorial_descriptor', 'description',
+    'product_annotation', 'material', 'fit_notes', 'care_instructions', 'shipping_note', 'size_guide_url',
     'base_price_cents', 'currency', 'catalog_image', 'active', 'featured', 'new_drop', 'created_at',
     'product_variants(id,sku,style,garment,size,active,inventory_quantity,stripe_product_id,stripe_price_id,price_cents)',
     'product_collections(sort_order,collections(name,slug,active))',

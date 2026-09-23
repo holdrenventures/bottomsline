@@ -458,7 +458,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .admin-image-field { display:grid; grid-template-columns:minmax(0,1fr) 150px; align-items:start; gap:24px; }
 .admin-image-field img,.admin-row--color img { width:100%; height:150px; object-fit:contain; background:#e9e4da; }
 .admin-row { display:grid; gap:12px; margin-top:12px; padding:16px; border:1px solid #d9d3c8; background:#f4f1eb; }
-.admin-row--variant { grid-template-columns:70px 1.2fr 110px 100px 1fr 1fr auto; }
+.admin-row--variant { grid-template-columns:80px 100px 65px 1.2fr 100px 95px 1fr 1fr auto; }
 .admin-row--color { grid-template-columns:1fr 90px 120px 70px 2fr auto 100px; align-items:end; }
 .admin-row__url { min-width:0; }
 .admin-row--color img { height:72px; }

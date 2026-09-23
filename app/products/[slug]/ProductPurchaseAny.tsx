@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { CatalogColor, CatalogProduct } from '../../data/products';
+import type { CatalogColor, CatalogProduct, CatalogVariant } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
 
 type PurchaseProduct = Pick<
@@ -17,14 +17,25 @@ function styleName(color: CatalogColor) {
   return color.style?.trim() || 'Tee';
 }
 
+function variantIsAvailable(variant: CatalogVariant) {
+  return variant.active && (variant.inventoryQuantity === null || variant.inventoryQuantity > 0);
+}
+
 export default function ProductPurchaseAny({ product }: { product: PurchaseProduct }) {
   const displayColors = useMemo(
     () => product.colors.filter((color) => color.active),
     [product.colors],
   );
+  const sellableVariants = useMemo(
+    () => (product.variants ?? []).filter(variantIsAvailable),
+    [product.variants],
+  );
+  const hasConfiguredVariants = Boolean(product.variants?.length);
   const styles = useMemo(
-    () => Array.from(new Set(displayColors.map(styleName))),
-    [displayColors],
+    () => hasConfiguredVariants
+      ? Array.from(new Set(sellableVariants.map((variant) => variant.style)))
+      : Array.from(new Set(displayColors.map(styleName))),
+    [displayColors, hasConfiguredVariants, sellableVariants],
   );
   const [style, setStyle] = useState<string | null>(styles[0] ?? null);
   const colorsForStyle = useMemo(
@@ -36,22 +47,39 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
+  const sizesForStyle = useMemo(() => {
+    if (!hasConfiguredVariants) return product.availableSizes;
+    return sellableVariants
+      .filter((variant) => variant.style === style)
+      .map((variant) => variant.size);
+  }, [hasConfiguredVariants, product.availableSizes, sellableVariants, style]);
+
   const selectedColor: CatalogColor | null = useMemo(
     () => colorsForStyle.find((color) => color.id === colorId) ?? null,
     [colorsForStyle, colorId],
   );
 
   const heroImage = selectedColor?.mockupUrl ?? product.catalogImage ?? null;
+  const selectedVariant = useMemo(
+    () => sellableVariants.find((variant) => variant.style === style && variant.size === size) ?? null,
+    [sellableVariants, size, style],
+  );
+  const selectionReady = Boolean(
+    size
+    && (!hasConfiguredVariants || selectedVariant)
+    && (!displayColors.length || selectedColor),
+  );
 
   function addToBag() {
-    if (!size) return;
-    const selectedVariant = product.variants?.find((variant) => variant.size === size);
+    if (!size || !selectionReady) return;
     const composedSku = selectedColor
       ? `blc-${product.slug}-${slugify(styleName(selectedColor))}-${slugify(selectedColor.color)}-${size.toLowerCase()}`
       : null;
 
     addCartItem({
       productId: product.id,
+      variantId: selectedVariant?.id ?? null,
+      sku: selectedVariant?.sku ?? composedSku,
       slug: product.slug,
       name: product.name,
       unitPrice: selectedVariant?.price ?? product.price,
@@ -62,8 +90,8 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       color: selectedColor?.color ?? null,
       colorId: selectedColor?.id ?? null,
       colorMockup: selectedColor?.mockupUrl ?? null,
-      style: selectedColor ? styleName(selectedColor) : null,
-      garment: selectedColor?.garment ?? null,
+      style: selectedVariant?.style ?? (selectedColor ? styleName(selectedColor) : style),
+      garment: selectedVariant?.garment ?? selectedColor?.garment ?? null,
     });
     if (composedSku && typeof console !== 'undefined') {
       // Recorded on the client for now; the Worker will re-derive this at checkout.
@@ -93,6 +121,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
                 onClick={() => {
                   setStyle(option);
                   setColorId(displayColors.find((color) => styleName(color) === option)?.id ?? null);
+                  setSize(null);
                   setAdded(false);
                 }}
               >
@@ -128,7 +157,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       <fieldset className="size-selector">
         <legend><span>Choose a size</span><button type="button" className="size-guide">Size guide</button></legend>
         <div>
-          {product.availableSizes.map((option) => (
+          {sizesForStyle.map((option) => (
             <button
               key={option}
               type="button"
@@ -149,7 +178,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
           <output aria-live="polite">{quantity}</output>
           <button type="button" aria-label="Increase quantity" onClick={() => setQuantity(Math.min(9, quantity + 1))}>+</button>
         </div>
-        <button className="add-to-bag" type="button" disabled={!size} onClick={addToBag}>
+        <button className="add-to-bag" type="button" disabled={!selectionReady} onClick={addToBag}>
           {added
             ? `Added — ${selectedColor ? `${styleName(selectedColor)} · ${selectedColor.color} · ` : ''}${size} × ${quantity}`
             : 'Add to bag'} <span aria-hidden="true">↗</span>
@@ -158,8 +187,10 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       <p className={`purchase-note ${added ? 'purchase-note--success' : ''}`} role="status">
         {added
           ? 'Excellent judgment. It’s in the bag.'
-          : size
+          : selectionReady
             ? 'Ready when you are.'
+            : size && !selectedVariant && hasConfiguredVariants
+              ? 'That combination is not available.'
             : displayColors.length > 0 && !selectedColor
               ? 'Pick a color, then a size.'
               : 'Pick a size. Commitment looks good on you.'}

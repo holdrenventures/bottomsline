@@ -11,10 +11,13 @@ Migrations applied to production, in order:
    order_items, stripe_events; RLS on, Worker-only access; the
    `record_paid_checkout` RPC for atomic Stripe writes).
 2. `202609210002_product_colors.sql` — adds the `product_colors` companion table
-   used by the catalog load. Size stays the SKU dimension on `product_variants`
-   (via `unique (product_id, size)`); color, style, garment and the Cloudinary
-   `mockup_url` live on `product_colors`. Also drops three placeholder columns
-   an early draft added to `product_variants`.
+   used by the catalog load. Color, style, garment and the Cloudinary
+   `mockup_url` live on `product_colors`. It also drops three placeholder
+   columns an early draft added to `product_variants`.
+3. `202609230001_saleable_variants.sql` — defines a sellable variant as
+   product + style + size, adds optional garment fulfillment data, permits one
+   Stripe Price to be reused across sizes, and snapshots the selected style,
+   color, garment and colorway on paid order items.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor
@@ -24,10 +27,11 @@ one-shot SQL scripts run in the Supabase SQL editor
 here — they were single-use inserts, not schema. Re-loading is done by
 re-running them against a truncated table set, not by touching migrations.
 
-Products are loaded as drafts (`active = false`). The Worker's catalog reader
-does not filter on `active`, so drafts are visible on the storefront while
-copy is being finalized. Flip individual rows to `active = true` when they
-are ready for sale.
+Products were initially loaded as drafts (`active = false`). The Worker's
+public catalog reader filters on `active = true`, so drafts remain available
+in the authenticated Product Desk without appearing on the homepage, shop, or
+public product routes. Flip individual rows to `active = true` only when they
+are ready to be public.
 
 The storefront still falls back to `app/data/products.ts` mock data when
 Supabase env vars are absent, so local previews work with no backend.

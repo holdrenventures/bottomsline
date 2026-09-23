@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic';
 
 type VariantInput = {
   id?: string;
+  style?: string;
+  garment?: string | null;
   size?: string;
   sku?: string;
   active?: boolean;
@@ -120,14 +122,14 @@ export async function POST(request: Request) {
 
     const variants = (input.product_variants ?? []).filter((variant) => variant.size?.trim() && variant.sku?.trim()).map((variant) => {
       const active = Boolean(variant.active);
+      const style = variant.style?.trim() || 'Tee';
       const stripeProductId = cleanNullable(variant.stripe_product_id);
       const stripePriceId = cleanNullable(variant.stripe_price_id);
-      if (active && (!stripeProductId || !stripePriceId)) {
-        throw new Error(`Active variant ${variant.size} needs both Stripe IDs.`);
-      }
       return {
         id: variant.id || crypto.randomUUID(),
         product_id: productId,
+        style,
+        garment: cleanNullable(variant.garment),
         size: variant.size!.trim(),
         sku: variant.sku!.trim(),
         active,

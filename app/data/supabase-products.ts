@@ -32,6 +32,9 @@ type SupabaseProduct = {
   created_at: string;
   product_variants: Array<{
     id: string;
+    sku: string;
+    style: string;
+    garment: string | null;
     size: string;
     active: boolean;
     inventory_quantity: number | null;
@@ -83,12 +86,15 @@ function productArt(name: string) {
 }
 
 function normalizeProduct(product: SupabaseProduct, index: number): CatalogProduct {
-  // Sizes are the SKU dimension. Show all size rows for the product; the
-  // per-variant `active` flag becomes purchase-time gating later.
+  // A sellable SKU is product + style + size. Colorways stay separate so a
+  // price can be reused across colors while the order still records color.
   const variants: CatalogVariant[] = [...product.product_variants]
-    .sort((a, b) => sizeRank(a.size) - sizeRank(b.size))
+    .sort((a, b) => a.style.localeCompare(b.style) || sizeRank(a.size) - sizeRank(b.size))
     .map((variant) => ({
       id: variant.id,
+      sku: variant.sku,
+      style: variant.style,
+      garment: variant.garment,
       size: variant.size,
       price: variant.price_cents / 100,
       inventoryQuantity: variant.inventory_quantity,
@@ -125,7 +131,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     description: product.description ?? '',
     collection: firstCollection(product),
     catalogImage: trimmedCatalog ?? firstColorMockup,
-    availableSizes: variants.map((variant) => variant.size),
+    availableSizes: Array.from(new Set(variants.map((variant) => variant.size))),
     variants,
     colors,
     active: product.active,
@@ -156,7 +162,7 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
   const select = [
     'id', 'name', 'slug', 'editorial_descriptor', 'description',
     'base_price_cents', 'currency', 'catalog_image', 'active', 'featured', 'new_drop', 'created_at',
-    'product_variants(id,size,active,inventory_quantity,stripe_product_id,stripe_price_id,price_cents)',
+    'product_variants(id,sku,style,garment,size,active,inventory_quantity,stripe_product_id,stripe_price_id,price_cents)',
     'product_collections(sort_order,collections(name,slug,active))',
     'product_colors(id,color,style,garment,mockup_url,sort_order,active)',
   ].join(',');

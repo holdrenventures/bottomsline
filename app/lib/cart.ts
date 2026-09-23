@@ -1,5 +1,7 @@
 export type CartItem = {
   productId: string;
+  variantId: string | null;
+  sku: string | null;
   slug: string;
   name: string;
   unitPrice: number;
@@ -34,6 +36,7 @@ export function addCartItem(nextItem: CartItem) {
   // remain distinct even when they share the same color name.
   const existing = cart.find((item) =>
     item.productId === nextItem.productId
+    && (item.variantId ?? null) === (nextItem.variantId ?? null)
     && item.size === nextItem.size
     && (item.colorId ?? null) === (nextItem.colorId ?? null)
     && (item.style ?? null) === (nextItem.style ?? null)

@@ -5,6 +5,9 @@ export type ProductCollection = 'Support Local Bottoms' | 'Cruising' | 'Parodies
 
 export type CatalogVariant = {
   id: string;
+  sku: string;
+  style: string;
+  garment: string | null;
   size: string;
   price: number;
   inventoryQuantity: number | null;
@@ -13,7 +16,8 @@ export type CatalogVariant = {
   active: boolean;
 };
 
-// One row per colorway. Size is not a color attribute — sizes live on variants.
+// One row per colorway. Sellability and pricing are product + style + size;
+// the colorway supplies the selected color, garment and mockup.
 export type CatalogColor = {
   id: string;
   color: string;

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { CatalogColor, CatalogProduct, CatalogVariant } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
+import ProductGuide from './ProductGuide';
 
 type PurchaseProduct = Pick<
   CatalogProduct,
@@ -154,7 +155,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       )}
 
       <fieldset className="size-selector">
-        <legend><span>Choose a size</span>{product.sizeGuideUrl && <a className="size-guide" href={product.sizeGuideUrl} target="_blank" rel="noreferrer">Size guide ↗</a>}</legend>
+        <legend><span>Choose a size</span><ProductGuide selectedStyle={style} availableStyles={styles} externalGuideUrl={product.sizeGuideUrl} /></legend>
         <div>
           {sizesForStyle.map((option) => (
             <button

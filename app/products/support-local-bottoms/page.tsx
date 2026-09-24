@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import { getProductBySlug, productPriceLabel } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
+import { productDetailRows } from '../product-details';
 import ProductPurchase from './ProductPurchase';
 
 export const metadata: Metadata = {
@@ -25,12 +26,7 @@ export default async function SupportLocalBottomsPage() {
   const product = await getProductBySlug('support-local-bottoms');
 
   if (!product) notFound();
-  const productDetails = [
-    ['Material', product.material],
-    ['Fit', product.fitNotes],
-    ['Care', product.careInstructions],
-    ['Shipping', product.shippingNote],
-  ].filter((detail): detail is [string, string] => Boolean(detail[1]));
+  const productDetails = productDetailRows(product);
 
   return (
     <>

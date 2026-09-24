@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import { getProductBySlug, productPriceLabel } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
+import { productDetailRows } from '../product-details';
 import ProductPurchaseAny from './ProductPurchaseAny';
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -30,12 +31,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   const eyebrow = product.editorialDescriptor || 'Conversation Starter';
   const priceLabel = productPriceLabel(product);
-  const productDetails = [
-    ['Material', product.material],
-    ['Fit', product.fitNotes],
-    ['Care', product.careInstructions],
-    ['Shipping', product.shippingNote],
-  ].filter((detail): detail is [string, string] => Boolean(detail[1]));
+  const productDetails = productDetailRows(product);
   const nameParts = product.name.split(' ');
   const nameHead = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : product.name;
   const nameTail = nameParts.length > 1 ? nameParts.slice(-1)[0] : '';

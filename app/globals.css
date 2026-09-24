@@ -754,6 +754,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .cut-controls__group { margin:0; padding:0; border:0; }
 .cut-controls__group legend { text-transform:uppercase; font-size:9px; font-weight:900; letter-spacing:2px; color:var(--muted); margin-bottom:10px; }
 .cut-buttons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.cut-buttons--two { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .cut-buttons button { padding:12px 10px; background:#141414; border:1px solid var(--line); color:var(--white); text-transform:uppercase; font-size:10px; font-weight:800; letter-spacing:1.2px; cursor:pointer; transition:border-color .2s ease, background .2s ease; }
 .cut-buttons button:hover { background:#1e1e1e; }
 .cut-buttons button.is-selected { border-color:var(--coral); background:#1c1614; color:var(--coral); }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { CatalogProduct } from '../data/products';
 
-type PrimaryCut = 'none' | 'muscle' | 'drop-arm' | 'crop';
+type Sleeves = 'none' | 'muscle' | 'drop-arm';
 type Extras = { scoop: boolean; vneck: boolean; slits: boolean; slashes: boolean };
 
 // Shirt geometry in the artifact's viewBox coords (300 × 340). We reuse it so
@@ -47,10 +47,10 @@ function sample(n: number, fn: (t: number) => Pt): Pt[] {
   return pts;
 }
 
-function buildClipPath(cut: PrimaryCut, drop: number, crop: number, extras: Extras): string | undefined {
+function buildClipPath(sleeves: Sleeves, cropOn: boolean, drop: number, crop: number, extras: Extras): string | undefined {
   const cropY = 130 + crop * 10;
   const dropY = 130 + drop * 10;
-  const bottomY = cut === 'crop' ? cropY : 320;
+  const bottomY = cropOn ? cropY : 320;
 
   // Neckline (left → right). Default is a shallow quadratic arc that matches
   // the artifact's SVG `M118,28 Q150,50 182,28`. Scoop deepens the arc; V-neck
@@ -64,13 +64,13 @@ function buildClipPath(cut: PrimaryCut, drop: number, crop: number, extras: Extr
   // Right side of the shirt outline from the top-right of the neckline down
   // to the hem. Muscle and drop-arm both follow curves in the source SVG.
   function rightSide(): Pt[] {
-    if (cut === 'muscle') {
+    if (sleeves === 'muscle') {
       // Cut runs along the sleeve seam: `M230,48 Q224,98 218,130` on the raw
       // outline, then straight down to the hem.
       const seam = sample(N_SLEEVE, (t) => quad(t, [230, 48], [224, 98], [218, 130]));
       return [...seam, [218, bottomY]];
     }
-    if (cut === 'drop-arm') {
+    if (sleeves === 'drop-arm') {
       // J-curve: `M208,38.8 C202,78 203,dropY-6 217,dropY`.
       const curve = sample(N_SLEEVE, (t) => cubic(t, [208, 38.8], [202, 78], [203, dropY - 6], [217, dropY]));
       return [...curve, [217, bottomY]];
@@ -109,11 +109,11 @@ function cropLevel(v: number) {
   return 'Low crop: a peek when you reach';
 }
 
-function buildRecipe(cut: PrimaryCut, drop: number, crop: number, x: Extras): string {
+function buildRecipe(sleeves: Sleeves, cropOn: boolean, drop: number, crop: number, x: Extras): string {
   const parts: string[] = [];
-  if (cut === 'muscle') parts.push('Muscle');
-  else if (cut === 'drop-arm') parts.push(`Drop arm ${drop} in`);
-  else if (cut === 'crop') parts.push(`Crop ${crop} in`);
+  if (sleeves === 'muscle') parts.push('Muscle');
+  else if (sleeves === 'drop-arm') parts.push(`Drop arm ${drop} in`);
+  if (cropOn) parts.push(`Crop ${crop} in`);
   if (x.scoop) parts.push('scoop');
   if (x.vneck) parts.push('v-neck');
   if (x.slits) parts.push('side slits');
@@ -123,7 +123,8 @@ function buildRecipe(cut: PrimaryCut, drop: number, crop: number, x: Extras): st
 
 export default function CutItOutModeler({ products }: { products: CatalogProduct[] }) {
   const [selectedSlug, setSelectedSlug] = useState<string>(products[0]?.slug ?? '');
-  const [cut, setCut] = useState<PrimaryCut>('muscle');
+  const [sleeves, setSleeves] = useState<Sleeves>('muscle');
+  const [cropOn, setCropOn] = useState(false);
   const [dropDepth, setDropDepth] = useState(4);
   const [cropLen, setCropLen] = useState(8);
   const [extras, setExtras] = useState<Extras>({ scoop: false, vneck: false, slits: false, slashes: false });
@@ -135,11 +136,11 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
   );
 
   const clipPath = useMemo(
-    () => (showCut ? buildClipPath(cut, dropDepth, cropLen, extras) : undefined),
-    [showCut, cut, dropDepth, cropLen, extras],
+    () => (showCut ? buildClipPath(sleeves, cropOn, dropDepth, cropLen, extras) : undefined),
+    [showCut, sleeves, cropOn, dropDepth, cropLen, extras],
   );
 
-  const recipe = buildRecipe(cut, dropDepth, cropLen, extras);
+  const recipe = buildRecipe(sleeves, cropOn, dropDepth, cropLen, extras);
 
   if (!selected) {
     return (
@@ -200,7 +201,7 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
                 preserveAspectRatio="xMidYMid meet"
                 aria-hidden="true"
               >
-                <CutLines cut={cut} drop={dropDepth} crop={cropLen} extras={extras} showCut={showCut} />
+                <CutLines sleeves={sleeves} cropOn={cropOn} drop={dropDepth} crop={cropLen} extras={extras} showCut={showCut} />
               </svg>
             </div>
             <div className="cut-stage__caption">
@@ -223,23 +224,23 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
           <p className="cut-modeler__pane-label">03 · Cut</p>
 
           <fieldset className="cut-controls__group">
-            <legend>Main cut</legend>
+            <legend>Sleeves</legend>
             <div className="cut-buttons">
-              {(['none', 'muscle', 'drop-arm', 'crop'] as PrimaryCut[]).map((option) => (
+              {(['none', 'muscle', 'drop-arm'] as Sleeves[]).map((option) => (
                 <button
                   key={option}
                   type="button"
-                  className={cut === option ? 'is-selected' : ''}
-                  aria-pressed={cut === option}
-                  onClick={() => setCut(option)}
+                  className={sleeves === option ? 'is-selected' : ''}
+                  aria-pressed={sleeves === option}
+                  onClick={() => setSleeves(option)}
                 >
-                  {option === 'none' ? 'No cut' : option === 'muscle' ? 'Muscle' : option === 'drop-arm' ? 'Drop arm' : 'Crop'}
+                  {option === 'none' ? 'Keep sleeves' : option === 'muscle' ? 'Muscle' : 'Drop arm'}
                 </button>
               ))}
             </div>
           </fieldset>
 
-          {cut === 'drop-arm' && (
+          {sleeves === 'drop-arm' && (
             <div className="cut-slider">
               <label htmlFor="drop-depth">
                 Depth below armpit <output htmlFor="drop-depth">{dropDepth} in</output>
@@ -257,7 +258,29 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
             </div>
           )}
 
-          {cut === 'crop' && (
+          <fieldset className="cut-controls__group">
+            <legend>Hem</legend>
+            <div className="cut-buttons cut-buttons--two">
+              <button
+                type="button"
+                className={!cropOn ? 'is-selected' : ''}
+                aria-pressed={!cropOn}
+                onClick={() => setCropOn(false)}
+              >
+                Full length
+              </button>
+              <button
+                type="button"
+                className={cropOn ? 'is-selected' : ''}
+                aria-pressed={cropOn}
+                onClick={() => setCropOn(true)}
+              >
+                Crop
+              </button>
+            </div>
+          </fieldset>
+
+          {cropOn && (
             <div className="cut-slider">
               <label htmlFor="crop-len">
                 Hem below armpit <output htmlFor="crop-len">{cropLen} in</output>
@@ -308,13 +331,15 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
 }
 
 function CutLines({
-  cut,
+  sleeves,
+  cropOn,
   drop,
   crop,
   extras,
   showCut,
 }: {
-  cut: PrimaryCut;
+  sleeves: Sleeves;
+  cropOn: boolean;
   drop: number;
   crop: number;
   extras: Extras;
@@ -328,19 +353,19 @@ function CutLines({
 
   return (
     <g>
-      {showPrimary && cut === 'muscle' && (
+      {showPrimary && sleeves === 'muscle' && (
         <>
           <path d="M70,48 Q76,98 82,130" className="cut-line" />
           <path d="M230,48 Q224,98 218,130" className="cut-line" />
         </>
       )}
-      {showPrimary && cut === 'drop-arm' && (
+      {showPrimary && sleeves === 'drop-arm' && (
         <>
           <path d={`M92,38.8 C98,78 97,${dropY - 6} 83,${dropY}`} className="cut-line" />
           <path d={`M208,38.8 C202,78 203,${dropY - 6} 217,${dropY}`} className="cut-line" />
         </>
       )}
-      {showPrimary && cut === 'crop' && (
+      {showPrimary && cropOn && (
         <path d={`M56,${cropY} L244,${cropY}`} className="cut-line" />
       )}
       {extras.scoop && <path d="M118,28 Q150,92 182,28" className="cut-line" />}

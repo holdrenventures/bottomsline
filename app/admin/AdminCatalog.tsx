@@ -35,10 +35,19 @@ type Product = {
 };
 type Filter = 'all' | 'live' | 'draft';
 type Notice = { text: string; tone: 'info' | 'success' | 'error' };
+type GarmentPresetId = 'tee' | 'tank' | 'sweatshirt' | 'hat' | 'custom';
+type GarmentGenerator = { preset: GarmentPresetId; style: string; garment: string; sizes: string };
 
 const tokenKey = 'bl-admin-token';
 const DEFAULT_SIZES = 'S, M, L, XL, 2XL';
-const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL', '4XL', '5XL'];
+const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL', '4XL', '5XL', 'ONE SIZE', 'OS'];
+const GARMENT_PRESETS: Array<{ id: GarmentPresetId; label: string; detail: string; style: string; sizes: string }> = [
+  { id: 'tee', label: 'T-shirt', detail: 'Standard size run', style: 'Tee', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
+  { id: 'tank', label: 'Tank', detail: 'Sleeveless option', style: 'Tank', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
+  { id: 'sweatshirt', label: 'Sweatshirt', detail: 'Crewneck or hoodie', style: 'Sweatshirt', sizes: 'S, M, L, XL, 2XL, 3XL' },
+  { id: 'hat', label: 'Hat', detail: 'Starts as one size', style: 'Hat', sizes: 'One Size' },
+  { id: 'custom', label: 'Custom', detail: 'Anything else', style: '', sizes: DEFAULT_SIZES },
+];
 /** Public URL for one product. Change this if the storefront route is different. */
 const productPath = (slug: string) => `/products/${slug}`;
 const emptyNotice: Notice = { text: '', tone: 'info' };
@@ -154,7 +163,7 @@ export default function AdminCatalog() {
   const [notice, setNotice] = useState<Notice>({ text: 'Enter the admin token to load the catalog.', tone: 'info' });
   const [busy, setBusy] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
-  const [generator, setGenerator] = useState({ styles: '', garments: '', sizes: DEFAULT_SIZES });
+  const [generator, setGenerator] = useState<GarmentGenerator>({ preset: 'tee', style: 'Tee', garment: '', sizes: DEFAULT_SIZES });
   const formRef = useRef<HTMLFormElement>(null);
 
   const dirty = JSON.stringify(draft) !== savedSnapshot;
@@ -188,15 +197,13 @@ export default function AdminCatalog() {
   const newCombos = useMemo(() => {
     if (!generatorOpen) return [];
     const existing = new Set(draft.product_variants.map(comboKey));
-    const garments = splitList(generator.garments);
     const combos: Array<Pick<Variant, 'style' | 'garment' | 'size'>> = [];
-    for (const style of splitList(generator.styles)) {
-      for (const garment of garments.length ? garments : ['']) {
-        for (const size of splitList(generator.sizes)) {
-          const combo = { style, garment, size };
-          if (!existing.has(comboKey(combo))) { existing.add(comboKey(combo)); combos.push(combo); }
-        }
-      }
+    const style = generator.style.trim();
+    const garment = generator.garment.trim();
+    if (!style) return combos;
+    for (const size of splitList(generator.sizes)) {
+      const combo = { style, garment, size };
+      if (!existing.has(comboKey(combo))) { existing.add(comboKey(combo)); combos.push(combo); }
     }
     return combos;
   }, [generatorOpen, generator, draft.product_variants]);
@@ -329,13 +336,27 @@ export default function AdminCatalog() {
     }));
   }
 
-  function openGenerator() {
-    setGenerator({ styles: suggestions.styles[0] ?? 'Tee', garments: suggestions.garments[0] ?? '', sizes: DEFAULT_SIZES });
+  function selectGarmentPreset(presetId: GarmentPresetId) {
+    const preset = GARMENT_PRESETS.find((item) => item.id === presetId) ?? GARMENT_PRESETS[0];
+    setGenerator({ preset: preset.id, style: preset.style, garment: '', sizes: preset.sizes });
+  }
+  function openGenerator(presetId: GarmentPresetId = 'tee') {
+    const preset = GARMENT_PRESETS.find((item) => item.id === presetId) ?? GARMENT_PRESETS[0];
+    setGenerator({ preset: preset.id, style: preset.style, garment: '', sizes: preset.sizes });
     setGeneratorOpen(true);
   }
   function addGenerated() {
     const added: Variant[] = newCombos.map((combo) => ({ ...combo, sku: '', active: true, inventory_quantity: null, price_cents: draft.base_price_cents, _key: uid() }));
-    patch('product_variants', [...draft.product_variants, ...added].sort(compareVariants));
+    const style = generator.style.trim();
+    const garment = generator.garment.trim();
+    const hasMatchingColorway = draft.product_colors.some((color) => (color.style ?? 'Tee') === style && (color.garment ?? '') === garment);
+    const starterColorway: Color = { color: '', style, garment, mockup_url: '', sort_order: draft.product_colors.length, active: true, _key: uid() };
+    setDraft((current) => ({
+      ...current,
+      product_variants: [...current.product_variants, ...added].sort(compareVariants),
+      product_colors: hasMatchingColorway ? current.product_colors : [...current.product_colors, starterColorway],
+    }));
+    setNotice({ text: `${style} added. Add its color and mockup below, then save.`, tone: 'info' });
     setGeneratorOpen(false);
   }
   function addColorway() {
@@ -511,32 +532,39 @@ export default function AdminCatalog() {
           <section className="admin-section">
             <div className="admin-section__heading">
               <div>
-                <h3>Sizes and stock</h3>
-                <p className="admin-section__help">What customers can buy. Price and stock here are exactly what checkout charges and tracks. Leave stock blank if you don’t track it. Blank SKUs fill in automatically on save.</p>
+                <h3>Garment options, sizes, and stock</h3>
+                <p className="admin-section__help">Add each format this design comes on, such as a tee, tank, sweatshirt, or hat. Price and stock here are exactly what checkout charges and tracks. Leave stock blank if you don’t track it.</p>
               </div>
               <div className="admin-section__actions">
-                <button type="button" onClick={openGenerator}>Generate sizes</button>
-                <button type="button" onClick={() => patch('product_variants', [...draft.product_variants, { style: productStyles[0] ?? 'Tee', garment: productGarments[0] ?? '', size: '', sku: '', active: true, inventory_quantity: null, price_cents: draft.base_price_cents, _key: uid() }])}>+ Add one</button>
+                <button type="button" onClick={() => openGenerator()}>+ Add garment option</button>
+                <button type="button" onClick={() => patch('product_variants', [...draft.product_variants, { style: productStyles[0] ?? 'Tee', garment: productGarments[0] ?? '', size: '', sku: '', active: true, inventory_quantity: null, price_cents: draft.base_price_cents, _key: uid() }])}>+ Add single size</button>
               </div>
             </div>
 
             {generatorOpen && (
               <div className="admin-generator">
-                <div className="admin-fields admin-fields--three">
-                  <label>Styles<input value={generator.styles} onChange={(event) => setGenerator({ ...generator, styles: event.target.value })} placeholder="Tee, Tank" /></label>
-                  <label>Garments<input value={generator.garments} onChange={(event) => setGenerator({ ...generator, garments: event.target.value })} placeholder="Optional" /></label>
-                  <label>Sizes<input value={generator.sizes} onChange={(event) => setGenerator({ ...generator, sizes: event.target.value })} /></label>
+                <div className="admin-generator__intro">
+                  <div><p className="admin-preset-label">What are you adding?</p><p className="admin-section__help">Choose a starting point. You can adjust the label, blank, and sizes before adding it.</p></div>
+                  <button type="button" className="admin-icon-button" aria-label="Close garment option builder" onClick={() => setGeneratorOpen(false)}>✕</button>
                 </div>
-                <p className="admin-section__help">Separate with commas. Sizes that already exist are skipped. New sizes start sellable at {`$${dollars(draft.base_price_cents)}`}.</p>
+                <div className="admin-garment-presets">
+                  {GARMENT_PRESETS.map((preset) => <button type="button" key={preset.id} className={generator.preset === preset.id ? 'is-selected' : ''} aria-pressed={generator.preset === preset.id} onClick={() => selectGarmentPreset(preset.id)}><strong>{preset.label}</strong><span>{preset.detail}</span></button>)}
+                </div>
+                <div className="admin-fields admin-fields--three">
+                  <label>Customer-facing style<input list="dl-styles" value={generator.style} onChange={(event) => setGenerator({ ...generator, preset: 'custom', style: event.target.value })} placeholder="Tank" /><small className="admin-field-hint">Customers choose this on the product page.</small></label>
+                  <label>Blank / model <span className="admin-optional">optional</span><input list="dl-garments" value={generator.garment} onChange={(event) => setGenerator({ ...generator, garment: event.target.value })} placeholder="e.g. Tultex 202" /><small className="admin-field-hint">For your internal garment reference.</small></label>
+                  <label>Available sizes<input value={generator.sizes} onChange={(event) => setGenerator({ ...generator, sizes: event.target.value })} /><small className="admin-field-hint">Separate sizes with commas.</small></label>
+                </div>
+                <p className="admin-section__help">This adds {newCombos.length || 'no new'} sellable {newCombos.length === 1 ? 'option' : 'options'} at {`$${dollars(draft.base_price_cents)}`} and starts a matching colorway for its image.</p>
                 <div className="admin-section__actions">
-                  <button type="button" className="admin-save" disabled={!newCombos.length} onClick={addGenerated}>{newCombos.length ? `Add ${newCombos.length} size${newCombos.length === 1 ? '' : 's'}` : 'Nothing new to add'}</button>
+                  <button type="button" className="admin-save" disabled={!newCombos.length} onClick={addGenerated}>{newCombos.length ? `Add ${generator.style || 'garment'} · ${newCombos.length} ${newCombos.length === 1 ? 'size' : 'sizes'}` : 'Nothing new to add'}</button>
                   <button type="button" onClick={() => setGeneratorOpen(false)}>Cancel</button>
                 </div>
               </div>
             )}
 
             {draft.product_variants.length === 0 ? (
-              <p className="admin-empty">No sizes yet. Use <strong>Generate sizes</strong> to add a full size run in one click.</p>
+              <p className="admin-empty">No garment options yet. Use <strong>Add garment option</strong> to start with a T-shirt, tank, sweatshirt, hat, or custom size run.</p>
             ) : (
               <>
                 <div className="admin-bulk">
@@ -546,14 +574,14 @@ export default function AdminCatalog() {
                 </div>
                 <div className="admin-table-wrap">
                   <table className="admin-table">
-                    <thead><tr><th>Style</th><th>Garment</th><th>Size</th><th>SKU</th><th>Price</th><th>Stock</th><th>Sellable</th><th><span className="sr-only">Remove</span></th></tr></thead>
+                    <thead><tr><th>Product type</th><th>Blank / model</th><th>Size</th><th>SKU</th><th>Price</th><th>Stock</th><th>Sellable</th><th><span className="sr-only">Remove</span></th></tr></thead>
                     <tbody>
                       {draft.product_variants.map((variant, index) => {
                         const rowLabel = `${variant.style} ${variant.garment ?? ''} ${variant.size}`.trim();
                         return (
                           <tr key={variant._key} className={variant.active ? '' : 'is-muted'}>
-                            <td><input aria-label={`Style, ${rowLabel}`} list="dl-styles" value={variant.style} onChange={(event) => patchVariant(index, { style: event.target.value })} /></td>
-                            <td><input aria-label={`Garment, ${rowLabel}`} list="dl-garments" value={variant.garment ?? ''} onChange={(event) => patchVariant(index, { garment: event.target.value })} /></td>
+                            <td><input aria-label={`Product type, ${rowLabel}`} list="dl-styles" value={variant.style} onChange={(event) => patchVariant(index, { style: event.target.value })} /></td>
+                            <td><input aria-label={`Blank or model, ${rowLabel}`} list="dl-garments" value={variant.garment ?? ''} onChange={(event) => patchVariant(index, { garment: event.target.value })} /></td>
                             <td><input aria-label={`Size, ${rowLabel}`} list="dl-sizes" value={variant.size} onChange={(event) => patchVariant(index, { size: event.target.value })} className="admin-input--short" /></td>
                             <td><input aria-label={`SKU, ${rowLabel}`} value={variant.sku} placeholder={draft.slug ? skuFor(draft.slug, variant) : 'Auto'} onChange={(event) => patchVariant(index, { sku: event.target.value })} /></td>
                             <td><MoneyInput aria-label={`Price, ${rowLabel}`} cents={variant.price_cents} onCentsChange={(cents) => patchVariant(index, { price_cents: cents })} className={variant.price_cents !== draft.base_price_cents ? 'is-custom' : ''} /></td>

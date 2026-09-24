@@ -22,6 +22,10 @@ Migrations applied to production, in order:
    annotation, material, fit, care, shipping and size-guide fields. Empty
    fields are intentionally omitted from public product pages.
 
+5. `202609240001_checkout_attempts.sql` — adds the private server-owned cart
+   snapshot used to reconcile shared Stripe Prices with exact size/color
+   selections. Applied to production on 2026-09-24 before enabling Checkout.
+
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor
 (`002_collections_products.sql` → 5 collections, 33 products, 44 links;

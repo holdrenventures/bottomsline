@@ -332,8 +332,12 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .bag-summary>div { display:flex; justify-content:space-between; gap:20px; padding-bottom:22px; border-bottom:1px solid var(--line); text-transform:uppercase; font-size:11px; font-weight:900; letter-spacing:1.1px; }
 .bag-summary strong { color:var(--coral); font-family:var(--serif); font-size:24px; font-style:italic; font-weight:400; letter-spacing:0; }
 .bag-summary>p:not(.eyebrow) { margin:20px 0; color:var(--muted); font-family:var(--serif); font-size:14px; font-style:italic; line-height:1.4; }
-.bag-summary>button { width:100%; min-height:58px; padding:0 20px; display:flex; justify-content:space-between; align-items:center; border:1px solid #605c56; background:#242321; color:#77736d; font-size:11px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:not-allowed; }
+.bag-summary>button { width:100%; min-height:58px; padding:0 20px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--coral); background:var(--coral); color:var(--black); font-size:11px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; transition:background .18s ease,color .18s ease; }
+.bag-summary>button:hover { background:var(--cream); }
+.bag-summary>button:disabled { border-color:#605c56; background:#242321; color:#77736d; cursor:wait; }
 .bag-summary>small { display:block; margin-top:14px; color:#77736d; font-size:8px; line-height:1.5; letter-spacing:.7px; }
+.bag-summary>small.bag-summary__error { color:var(--coral); font-size:10px; }
+.checkout-success { min-height:70vh; display:grid; align-items:center; }
 .bag-loading { min-height:360px; display:grid; place-items:center; color:var(--muted); font-family:var(--serif); font-style:italic; }
 .bag-empty { min-height:540px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
 .bag-empty>p:not(.eyebrow) { margin:30px 0 0; color:var(--muted); font-family:var(--serif); font-size:18px; font-style:italic; }

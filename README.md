@@ -1,7 +1,7 @@
 # Bottom's Line storefront
 
 Custom Vinext storefront deployed as a Cloudflare Worker, with Supabase as the
-private catalog/order database and Stripe Checkout planned for payments.
+private catalog/order database and Stripe-hosted Checkout for payments.
 
 ## Local development
 
@@ -33,6 +33,36 @@ The Worker requires the encrypted runtime secret `SUPABASE_SECRET_KEY`.
 
 Never commit Supabase or Stripe secret keys. Add them through Cloudflare's
 Variables and Secrets settings.
+
+## Stripe Checkout
+
+The browser submits only product, variant, colorway, and quantity identifiers
+to `POST /api/checkout`. The Worker reloads active catalog rows from Supabase,
+verifies the saved Stripe Prices, snapshots the validated selection, and then
+creates a hosted Checkout Session. Browser names, prices, and Stripe IDs are
+not trusted.
+
+Before testing Checkout:
+
+1. Apply `supabase/migrations/202609240001_checkout_attempts.sql` in the
+   Supabase SQL editor.
+2. Create a Stripe sandbox restricted key with only the permissions needed to
+   read Products/Prices and create/read Checkout Sessions. Save it locally as
+   `STRIPE_RESTRICTED_KEY`; never paste it into source or chat.
+3. Create a Stripe webhook endpoint for `/api/stripe-webhook` and subscribe to
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, and `checkout.session.expired`.
+   Save its `whsec_…` value as `STRIPE_WEBHOOK_SECRET`.
+4. Set `SITE_URL=http://localhost:3000` locally and the canonical HTTPS site URL
+   in production.
+5. Populate each sellable Supabase variant with matching Stripe Product and
+   Price IDs, then test with Stripe sandbox data before using live keys.
+
+For Cloudflare production, add both Stripe values as encrypted Worker secrets.
+Use a separate restricted key and webhook secret for sandbox and live mode.
+Stripe Tax is deliberately not enabled until the business's registrations and
+tax settings have been confirmed. Order creation and fulfillment are driven by
+the signed webhook, never by the success page.
 
 ## Internal Product Desk
 

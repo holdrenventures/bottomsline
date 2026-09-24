@@ -12,6 +12,8 @@ function itemDetails(item: CartItem) {
 export default function BagClient() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   useEffect(() => {
     const sync = () => {
@@ -38,6 +40,36 @@ export default function BagClient() {
 
   function remove(index: number) {
     setItems(removeCartItem(index));
+  }
+
+  async function checkout() {
+    setCheckingOut(true);
+    setCheckoutError('');
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            colorId: item.colorId ?? null,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+      const result = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !result.url) throw new Error(result.error ?? 'Checkout is temporarily unavailable.');
+
+      const destination = new URL(result.url);
+      if (destination.protocol !== 'https:' || !destination.hostname.endsWith('.stripe.com')) {
+        throw new Error('Checkout returned an unexpected destination.');
+      }
+      window.location.assign(destination.href);
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : 'Checkout is temporarily unavailable.');
+      setCheckingOut(false);
+    }
   }
 
   if (!ready) return <div className="bag-loading" aria-live="polite">Checking the bag…</div>;
@@ -89,9 +121,13 @@ export default function BagClient() {
       <aside className="bag-summary">
         <p className="eyebrow"><span /> The bottom line</p>
         <div><span>Subtotal</span><strong>{money.format(subtotal)}</strong></div>
-        <p>Shipping and taxes are calculated at checkout.</p>
-        <button type="button" disabled>Checkout <span>↗</span></button>
-        <small>Stripe Checkout connects in the next phase. Your bag is saved on this device.</small>
+        <p>Secure payment and shipping details are handled at checkout.</p>
+        <button type="button" disabled={checkingOut} onClick={checkout}>
+          {checkingOut ? 'Opening checkout…' : 'Checkout'} <span>↗</span>
+        </button>
+        {checkoutError
+          ? <small className="bag-summary__error" role="alert">{checkoutError}</small>
+          : <small>Secure payment happens on Stripe. Your bag stays saved until payment succeeds.</small>}
       </aside>
     </div>
   );

@@ -1,3 +1,5 @@
+import { MuscleDiagram, DropArmDiagram, CropDiagram } from './CutDiagrams';
+
 // The static how-to guide. Copy lifted from the artifact and adapted to the
 // Bottom’s Line voice/typography. The interactive part lives in the modeler
 // above; this section is the reference material.
@@ -20,8 +22,19 @@ const rules = [
   ['This is DIY.', 'We ship the shirt. You bring the scissors. If your cut goes sideways, make it work — we don’t replace shirts you’ve already rearranged.'],
 ];
 
-const lessons = [
+type LessonId = 'muscle' | 'drop-arm' | 'crop';
+const lessons: Array<{
+  id: LessonId;
+  number: string;
+  eyebrow: string;
+  title: string;
+  tag: string;
+  specs: string[];
+  steps: Array<[string, string]>;
+  tip: [string, string];
+}> = [
   {
+    id: 'muscle',
     number: '01',
     eyebrow: 'The starter',
     title: 'Muscle Tee',
@@ -37,6 +50,7 @@ const lessons = [
     tip: ['Pro move', 'Cut the sleeves off a size-up tee for a looser, boxier muscle tank that hangs lower on the sides.'],
   },
   {
+    id: 'drop-arm',
     number: '02',
     eyebrow: 'The statement',
     title: 'Drop-Arm Tank',
@@ -53,6 +67,7 @@ const lessons = [
     tip: ['Pro move', 'Past 6 in you’re in stringer territory. Keep the strap at least 1.5 in wide or it will roll into a string after the first wash.'],
   },
   {
+    id: 'crop',
     number: '03',
     eyebrow: 'The showoff',
     title: 'Crop Top',
@@ -101,27 +116,40 @@ export default function DiyGuide() {
 
       <section className="cut-lessons shell">
         {lessons.map((lesson) => (
-          <article key={lesson.number} className="cut-lesson">
+          <article key={lesson.id} id={`how-to-${lesson.id}`} className="cut-lesson">
             <div className="cut-lesson__head">
               <p className="eyebrow"><span /> Cut {lesson.number} · {lesson.eyebrow}</p>
               <h2>{lesson.title}</h2>
               <p>{lesson.tag}</p>
             </div>
-            <ul className="cut-lesson__specs">
-              {lesson.specs.map((spec) => <li key={spec}>{spec}</li>)}
-            </ul>
-            <ol className="cut-lesson__steps">
-              {lesson.steps.map(([lead, rest], index) => (
-                <li key={index}>
-                  <span className="cut-lesson__num">{String(index + 1).padStart(2, '0')}</span>
-                  <p><strong>{lead}</strong> {rest}</p>
-                </li>
-              ))}
-            </ol>
-            <aside className="cut-lesson__tip">
-              <p className="eyebrow">{lesson.tip[0]}</p>
-              <p>{lesson.tip[1]}</p>
-            </aside>
+            <div className="cut-lesson__body">
+              <figure className="cut-lesson__figure">
+                {lesson.id === 'muscle' && <MuscleDiagram />}
+                {lesson.id === 'drop-arm' && <DropArmDiagram depth={4} />}
+                {lesson.id === 'crop' && <CropDiagram hem={8} />}
+                <figcaption>
+                  <span className="cut-diagram__legend"><i /> Cut line</span>
+                  <span className="cut-diagram__legend"><i className="ghost" /> Original shirt</span>
+                </figcaption>
+              </figure>
+              <div className="cut-lesson__copy">
+                <ul className="cut-lesson__specs">
+                  {lesson.specs.map((spec) => <li key={spec}>{spec}</li>)}
+                </ul>
+                <ol className="cut-lesson__steps">
+                  {lesson.steps.map(([lead, rest], index) => (
+                    <li key={index}>
+                      <span className="cut-lesson__num">{String(index + 1).padStart(2, '0')}</span>
+                      <p><strong>{lead}</strong> {rest}</p>
+                    </li>
+                  ))}
+                </ol>
+                <aside className="cut-lesson__tip">
+                  <p className="eyebrow">{lesson.tip[0]}</p>
+                  <p>{lesson.tip[1]}</p>
+                </aside>
+              </div>
+            </div>
           </article>
         ))}
       </section>

@@ -6,7 +6,7 @@ import { addCartItem } from '../../lib/cart';
 
 type PurchaseProduct = Pick<
   CatalogProduct,
-  'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'variants' | 'colors' | 'stripeProductId' | 'stripePriceId' | 'catalogImage' | 'sizeGuideUrl'
+  'id' | 'slug' | 'name' | 'price' | 'availableSizes' | 'variants' | 'colors' | 'catalogImage' | 'sizeGuideUrl'
 >;
 
 function slugify(input: string) {
@@ -86,8 +86,6 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       unitPrice: selectedVariant?.price ?? product.price,
       size,
       quantity,
-      stripeProductId: selectedVariant?.stripeProductId ?? product.stripeProductId,
-      stripePriceId: selectedVariant?.stripePriceId ?? product.stripePriceId,
       color: selectedColor?.color ?? null,
       colorId: selectedColor?.id ?? null,
       colorMockup: selectedColor?.mockupUrl ?? null,

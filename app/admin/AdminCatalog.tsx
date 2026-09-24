@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react';
 
 type Collection = { id: string; name: string; slug: string; description: string | null; sort_order: number; active: boolean };
-type Variant = { id?: string; style: string; garment: string | null; size: string; sku: string; active: boolean; inventory_quantity: number | null; stripe_product_id: string | null; stripe_price_id: string | null; price_cents: number };
+type Variant = { id?: string; style: string; garment: string | null; size: string; sku: string; active: boolean; inventory_quantity: number | null; price_cents: number };
 type Color = { id?: string; color: string; style: string | null; garment: string | null; mockup_url: string | null; sort_order: number; active: boolean };
 type Product = {
   id?: string;
@@ -55,9 +55,9 @@ export default function AdminCatalog() {
 
   const visibleProducts = useMemo(() => products.filter((product) => `${product.name} ${product.slug}`.toLowerCase().includes(query.toLowerCase())), [products, query]);
 
-  async function request(input: RequestInfo, init: RequestInit = {}, accessToken = token) {
+  async function request<T>(input: RequestInfo, init: RequestInit = {}, accessToken = token): Promise<T> {
     const response = await fetch(input, { ...init, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...(init.headers ?? {}) } });
-    const payload: any = await response.json();
+    const payload = await response.json() as T & { error?: string };
     if (!response.ok) throw new Error(payload.error || 'Request failed.');
     return payload;
   }
@@ -65,7 +65,7 @@ export default function AdminCatalog() {
   async function loadCatalog(accessToken = token, preferredId?: string) {
     setBusy(true); setStatus('Loading catalog…');
     try {
-      const payload = await request('/api/admin/catalog', {}, accessToken);
+      const payload = await request<{ products: Product[]; collections: Collection[] }>('/api/admin/catalog', {}, accessToken);
       setProducts(payload.products); setCollections(payload.collections);
       const nextId = preferredId ?? selectedId ?? payload.products[0]?.id ?? '';
       const next = payload.products.find((product: Product) => product.id === nextId) ?? payload.products[0];
@@ -102,21 +102,10 @@ export default function AdminCatalog() {
   async function save(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setStatus('Saving…');
     try {
-      const payload = await request('/api/admin/catalog', { method: 'POST', body: JSON.stringify(draft) });
+      const payload = await request<{ id: string }>('/api/admin/catalog', { method: 'POST', body: JSON.stringify(draft) });
       setStatus('Saved. The storefront will read the update on its next request.');
       await loadCatalog(token, payload.id);
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Unable to save product.'); }
-    finally { setBusy(false); }
-  }
-
-  async function syncStripe() {
-    if (!draft.id) { setStatus('Save the product before syncing payment references.'); return; }
-    setBusy(true); setStatus('Syncing saved variants to Stripe…');
-    try {
-      const payload = await request('/api/admin/stripe-sync', { method: 'POST', body: JSON.stringify({ productId: draft.id }) });
-      await loadCatalog(token, draft.id);
-      setStatus(`Stripe synced. ${payload.variantsUpdated} variants linked across ${payload.groups.length} price group${payload.groups.length === 1 ? '' : 's'}.`);
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'Unable to sync Stripe payment references.'); }
     finally { setBusy(false); }
   }
 
@@ -145,7 +134,7 @@ export default function AdminCatalog() {
         </aside>
 
         <form className="admin-editor" onSubmit={save}>
-          <div className="admin-editor__top"><div><p>{draft.id ? 'Edit product' : 'New product'}</p><h2>{draft.name || 'Untitled shirt'}</h2></div><div className="admin-editor__actions"><button type="button" className="admin-sync" disabled={busy || !draft.id} onClick={syncStripe}>Sync Stripe</button><button className="admin-save" disabled={busy}>{busy ? 'Working…' : 'Save product'}</button></div></div>
+          <div className="admin-editor__top"><div><p>{draft.id ? 'Edit product' : 'New product'}</p><h2>{draft.name || 'Untitled shirt'}</h2></div><button className="admin-save" disabled={busy}>{busy ? 'Working…' : 'Save product'}</button></div>
           <output className="admin-status" role="status">{status}</output>
 
           <section className="admin-section"><h3>Core product</h3><div className="admin-fields admin-fields--two">
@@ -170,8 +159,8 @@ export default function AdminCatalog() {
 
           <section className="admin-section"><h3>Collections</h3><div className="admin-checks admin-checks--wrap">{collections.map((collection) => <label key={collection.id}><input type="checkbox" checked={(draft.collection_ids ?? []).includes(collection.id)} onChange={(event) => patch('collection_ids', event.target.checked ? [...(draft.collection_ids ?? []), collection.id] : (draft.collection_ids ?? []).filter((id) => id !== collection.id))} /> {collection.name}</label>)}</div></section>
 
-          <section className="admin-section"><div className="admin-section__heading"><div><h3>Sellable variants</h3><p className="admin-section__help">Supabase controls the catalog and prices. Save first, then Sync Stripe to refresh payment references.</p></div><button type="button" onClick={() => patch('product_variants', [...draft.product_variants, { style:'Tee', garment:'', size:'', sku:'', active:false, inventory_quantity:null, stripe_product_id:null, stripe_price_id:null, price_cents:draft.base_price_cents }])}>+ Add variant</button></div>{draft.product_variants.map((variant, index) => <div className="admin-row admin-row--variant" key={variant.id ?? `new-variant-${index}`}>
-            <label>Style<input value={variant.style} onChange={(event) => patchVariant(index, { style:event.target.value })} /></label><label>Garment<input value={variant.garment ?? ''} onChange={(event) => patchVariant(index, { garment:event.target.value })} /></label><label>Size<input value={variant.size} onChange={(event) => patchVariant(index, { size:event.target.value })} /></label><label>SKU<input value={variant.sku} onChange={(event) => patchVariant(index, { sku:event.target.value })} /></label><label>Price cents<input type="number" min="0" value={variant.price_cents} onChange={(event) => patchVariant(index, { price_cents:Number(event.target.value) })} /></label><label>Inventory<input type="number" min="0" placeholder="Untracked" value={variant.inventory_quantity ?? ''} onChange={(event) => patchVariant(index, { inventory_quantity:event.target.value === '' ? null : Number(event.target.value) })} /></label><label>Stripe product (synced)<input readOnly placeholder="Not synced" value={variant.stripe_product_id ?? ''} /></label><label>Stripe price (synced)<input readOnly placeholder="Not synced" value={variant.stripe_price_id ?? ''} /></label><label className="admin-row__check"><input type="checkbox" checked={variant.active} onChange={(event) => patchVariant(index, { active:event.target.checked })} /> Sellable</label>
+          <section className="admin-section"><div className="admin-section__heading"><div><h3>Sellable variants</h3><p className="admin-section__help">Supabase controls availability, inventory, and the price Stripe charges at checkout.</p></div><button type="button" onClick={() => patch('product_variants', [...draft.product_variants, { style:'Tee', garment:'', size:'', sku:'', active:false, inventory_quantity:null, price_cents:draft.base_price_cents }])}>+ Add variant</button></div>{draft.product_variants.map((variant, index) => <div className="admin-row admin-row--variant" key={variant.id ?? `new-variant-${index}`}>
+            <label>Style<input value={variant.style} onChange={(event) => patchVariant(index, { style:event.target.value })} /></label><label>Garment<input value={variant.garment ?? ''} onChange={(event) => patchVariant(index, { garment:event.target.value })} /></label><label>Size<input value={variant.size} onChange={(event) => patchVariant(index, { size:event.target.value })} /></label><label>SKU<input value={variant.sku} onChange={(event) => patchVariant(index, { sku:event.target.value })} /></label><label>Price cents<input type="number" min="0" value={variant.price_cents} onChange={(event) => patchVariant(index, { price_cents:Number(event.target.value) })} /></label><label>Inventory<input type="number" min="0" placeholder="Untracked" value={variant.inventory_quantity ?? ''} onChange={(event) => patchVariant(index, { inventory_quantity:event.target.value === '' ? null : Number(event.target.value) })} /></label><label className="admin-row__check"><input type="checkbox" checked={variant.active} onChange={(event) => patchVariant(index, { active:event.target.checked })} /> Sellable</label>
           </div>)}</section>
 
           <section className="admin-section"><div className="admin-section__heading"><h3>Colorways and images</h3><button type="button" onClick={() => patch('product_colors', [...draft.product_colors, { color:'', style:'Tee', garment:'', mockup_url:'', sort_order:draft.product_colors.length, active:true }])}>+ Add colorway</button></div>{draft.product_colors.map((color, index) => <div className="admin-row admin-row--color" key={color.id ?? `new-color-${index}`}>

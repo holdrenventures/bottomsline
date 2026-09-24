@@ -44,8 +44,6 @@ type SupabaseProduct = {
     size: string;
     active: boolean;
     inventory_quantity: number | null;
-    stripe_product_id: string | null;
-    stripe_price_id: string | null;
     price_cents: number;
   }>;
   product_collections: Array<{
@@ -104,8 +102,6 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
       size: variant.size,
       price: variant.price_cents / 100,
       inventoryQuantity: variant.inventory_quantity,
-      stripeProductId: variant.stripe_product_id,
-      stripePriceId: variant.stripe_price_id,
       active: variant.active,
     }));
 
@@ -121,7 +117,6 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
       active: color.active,
     }));
 
-  const checkoutVariant = variants[0];
   const collections = productCollections(product);
   const tones: CatalogProduct['tone'][] = ['coral', 'cream', 'charcoal', 'red'];
 
@@ -152,8 +147,6 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     draft: !product.active,
     featured: product.featured,
     isNewDrop: product.new_drop,
-    stripeProductId: checkoutVariant?.stripeProductId ?? null,
-    stripePriceId: checkoutVariant?.stripePriceId ?? null,
     art: productArt(product.name),
     tone: tones[index % tones.length],
   };
@@ -177,7 +170,7 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
     'id', 'name', 'slug', 'editorial_descriptor', 'description',
     'product_annotation', 'material', 'fit_notes', 'care_instructions', 'shipping_note', 'size_guide_url',
     'base_price_cents', 'currency', 'catalog_image', 'active', 'featured', 'new_drop', 'created_at',
-    'product_variants(id,sku,style,garment,size,active,inventory_quantity,stripe_product_id,stripe_price_id,price_cents)',
+    'product_variants(id,sku,style,garment,size,active,inventory_quantity,price_cents)',
     'product_collections(sort_order,collections(name,slug,active))',
     'product_colors(id,color,style,garment,mockup_url,sort_order,active)',
   ].join(',');

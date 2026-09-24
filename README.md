@@ -38,16 +38,16 @@ Variables and Secrets settings.
 
 The browser submits only product, variant, colorway, and quantity identifiers
 to `POST /api/checkout`. The Worker reloads active catalog rows from Supabase,
-verifies the saved Stripe Prices, snapshots the validated selection, and then
-creates a hosted Checkout Session. Browser names, prices, and Stripe IDs are
-not trusted.
+snapshots the validated selection, and sends the authoritative amounts to a
+hosted Checkout Session as inline price data. Browser names and prices are not
+trusted.
 
 Before testing Checkout:
 
 1. Apply `supabase/migrations/202609240001_checkout_attempts.sql` in the
    Supabase SQL editor.
 2. Create a Stripe sandbox restricted key with only the permissions needed to
-   read Products/Prices and create/read Checkout Sessions. Save it locally as
+   create/read/expire Checkout Sessions. Save it locally as
    `STRIPE_RESTRICTED_KEY`; never paste it into source or chat.
 3. Create a Stripe webhook endpoint for `/api/stripe-webhook` and subscribe to
    `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
@@ -55,12 +55,7 @@ Before testing Checkout:
    Save its `whsec_…` value as `STRIPE_WEBHOOK_SECRET`.
 4. Set `SITE_URL=http://localhost:3000` locally and the canonical HTTPS site URL
    in production.
-5. Create a second sandbox restricted key with Products and Prices write
-   access only. Save it as `STRIPE_CATALOG_KEY`.
-6. In Product Desk, save a product and use **Sync Stripe**. The server creates
-   or updates Stripe payment objects from the saved Supabase variants and
-   writes the resulting IDs back to Supabase.
-7. Test with Stripe sandbox data before creating separate live-mode keys.
+5. Test with Stripe sandbox data before creating separate live-mode keys.
 
 For Cloudflare production, add both Stripe values as encrypted Worker secrets.
 Use a separate restricted key and webhook secret for sandbox and live mode.
@@ -89,8 +84,8 @@ to an ignored `.dev.vars` file. The Product Desk intentionally has no link in
 the public navigation. For another security layer in production, protect
 `/admin*` and `/api/admin*` with Cloudflare Access.
 
-Supabase remains the catalog source of truth. Product Desk sends a saved
-product to `/api/admin/stripe-sync`, which mirrors its name and variant price
-groups into Stripe. Stripe Prices are immutable, so changing a Supabase price
-creates a replacement Stripe Price and updates the variant references. The
-browser never receives either Stripe restricted key.
+Supabase is the only catalog and pricing source of truth. At checkout, the
+Worker reloads each saved variant and sends its trusted amount to Stripe as
+inline Checkout price data. Product Desk does not maintain a second catalog in
+Stripe, and the browser never supplies a trusted price or receives a Stripe
+secret key.

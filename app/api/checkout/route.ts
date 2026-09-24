@@ -1,3 +1,4 @@
+import type Stripe from 'stripe';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient } from '../../lib/stripe';
 
@@ -29,8 +30,6 @@ type VariantRow = {
   sku: string;
   active: boolean;
   inventory_quantity: number | null;
-  stripe_product_id: string | null;
-  stripe_price_id: string | null;
   price_cents: number;
 };
 
@@ -92,7 +91,7 @@ export async function POST(request: Request) {
 
     const [products, variants, colors] = await Promise.all([
       supabaseAdmin(`products?select=id,name,slug,active,currency&id=in.(${productIds.join(',')})`) as Promise<ProductRow[]>,
-      supabaseAdmin(`product_variants?select=id,product_id,style,garment,size,sku,active,inventory_quantity,stripe_product_id,stripe_price_id,price_cents&id=in.(${variantIds.join(',')})`) as Promise<VariantRow[]>,
+      supabaseAdmin(`product_variants?select=id,product_id,style,garment,size,sku,active,inventory_quantity,price_cents&id=in.(${variantIds.join(',')})`) as Promise<VariantRow[]>,
       colorIds.length
         ? supabaseAdmin(`product_colors?select=id,product_id,color,style,garment,active&id=in.(${colorIds.join(',')})`) as Promise<ColorRow[]>
         : Promise.resolve([] as ColorRow[]),
@@ -108,9 +107,6 @@ export async function POST(request: Request) {
 
       if (!product?.active || !variant?.active || variant.product_id !== product.id) {
         throw new Error('One or more products are no longer available.');
-      }
-      if (!variant.stripe_price_id || !variant.stripe_product_id) {
-        throw new Error(`${product.name} is not ready for checkout yet.`);
       }
       if (variant.inventory_quantity !== null && selection.quantity > variant.inventory_quantity) {
         throw new Error(`Only ${variant.inventory_quantity} of ${product.name} is currently available.`);
@@ -141,66 +137,99 @@ export async function POST(request: Request) {
     const currency = trusted[0].product.currency;
 
     const stripe = stripeClient();
-    const uniquePriceIds = [...new Set(trusted.map(({ variant }) => variant.stripe_price_id!))];
-    const stripePrices = await Promise.all(uniquePriceIds.map((id) => stripe.prices.retrieve(id)));
-    const stripePriceById = new Map(stripePrices.map((price) => [price.id, price]));
-
-    for (const { product, variant } of trusted) {
-      const price = stripePriceById.get(variant.stripe_price_id!);
-      const stripeProductId = typeof price?.product === 'string' ? price.product : price?.product?.id;
-      if (!price?.active || price.currency !== currency || price.unit_amount !== variant.price_cents) {
-        throw new Error(`${product.name} has a payment price that needs attention.`);
-      }
-      if (stripeProductId !== variant.stripe_product_id) {
-        throw new Error(`${product.name} has a mismatched Stripe product.`);
-      }
-    }
-
     const attemptId = crypto.randomUUID();
     await supabaseAdmin('checkout_attempts', {
       method: 'POST',
       headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ id: attemptId, currency, status: 'creating' }),
     });
-    await supabaseAdmin('checkout_attempt_items', {
-      method: 'POST',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify(trusted.map(({ selection, product, variant, color }, index) => ({
-        checkout_attempt_id: attemptId,
-        sort_order: index,
-        product_id: product.id,
-        variant_id: variant.id,
-        colorway_id: color?.id ?? null,
-        product_name: product.name,
-        style: variant.style,
-        color: color?.color ?? null,
-        garment: variant.garment ?? color?.garment ?? null,
-        size: variant.size,
-        sku: variant.sku,
-        quantity: selection.quantity,
-        unit_price_cents: variant.price_cents,
-        stripe_price_id: variant.stripe_price_id,
-      }))),
-    });
-
+    let createdSession: Stripe.Checkout.Session | null = null;
     try {
       const origin = checkoutOrigin(request);
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         client_reference_id: attemptId,
         integration_identifier: `bottoms_line_${randomLetters()}`,
-        line_items: trusted.map(({ selection, variant }) => ({
-          price: variant.stripe_price_id!,
+        line_items: trusted.map(({ selection, product, variant, color }, index) => ({
+          price_data: {
+            currency,
+            unit_amount: variant.price_cents,
+            product_data: {
+              name: product.name,
+              description: [variant.style, color?.color, variant.size].filter(Boolean).join(' / '),
+              metadata: {
+                checkout_attempt_id: attemptId,
+                line_index: String(index),
+                product_id: product.id,
+                variant_id: variant.id,
+              },
+            },
+          },
           quantity: selection.quantity,
         })),
         metadata: { checkout_attempt_id: attemptId },
+        payment_intent_data: { metadata: { checkout_attempt_id: attemptId } },
         billing_address_collection: 'auto',
         shipping_address_collection: { allowed_countries: ['US'] },
         success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/bag`,
       }, { idempotencyKey: `bottoms-line-checkout-${attemptId}` });
+      createdSession = session;
 
       if (!session.url) throw new Error('Stripe did not return a Checkout URL.');
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+        limit: 100,
+        expand: ['data.price.product'],
+      });
+      if (lineItems.has_more || lineItems.data.length !== trusted.length) {
+        throw new Error('Stripe returned an unexpected line-item count.');
+      }
+
+      const snapshots: Array<Record<string, unknown> | undefined> = new Array(trusted.length);
+      for (const lineItem of lineItems.data) {
+        const price = lineItem.price;
+        const stripeProduct = price && typeof price.product !== 'string' ? price.product : null;
+        const index = Number(stripeProduct && !('deleted' in stripeProduct) ? stripeProduct.metadata.line_index : NaN);
+        const trustedItem = trusted[index];
+        if (
+          !price?.id ||
+          !trustedItem ||
+          snapshots[index] ||
+          price.currency !== currency ||
+          price.unit_amount !== trustedItem.variant.price_cents ||
+          lineItem.quantity !== trustedItem.selection.quantity ||
+          lineItem.amount_subtotal !== trustedItem.variant.price_cents * trustedItem.selection.quantity
+        ) {
+          throw new Error('Stripe line items do not match the authoritative catalog snapshot.');
+        }
+
+        const { selection, product, variant, color } = trustedItem;
+        snapshots[index] = {
+          checkout_attempt_id: attemptId,
+          sort_order: index,
+          product_id: product.id,
+          variant_id: variant.id,
+          colorway_id: color?.id ?? null,
+          product_name: product.name,
+          style: variant.style,
+          color: color?.color ?? null,
+          garment: variant.garment ?? color?.garment ?? null,
+          size: variant.size,
+          sku: variant.sku,
+          quantity: selection.quantity,
+          unit_price_cents: variant.price_cents,
+          stripe_price_id: price.id,
+        };
+      }
+      if (snapshots.some((snapshot) => !snapshot)) {
+        throw new Error('Stripe did not return every authoritative catalog line.');
+      }
+
+      await supabaseAdmin('checkout_attempt_items', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify(snapshots),
+      });
       await supabaseAdmin(`checkout_attempts?id=eq.${attemptId}&status=eq.creating`, {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
@@ -208,6 +237,9 @@ export async function POST(request: Request) {
       });
       return Response.json({ url: session.url });
     } catch (error) {
+      if (createdSession?.status === 'open') {
+        try { await stripe.checkout.sessions.expire(createdSession.id); } catch { /* Preserve the original checkout error. */ }
+      }
       await supabaseAdmin(`checkout_attempts?id=eq.${attemptId}&status=eq.creating`, {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
@@ -217,7 +249,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Checkout is temporarily unavailable.';
-    const status = /available|invalid|quantity|currency|price|Stripe product|ready for checkout/i.test(message) ? 400 : 500;
+    const status = /available|invalid|quantity|currency/i.test(message) ? 400 : 500;
     if (status === 500) console.error('Checkout creation failed:', message);
     return Response.json({ error: status === 400 ? message : 'Checkout is temporarily unavailable.' }, { status });
   }

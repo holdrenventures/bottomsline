@@ -10,8 +10,6 @@ type VariantInput = {
   sku?: string;
   active?: boolean;
   inventory_quantity?: number | null;
-  stripe_product_id?: string | null;
-  stripe_price_id?: string | null;
   price_cents?: number;
 };
 
@@ -135,8 +133,6 @@ export async function POST(request: Request) {
     const variants = (input.product_variants ?? []).filter((variant) => variant.size?.trim() && variant.sku?.trim()).map((variant) => {
       const active = Boolean(variant.active);
       const style = variant.style?.trim() || 'Tee';
-      const stripeProductId = cleanNullable(variant.stripe_product_id);
-      const stripePriceId = cleanNullable(variant.stripe_price_id);
       return {
         id: variant.id || crypto.randomUUID(),
         product_id: productId,
@@ -148,8 +144,6 @@ export async function POST(request: Request) {
         inventory_quantity: variant.inventory_quantity === null || variant.inventory_quantity === undefined
           ? null
           : Number(variant.inventory_quantity),
-        stripe_product_id: stripeProductId,
-        stripe_price_id: stripePriceId,
         price_cents: Number.isInteger(Number(variant.price_cents)) ? Number(variant.price_cents) : price,
       };
     });

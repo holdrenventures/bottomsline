@@ -2,6 +2,5 @@
 SUPABASE_SECRET_KEY=sb_secret_replace_locally
 ADMIN_TOKEN=replace_with_a_long_random_admin_token
 STRIPE_RESTRICTED_KEY=rk_test_replace_locally
-STRIPE_CATALOG_KEY=rk_test_replace_locally
 STRIPE_WEBHOOK_SECRET=whsec_replace_locally
 SITE_URL=http://localhost:3000

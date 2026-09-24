@@ -7,8 +7,6 @@ export type CartItem = {
   unitPrice: number;
   size: string;
   quantity: number;
-  stripeProductId: string | null;
-  stripePriceId: string | null;
   // Optional garment/colorway selection. colorId is the stable choice ID;
   // the readable fields are retained for the future bag and order snapshot.
   color?: string | null;

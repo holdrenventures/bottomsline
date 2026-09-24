@@ -216,6 +216,7 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
             >
               {showCut ? 'Show original' : 'Show cut'}
             </button>
+            <p className="cut-stage__disclaimer">Cut it wrong? Welcome to your new look. We don’t replace shirts you’ve rearranged.</p>
           </div>
         </div>
 
@@ -324,6 +325,7 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
           <a className="cut-cta" href={`/products/${selected.slug}`}>
             Get this shirt <span aria-hidden="true">↗</span>
           </a>
+          <p className="cut-cta__note">Ships uncut. The cutting is your art project.</p>
         </div>
       </div>
     </section>

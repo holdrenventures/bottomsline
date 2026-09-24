@@ -17,6 +17,7 @@ const rules = [
   ['Cut less than you think.', 'You can always take more off. You can’t glue it back.'],
   ['Long, smooth strokes.', 'Short choppy snips leave a jagged edge.'],
   ['Don’t worry about fraying.', 'Jersey knit doesn’t fray. It curls, and that’s the look.'],
+  ['This is DIY.', 'We ship the shirt. You bring the scissors. If your cut goes sideways, make it work — we don’t replace shirts you’ve already rearranged.'],
 ];
 
 const lessons = [

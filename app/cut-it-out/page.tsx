@@ -17,8 +17,13 @@ export const metadata: Metadata = {
 export default async function CutItOutPage() {
   const products = await getCatalogProducts();
   // Only shirts with a photo can be modeled — an SVG placeholder can’t be
-  // clipped or overlaid convincingly.
-  const shirts = products.filter((product) => product.catalogImage);
+  // clipped or overlaid convincingly. Also skip products whose only style is
+  // tank/other: the modeler is a tee-cutting tool, tanks are already tanks.
+  const shirts = products.filter((product) => {
+    if (!product.catalogImage) return false;
+    if (product.colors.length === 0) return true; // mock fallback keeps rendering
+    return product.colors.some((color) => (color.style ?? '').toLowerCase().includes('tee'));
+  });
 
   return (
     <>
@@ -28,7 +33,8 @@ export default async function CutItOutPage() {
           <p className="eyebrow"><span /> DIY / Cut It Out</p>
           <div className="cut-hero__copy">
             <h1>Cut it<br /><em>out.</em></h1>
-            <p>Your tee, your rules. One pair of scissors turns any Bottom’s Line shirt into a muscle tee, a drop-arm tank, or a crop that shows exactly as much as you want. Model it here, then make it.</p>
+            <p>Your tee, your rules. One pair of scissors turns any Bottom’s Line tee into a muscle tee, a drop-arm tank, or a crop that shows exactly as much as you want. Model it here, then make it.</p>
+            <p className="cut-hero__note"><span className="cut-hero__badge">DIY</span> These are do-it-yourself instructions. We ship the tees uncut. The scissors are on you.</p>
           </div>
         </section>
 

@@ -16,7 +16,7 @@ const AR_CONTAINER = 2 / 3; // blank canvas is 2:3 (both tees and tanks)
  * @param {{
  *   initial?: { slug?: string, productSlug?: string, garment?: 'tee'|'tank', placement?: {w:number,x:number,y:number}, colors?: string[] } | null,
  *   products?: Array<{name:string,slug:string,active:boolean}>,
- *   onUpload?: (file: File, slug: string) => Promise<unknown>,
+ *   onUpload?: (file: File, slug: string) => Promise<{assetSlug?: string}>,
  *   onSave?: (payload: {slug:string,productSlug:string|null,garment:string,placement:{w:number,x:number,y:number},colors:string[]}) => Promise<unknown>
  * }} props
  */
@@ -71,7 +71,8 @@ export default function DesignAdjuster({
     // upload in the background so the multi-color grid can render real Cloudinary art
     try {
       setBusy(true);
-      await onUpload(file, s);
+      const result = await onUpload(file, s);
+      if (result?.assetSlug) setSlug(result.assetSlug);
       setUploaded(true);
     } catch (err) {
       setError("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));

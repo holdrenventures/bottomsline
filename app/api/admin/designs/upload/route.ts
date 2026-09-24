@@ -17,12 +17,25 @@ export async function POST(request: Request) {
     if (file.size > 12 * 1024 * 1024) throw new Error('Artwork must be 12 MB or smaller.');
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('Design slug must use lowercase letters, numbers, and hyphens.');
 
-    const body = new FormData();
-    body.append('file', file); body.append('upload_preset', preset); body.append('folder', 'designs'); body.append('public_id', slug); body.append('overwrite', 'true');
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body });
-    const payload = await response.json() as { secure_url?: string; public_id?: string; error?: { message?: string } };
-    if (!response.ok) throw new Error(payload.error?.message || `Cloudinary upload failed (${response.status}).`);
-    return Response.json({ ok: true, publicId: payload.public_id, url: payload.secure_url });
+    async function uploadAsset(publicId: string) {
+      const body = new FormData();
+      body.append('file', file);
+      body.append('upload_preset', preset as string);
+      body.append('folder', 'designs');
+      body.append('public_id', publicId);
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body });
+      const payload = await response.json() as { secure_url?: string; public_id?: string; existing?: boolean; error?: { message?: string } };
+      if (!response.ok) throw new Error(payload.error?.message || `Cloudinary upload failed (${response.status}).`);
+      return payload;
+    }
+
+    // Unsigned uploads cannot overwrite. Preserve a clean ID for first uploads,
+    // then create a new versioned ID when an admin replaces existing artwork.
+    let payload = await uploadAsset(slug);
+    if (payload.existing) payload = await uploadAsset(`${slug}-${Date.now().toString(36)}`);
+    const assetSlug = String(payload.public_id ?? '').split('/').pop();
+    if (!assetSlug) throw new Error('Cloudinary did not return an asset ID.');
+    return Response.json({ ok: true, publicId: payload.public_id, assetSlug, url: payload.secure_url });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to upload artwork.';
     return Response.json({ error: message }, { status: /PNG|12 MB|slug|configured/i.test(message) ? 400 : 502 });

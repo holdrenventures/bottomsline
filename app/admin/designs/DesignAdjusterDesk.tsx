@@ -46,7 +46,7 @@ export default function DesignAdjusterDesk() {
   async function upload(file: File, slug: string) {
     const body = new FormData(); body.append('file', file); body.append('slug', slug);
     const response = await fetch('/api/admin/designs/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
-    const payload = await response.json() as { error?: string };
+    const payload = await response.json() as { error?: string; assetSlug?: string };
     if (!response.ok) throw new Error(payload.error || 'Cloudinary upload failed.');
     return payload;
   }

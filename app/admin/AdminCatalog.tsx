@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- Admin previews use arbitrary Cloudinary URLs entered by the catalog manager. */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type Collection = { id: string; name: string; slug: string; description: string | null; sort_order: number; active: boolean };
 type Variant = { id?: string; style: string; garment: string | null; size: string; sku: string; active: boolean; inventory_quantity: number | null; price_cents: number };
@@ -37,6 +37,7 @@ const blankProduct = (): Product => ({
   name: '', slug: '', editorial_descriptor: '', description: '', product_annotation: '', material: '', fit_notes: '', care_instructions: '', shipping_note: '', size_guide_url: '', base_price_cents: 3200, currency: 'usd', catalog_image: '',
   active: false, featured: false, new_drop: false, product_variants: [], product_colors: [], product_collections: [], collection_ids: [],
 });
+const tokenKey = 'bl-admin-token';
 
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -81,8 +82,17 @@ export default function AdminCatalog() {
     event.preventDefault();
     const clean = tokenInput.trim();
     if (!clean) return;
-    setToken(clean); void loadCatalog(clean);
+    sessionStorage.setItem(tokenKey, clean); setToken(clean); void loadCatalog(clean);
   }
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(tokenKey);
+    if (!saved) return;
+    const timer = window.setTimeout(() => { setToken(saved); setTokenInput(saved); void loadCatalog(saved); }, 0);
+    return () => window.clearTimeout(timer);
+    // The token is intentionally restored only once per tab session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function selectProduct(product: Product) {
     setSelectedId(product.id ?? '');
@@ -126,7 +136,7 @@ export default function AdminCatalog() {
 
   return (
     <main className="admin-shell">
-      <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Product Desk</h1></div><div><a href="/shop" target="_blank">View shop ↗</a><button type="button" onClick={() => loadCatalog()}>Refresh</button></div></header>
+      <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Product Desk</h1></div><div><a href="/admin/orders">Orders desk</a><a href="/shop" target="_blank">View shop ↗</a><button type="button" onClick={() => loadCatalog()}>Refresh</button></div></header>
       <div className="admin-layout">
         <aside className="admin-sidebar">
           <div className="admin-sidebar__tools"><input type="search" placeholder="Find a product" value={query} onChange={(event) => setQuery(event.target.value)} /><button type="button" onClick={newProduct}>+ New</button></div>

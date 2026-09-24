@@ -518,12 +518,39 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .admin-row--color img { height:72px; }
 .admin-editor__bottom { margin-top:28px; }
 .admin-editor__bottom p { max-width:500px; color:#746d63; font-size:11px; }
+.orders-sidebar .admin-sidebar__tools { grid-template-columns:1fr; }
+.orders-sidebar nav button { gap:7px; }
+.order-status { width:max-content; padding:4px 6px; background:#d8d1c5; color:#302d29!important; }
+.order-status--unfulfilled { background:var(--coral); }
+.order-status--processing { background:#f2c66d; }
+.order-status--shipped { background:#acd7cf; }
+.order-status--delivered { background:#b8d7a8; }
+.order-status--cancelled { background:#c9c3b9; text-decoration:line-through; }
+.order-summary { display:grid; grid-template-columns:1fr minmax(260px,.7fr); gap:40px; }
+.order-summary h3 { margin:6px 0 12px; }
+.order-summary p { margin-top:5px; color:#544f48; font-size:13px; line-height:1.35; }
+.order-summary dl { display:grid; gap:8px; margin:0; }
+.order-summary dl>div { display:flex; justify-content:space-between; gap:20px; padding-bottom:7px; border-bottom:1px solid #ded8cd; font-size:12px; }
+.order-summary dt { color:#746d63; }
+.order-summary dd { font-weight:850; }
+.order-summary dl>div:last-child { margin-top:4px; border-bottom:0; font-size:15px; }
+.order-items { display:grid; }
+.order-items article { display:flex; align-items:start; justify-content:space-between; gap:24px; padding:16px 0; border-top:1px solid #ded8cd; }
+.order-items article:first-child { border-top:0; padding-top:0; }
+.order-items strong { font-size:14px; }
+.order-items p { margin:5px 0; color:#665f56; font-size:12px; }
+.order-items small,.order-technical p { color:#817a70; font:700 9px/1.5 var(--sans); letter-spacing:.5px; overflow-wrap:anywhere; }
+.order-items b { white-space:nowrap; font-size:13px; }
+.order-tracking-link { margin-top:18px; }
+.order-tracking-link a { color:#e74438; font-size:11px; font-weight:900; text-transform:uppercase; }
+.order-technical p { margin-top:7px; }
 
 @media (max-width:1000px) {
   .admin-layout { grid-template-columns:220px minmax(0,1fr); }
   .admin-row--variant,.admin-row--color { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .admin-row__check { align-self:end; min-height:39px; }
   .admin-row--color img { width:100px; }
+  .order-summary { grid-template-columns:1fr; gap:28px; }
 }
 
 @media (max-width:680px) {

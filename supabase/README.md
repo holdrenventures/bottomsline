@@ -25,6 +25,10 @@ Migrations applied to production, in order:
 5. `202609240001_checkout_attempts.sql` — adds the private server-owned cart
    snapshot used to reconcile shared Stripe Prices with exact size/color
    selections. Applied to production on 2026-09-24 before enabling Checkout.
+6. `202609240002_order_fulfillment.sql` — adds fulfillment status and tracking
+   fields used by the protected Orders Desk.
+7. `202609240003_design_placements.sql` — stores Cloudinary overlay placement
+   and selected tee/tank colors for the protected Design Adjuster.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor

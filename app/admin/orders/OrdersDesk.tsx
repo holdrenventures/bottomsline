@@ -126,7 +126,7 @@ export default function OrdersDesk() {
 
   return (
     <main className="admin-shell">
-      <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Orders Desk</h1></div><div><a href="/admin">Product desk</a><a href="/shop" target="_blank">View shop ↗</a><button type="button" onClick={() => loadOrders()}>Refresh</button></div></header>
+      <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Orders Desk</h1></div><div><a href="/admin">Product desk</a><a href="/admin/designs">Design adjuster</a><a href="/shop" target="_blank">View shop ↗</a><button type="button" onClick={() => loadOrders()}>Refresh</button></div></header>
       <div className="admin-layout">
         <aside className="admin-sidebar orders-sidebar">
           <div className="admin-sidebar__tools"><select aria-label="Filter orders" value={filter} onChange={(event) => setFilter(event.target.value as 'all' | FulfillmentStatus)}><option value="all">All orders</option>{statuses.map((option) => <option key={option} value={option}>{option}</option>)}</select></div>

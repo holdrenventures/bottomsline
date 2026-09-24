@@ -89,3 +89,26 @@ Worker reloads each saved variant and sends its trusted amount to Stripe as
 inline Checkout price data. Product Desk does not maintain a second catalog in
 Stripe, and the browser never supplies a trusted price or receives a Stripe
 secret key.
+
+## Internal Design Adjuster
+
+The protected mockup composer lives at `/admin/designs`. It uploads one
+transparent PNG to Cloudinary, records its placement on a Tultex 202 tee or
+Tultex 105 tank, and can update only that garment style's colorway rows for a
+selected storefront product. Existing order-linked colorway rows are preserved
+and deactivated instead of deleted.
+
+Before first use:
+
+1. Apply `supabase/migrations/202609240003_design_placements.sql` in Supabase.
+2. In Cloudinary, create an unsigned upload preset restricted to the `designs`
+   folder (for example, `blc_designs`).
+3. Store its name server-side as `CLOUDINARY_UPLOAD_PRESET` in Cloudflare:
+
+```bash
+pnpm exec wrangler secret put CLOUDINARY_UPLOAD_PRESET
+```
+
+The browser never receives the preset. Uploads and design saves pass through
+admin-token-protected Worker routes. The adjuster assumes the Cloudinary blank
+assets described in `app/lib/blc-colors.json` already exist.

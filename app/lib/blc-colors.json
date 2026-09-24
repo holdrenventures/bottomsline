@@ -1,0 +1,314 @@
+{
+ "cloud": "bihiyho3",
+ "garments": {
+  "tee": {
+   "folder": "tultex202",
+   "prefix": "202"
+  },
+  "tank": {
+   "folder": "tultex105",
+   "prefix": "105"
+  }
+ },
+ "colors": {
+  "tee": [
+   {
+    "token": "aqua",
+    "label": "Aqua",
+    "hex": "#60c2e3"
+   },
+   {
+    "token": "baby_blue",
+    "label": "Baby Blue",
+    "hex": "#cfdde9"
+   },
+   {
+    "token": "black",
+    "label": "Black",
+    "hex": "#242424"
+   },
+   {
+    "token": "brown",
+    "label": "Brown",
+    "hex": "#4a2e1f"
+   },
+   {
+    "token": "burgundy",
+    "label": "Burgundy",
+    "hex": "#532231"
+   },
+   {
+    "token": "cantaloupe",
+    "label": "Cantaloupe",
+    "hex": "#f7ad82"
+   },
+   {
+    "token": "cardinal",
+    "label": "Cardinal",
+    "hex": "#a71125"
+   },
+   {
+    "token": "cassis",
+    "label": "Cassis",
+    "hex": "#ba7188"
+   },
+   {
+    "token": "charcoal",
+    "label": "Charcoal",
+    "hex": "#464543"
+   },
+   {
+    "token": "coal",
+    "label": "Coal",
+    "hex": "#37383a"
+   },
+   {
+    "token": "coral",
+    "label": "Coral",
+    "hex": "#fd9769"
+   },
+   {
+    "token": "ginger",
+    "label": "Ginger",
+    "hex": "#d9a340"
+   },
+   {
+    "token": "gold",
+    "label": "Gold",
+    "hex": "#feb02c"
+   },
+   {
+    "token": "heather_burgundy",
+    "label": "Heather Burgundy",
+    "hex": "#764249"
+   },
+   {
+    "token": "heather_cantaloupe",
+    "label": "Heather Cantaloupe",
+    "hex": "#fca47a"
+   },
+   {
+    "token": "heather_cassis",
+    "label": "Heather Cassis",
+    "hex": "#c2849d"
+   },
+   {
+    "token": "heather_charcoal",
+    "label": "Heather Charcoal",
+    "hex": "#4d4d4d"
+   },
+   {
+    "token": "heather_denim",
+    "label": "Heather Denim",
+    "hex": "#47546b"
+   },
+   {
+    "token": "heather_graphite",
+    "label": "Heather Graphite",
+    "hex": "#3b3b41"
+   },
+   {
+    "token": "heather_grey",
+    "label": "Heather Grey",
+    "hex": "#b5b6b9"
+   },
+   {
+    "token": "heather_kelly",
+    "label": "Heather Kelly",
+    "hex": "#02a768"
+   },
+   {
+    "token": "heather_mellow_yellow",
+    "label": "Heather Mellow Yellow",
+    "hex": "#f9bf45"
+   },
+   {
+    "token": "heather_military_green",
+    "label": "Heather Military Green",
+    "hex": "#5a5b4b"
+   },
+   {
+    "token": "heather_neo_mint",
+    "label": "Heather Neo Mint",
+    "hex": "#b5e2bc"
+   },
+   {
+    "token": "heather_orange",
+    "label": "Heather Orange",
+    "hex": "#f16545"
+   },
+   {
+    "token": "heather_purist_blue",
+    "label": "Heather Purist Blue",
+    "hex": "#b0dae0"
+   },
+   {
+    "token": "heather_purple",
+    "label": "Heather Purple",
+    "hex": "#655482"
+   },
+   {
+    "token": "heather_red",
+    "label": "Heather Red",
+    "hex": "#c34047"
+   },
+   {
+    "token": "heather_royal",
+    "label": "Heather Royal",
+    "hex": "#4463a7"
+   },
+   {
+    "token": "heather_rust",
+    "label": "Heather Rust",
+    "hex": "#c06f43"
+   },
+   {
+    "token": "indigo",
+    "label": "Indigo",
+    "hex": "#3c4c5e"
+   },
+   {
+    "token": "kelly_green",
+    "label": "Kelly Green",
+    "hex": "#017e55"
+   },
+   {
+    "token": "lemon",
+    "label": "Lemon",
+    "hex": "#d9cf5d"
+   },
+   {
+    "token": "military_green",
+    "label": "Military Green",
+    "hex": "#646045"
+   },
+   {
+    "token": "mint",
+    "label": "Mint",
+    "hex": "#70d7c1"
+   },
+   {
+    "token": "natural",
+    "label": "Natural",
+    "hex": "#f0ebdf"
+   },
+   {
+    "token": "navy",
+    "label": "Navy",
+    "hex": "#292d3c"
+   },
+   {
+    "token": "neo_mint",
+    "label": "Neo Mint",
+    "hex": "#c9eac5"
+   },
+   {
+    "token": "orange",
+    "label": "Orange",
+    "hex": "#f35433"
+   },
+   {
+    "token": "peach",
+    "label": "Peach",
+    "hex": "#e8c1a6"
+   },
+   {
+    "token": "pink",
+    "label": "Pink",
+    "hex": "#f1cbd2"
+   },
+   {
+    "token": "purple",
+    "label": "Purple",
+    "hex": "#583288"
+   },
+   {
+    "token": "red",
+    "label": "Red",
+    "hex": "#bc0b2c"
+   },
+   {
+    "token": "royal",
+    "label": "Royal",
+    "hex": "#1251ad"
+   },
+   {
+    "token": "sand",
+    "label": "Sand",
+    "hex": "#95855a"
+   },
+   {
+    "token": "silver",
+    "label": "Silver",
+    "hex": "#d5d1d0"
+   },
+   {
+    "token": "slate",
+    "label": "Slate",
+    "hex": "#57819e"
+   },
+   {
+    "token": "sunshine",
+    "label": "Sunshine",
+    "hex": "#f3dc65"
+   },
+   {
+    "token": "teal",
+    "label": "Teal",
+    "hex": "#027284"
+   },
+   {
+    "token": "terracotta",
+    "label": "Terracotta",
+    "hex": "#b45450"
+   },
+   {
+    "token": "turquoise",
+    "label": "Turquoise",
+    "hex": "#02a5dd"
+   },
+   {
+    "token": "vintage_white",
+    "label": "Vintage White",
+    "hex": "#e9e6df"
+   },
+   {
+    "token": "white",
+    "label": "White",
+    "hex": "#f3f2f6"
+   }
+  ],
+  "tank": [
+   {
+    "token": "black",
+    "label": "Black",
+    "hex": "#292929"
+   },
+   {
+    "token": "heather_grey",
+    "label": "Heather Grey",
+    "hex": "#c1c1c1"
+   },
+   {
+    "token": "navy",
+    "label": "Navy",
+    "hex": "#2d2e5b"
+   },
+   {
+    "token": "red",
+    "label": "Red",
+    "hex": "#ed0202"
+   },
+   {
+    "token": "royal",
+    "label": "Royal",
+    "hex": "#294e9e"
+   },
+   {
+    "token": "white",
+    "label": "White",
+    "hex": "#eeeeee"
+   }
+  ]
+ }
+}

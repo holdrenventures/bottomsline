@@ -405,7 +405,7 @@ export default function AdminCatalog() {
     <main className="admin-shell">
       <header className="admin-header">
         <div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Product Desk</h1></div>
-        <div><a href="/admin/orders">Orders desk</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a><button type="button" onClick={refresh} disabled={busy}>Refresh</button></div>
+        <div><a href="/admin/designs">Design adjuster</a><a href="/admin/orders">Orders desk</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a><button type="button" onClick={refresh} disabled={busy}>Refresh</button></div>
       </header>
 
       {/* Shared suggestion lists for free-text fields */}

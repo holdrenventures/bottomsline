@@ -55,8 +55,12 @@ Before testing Checkout:
    Save its `whsec_…` value as `STRIPE_WEBHOOK_SECRET`.
 4. Set `SITE_URL=http://localhost:3000` locally and the canonical HTTPS site URL
    in production.
-5. Populate each sellable Supabase variant with matching Stripe Product and
-   Price IDs, then test with Stripe sandbox data before using live keys.
+5. Create a second sandbox restricted key with Products and Prices write
+   access only. Save it as `STRIPE_CATALOG_KEY`.
+6. In Product Desk, save a product and use **Sync Stripe**. The server creates
+   or updates Stripe payment objects from the saved Supabase variants and
+   writes the resulting IDs back to Supabase.
+7. Test with Stripe sandbox data before creating separate live-mode keys.
 
 For Cloudflare production, add both Stripe values as encrypted Worker secrets.
 Use a separate restricted key and webhook secret for sandbox and live mode.
@@ -84,3 +88,9 @@ For local Product Desk access, add the same `ADMIN_TOKEN` and the Supabase key
 to an ignored `.dev.vars` file. The Product Desk intentionally has no link in
 the public navigation. For another security layer in production, protect
 `/admin*` and `/api/admin*` with Cloudflare Access.
+
+Supabase remains the catalog source of truth. Product Desk sends a saved
+product to `/api/admin/stripe-sync`, which mirrors its name and variant price
+groups into Stripe. Stripe Prices are immutable, so changing a Supabase price
+creates a replacement Stripe Price and updates the variant references. The
+browser never receives either Stripe restricted key.

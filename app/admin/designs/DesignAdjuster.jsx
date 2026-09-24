@@ -83,7 +83,9 @@ export default function DesignAdjuster({
   // ---- geometry <-> placement ----
   function rectFromPlacement() {
     const w = placement.w;                       // fraction of stage width
-    const h = w / ar / AR_CONTAINER;             // fraction of stage HEIGHT
+    // Convert the artwork width from a fraction of the stage width to a
+    // fraction of the stage height while preserving the PNG's aspect ratio.
+    const h = (w * AR_CONTAINER) / ar;
     const left = 0.5 + placement.x - w / 2;
     const top = placement.y;
     return { left, top, w, h };
@@ -192,7 +194,7 @@ export default function DesignAdjuster({
               width: `${r.w * 100}%`, height: `${r.h * 100}%`,
             }} onPointerDown={onPointerDownMove}>
               <img src={designUrl} alt="" draggable={false}
-                style={{ width: "100%", height: "100%", objectFit: "fill", pointerEvents: "none" }} />
+                style={{ width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none" }} />
               <div onPointerDown={onResizeDown} style={S.handle} />
             </div>
           )}

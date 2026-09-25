@@ -35,7 +35,7 @@ export default async function SupportLocalBottomsPage() {
         <div className="shell product-back-row"><a href="/shop">← Back to the line</a><span>Community Outreach / 001</span></div>
 
         <section className="product-detail shell">
-          <div className="product-detail__visual">
+          <div className="product-detail__visual" data-ghost="LOCAL">
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
             <ProductAnnotation>A public service,<br />more or less.</ProductAnnotation>
             <span className="product-detail__index">BL / 001</span>

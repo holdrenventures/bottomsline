@@ -15,6 +15,8 @@ const collections = [
   { name: 'New Drops', number: '06', note: 'Freshly inappropriate.' },
 ];
 
+const originStoryImage = 'https://res.cloudinary.com/bihiyho3/image/upload/l_designs:spread-legs-mugtl36x,fl_relative,w_0.3859,g_north,x_-0.0007,y_0.2681/e_trim/blanks/tultex202/202_navy_front.png';
+
 function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snapshot' }: { imageSrc?: string; imageAlt?: string }) {
   return (
     <figure className="pinned-editorial">
@@ -29,7 +31,7 @@ function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snaps
           </div>
         )}
       </div>
-      <figcaption><span>proof of concept</span> / phone photo goes here</figcaption>
+      <figcaption><span>{imageSrc ? 'origin story' : 'proof of concept'}</span> / {imageSrc ? 'it started with one joke' : 'phone photo goes here'}</figcaption>
     </figure>
   );
 }
@@ -106,7 +108,7 @@ export default async function Home() {
       <div className="clothesline-divider shell" aria-hidden="true"><Clothespin compact /><span>hold this thought</span></div>
 
       <section className="story shell section" id="story">
-        <div className="story__side"><p className="eyebrow"><span /> The origin story</p><PinnedEditorial /></div>
+        <div className="story__side"><p className="eyebrow"><span /> The origin story</p><PinnedEditorial imageSrc={originStoryImage} imageAlt="Bottom’s Line Nashville shirt featured in the origin story" /></div>
         <div className="story__copy">
           <h2>It started with<br /><em>one joke.</em></h2>
           <p>I made one shirt because I couldn’t stop laughing at a joke. Then I made another. Then my friends wanted them. Then strangers did.</p>

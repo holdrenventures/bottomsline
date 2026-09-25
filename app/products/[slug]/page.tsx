@@ -46,7 +46,7 @@ export default async function ProductPage({ params }: PageProps) {
         </div>
 
         <section className="product-detail shell">
-          <div className="product-detail__visual">
+          <div className="product-detail__visual" data-ghost={nameParts[0]?.toUpperCase() || 'BOTTOMS'}>
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
             <ProductAnnotation>{product.productAnnotation || <>Read the shirt.<br />Twice, if needed.</>}</ProductAnnotation>
             <span className="product-detail__index">BL / {product.slug}</span>

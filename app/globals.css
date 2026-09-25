@@ -174,7 +174,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .product-back-row a:hover { color:var(--coral); }
 .product-detail { display:grid; grid-template-columns:minmax(0,1.08fr) minmax(420px,.92fr); gap:clamp(52px,7vw,110px); padding-block:clamp(28px,3vw,46px) clamp(82px,8vw,120px); }
 .product-detail__visual { position:relative; min-height:clamp(580px,68vh,720px); display:grid; place-items:center; background:#111; overflow:hidden; }
-.product-detail__visual::before { content:'LOCAL'; position:absolute; color:rgba(255,255,255,.035); font-size:clamp(120px,18vw,280px); font-weight:900; letter-spacing:-.12em; transform:rotate(-7deg); }
+.product-detail__visual::before { content:attr(data-ghost); position:absolute; color:rgba(255,255,255,.035); font-size:clamp(120px,18vw,280px); font-weight:900; letter-spacing:-.12em; transform:rotate(-7deg); }
 .product-detail__line { position:absolute; z-index:5; top:9%; left:-2%; width:104%; height:1px; background:rgba(255,255,255,.62); transform:rotate(-.7deg); }
 .product-detail__line .clothespin { left:50%; top:-5px; }
 .product-detail__annotation { position:absolute; z-index:3; top:12%; right:5%; color:var(--coral); font-size:9px; font-weight:900; line-height:1.5; letter-spacing:1.8px; transform:rotate(3deg); }

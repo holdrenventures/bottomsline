@@ -179,20 +179,37 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
   endpoint.searchParams.set('active', 'eq.true');
   endpoint.searchParams.set('order', 'created_at.desc');
 
-  const response = await fetch(endpoint, {
-    headers: {
-      apikey: secretKey,
-      Authorization: `Bearer ${secretKey}`,
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      headers: {
+        apikey: secretKey,
+        Authorization: `Bearer ${secretKey}`,
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+  } catch (error) {
+    // Network-level failure (DNS, TLS, timeout). Keep the storefront up on
+    // mock data instead of serving a 500 for every page. The real catalog
+    // reappears automatically once Supabase is reachable again.
+    console.error('[catalog] Supabase fetch threw:', error);
+    return null;
+  }
 
   if (!response.ok) {
     const message = (await response.text()).slice(0, 500);
-    throw new Error(`Supabase catalog request failed (${response.status}): ${message}`);
+    // Log loudly so Cloudflare Observability catches it, but return null so
+    // the page keeps rendering via the mock fallback.
+    console.error(`[catalog] Supabase request failed (${response.status}): ${message}`);
+    return null;
   }
 
-  const products = await response.json() as SupabaseProduct[];
-  return products.map(normalizeProduct);
+  try {
+    const products = await response.json() as SupabaseProduct[];
+    return products.map(normalizeProduct);
+  } catch (error) {
+    console.error('[catalog] Supabase payload parse error:', error);
+    return null;
+  }
 }

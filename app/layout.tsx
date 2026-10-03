@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://bottomslineclothing.com'),
   title: 'Bottom’s Line Clothing — Skip the Small Talk',
   description: 'Conversation-starting apparel for people who would rather be honest than boring.',
   openGraph: {

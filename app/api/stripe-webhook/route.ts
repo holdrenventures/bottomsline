@@ -1,6 +1,9 @@
 import type Stripe from 'stripe';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient, stripeWebhookSecret } from '../../lib/stripe';
+import { sendEmail, orderNotificationRecipient } from '../../lib/email';
+import { customerOrderHtml, customerOrderSubject, customerOrderText } from '../../lib/emails/customer-order';
+import { storeOrderHtml, storeOrderSubject, storeOrderText } from '../../lib/emails/store-order';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,6 +161,99 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
     }),
   });
   await setAttemptStatus(attemptId, 'paid', session.id);
+
+  // Fire-and-forget notification emails. Wrapped in try/catch so Resend
+  // outages never cause Stripe to retry the webhook — the authoritative
+  // success signal is the RPC succeeding above.
+  try {
+    await notifyOrder(session.id, order, orderItems);
+  } catch (error) {
+    console.error('[notify] Order email dispatch failed:', error);
+  }
+}
+
+type OrderShape = {
+  stripe_checkout_session_id: string;
+  stripe_payment_intent_id: string | null;
+  customer_email: string | null;
+  customer_name: string | null;
+  shipping_address: Record<string, string | null> | null;
+  payment_status: string;
+  currency: string;
+  subtotal_cents: number;
+  discount_cents: number;
+  shipping_cents: number;
+  tax_cents: number;
+  total_cents: number;
+};
+
+/**
+ * Atomically claim the notification right for an order so email delivery
+ * happens exactly once even if Stripe redelivers the webhook. The claim is a
+ * PATCH on `orders.notified_at` with `is.null` as a filter — PostgREST returns
+ * the row only when the update ran (i.e. when notified_at was still null).
+ */
+async function notifyOrder(
+  sessionId: string,
+  order: OrderShape,
+  orderItems: Array<{ product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number }>,
+) {
+  const claimedRows = await supabaseAdmin(
+    `orders?stripe_checkout_session_id=eq.${encodeURIComponent(sessionId)}&notified_at=is.null&select=id`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ notified_at: new Date().toISOString() }),
+    },
+  ) as Array<{ id: string }>;
+
+  if (!claimedRows || claimedRows.length === 0) {
+    // Another webhook delivery already claimed and sent. Nothing to do.
+    return;
+  }
+
+  const emailItems = orderItems.map((item) => ({
+    product_name: item.product_name,
+    style: item.style,
+    color: item.color,
+    garment: item.garment,
+    size: item.size,
+    sku: item.sku,
+    quantity: item.quantity,
+    unit_price_cents: item.unit_price_cents,
+  }));
+
+  // Customer confirmation — only send if we actually have an email address.
+  if (order.customer_email) {
+    const result = await sendEmail({
+      to: order.customer_email,
+      subject: customerOrderSubject(order),
+      html: customerOrderHtml(order, emailItems),
+      text: customerOrderText(order, emailItems),
+      tags: [
+        { name: 'kind', value: 'order_confirmed' },
+        { name: 'session', value: sessionId },
+      ],
+    });
+    if (!result.ok) console.error('[notify] customer email failed:', result.error);
+  }
+
+  // Store-owner notification — skip gracefully if no inbox configured.
+  const ownerTo = orderNotificationRecipient();
+  if (ownerTo) {
+    const result = await sendEmail({
+      to: ownerTo,
+      subject: storeOrderSubject(order),
+      html: storeOrderHtml(order, emailItems),
+      text: storeOrderText(order, emailItems),
+      replyTo: order.customer_email ?? undefined,
+      tags: [
+        { name: 'kind', value: 'order_received' },
+        { name: 'session', value: sessionId },
+      ],
+    });
+    if (!result.ok) console.error('[notify] store email failed:', result.error);
+  }
 }
 
 export async function POST(request: Request) {

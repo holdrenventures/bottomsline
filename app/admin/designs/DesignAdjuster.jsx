@@ -8,13 +8,14 @@
 // from Cloudinary using that single placement.
 
 import { useRef, useState } from "react";
-import { COLORS, blankUrl, mockupUrl, slugify } from "../../lib/blc-cloudinary";
+import { COLORS, GARMENTS, blankUrl, mockupUrl, slugify } from "../../lib/blc-cloudinary";
 
-const AR_CONTAINER = 2 / 3; // blank canvas is 2:3 (both tees and tanks)
+const AR_CONTAINER = 2 / 3; // all current blank canvases are 2:3
+const GARMENT_OPTIONS = Object.entries(GARMENTS).map(([id, garment]) => ({ id, label: garment.label }));
 
 /**
  * @param {{
- *   initial?: { slug?: string, productSlug?: string, garment?: 'tee'|'tank', placement?: {w:number,x:number,y:number}, colors?: string[] } | null,
+ *   initial?: { slug?: string, productSlug?: string, garment?: 'tee'|'tank'|'crewneck'|'hoodie', placement?: {w:number,x:number,y:number}, colors?: string[] } | null,
  *   products?: Array<{name:string,slug:string,active:boolean}>,
  *   onUpload?: (file: File, slug: string) => Promise<{assetSlug?: string}>,
  *   onSave?: (payload: {slug:string,productSlug:string|null,garment:string,placement:{w:number,x:number,y:number},colors:string[]}) => Promise<unknown>
@@ -164,10 +165,10 @@ export default function DesignAdjuster({
             <input type="file" accept="image/png" onChange={onFile} style={{ display: "none" }} />
           </label>
           <div style={S.seg}>
-            {["tee", "tank"].map((g) => (
-              <button key={g} onClick={() => changeGarment(g)}
-                style={{ ...S.segBtn, ...(garment === g ? S.segOn : {}) }}>
-                {g === "tee" ? "Tee" : "Tank"}
+            {GARMENT_OPTIONS.map((option) => (
+              <button key={option.id} onClick={() => changeGarment(option.id)}
+                style={{ ...S.segBtn, ...(garment === option.id ? S.segOn : {}) }}>
+                {option.label}
               </button>
             ))}
           </div>
@@ -181,7 +182,7 @@ export default function DesignAdjuster({
             <option value="">Save placement only</option>
             {products.map((product) => <option key={product.slug} value={product.slug}>{product.name}{product.active ? "" : " — Draft"}</option>)}
           </select>
-          <span style={S.help}>{productSlug ? `Saving will update this product’s ${garment === "tank" ? "tank" : "tee"} colorways only.` : "Choose a product to send the generated mockups directly to its colorways."}</span>
+          <span style={S.help}>{productSlug ? `Saving will update this product’s ${GARMENTS[garment].label.toLowerCase()} colorways only.` : "Choose a product to send the generated mockups directly to its colorways."}</span>
         </label>
 
         <div ref={stageRef} style={S.stage}

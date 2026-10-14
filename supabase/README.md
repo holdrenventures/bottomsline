@@ -4,7 +4,7 @@ The storefront reads Supabase from server code deployed as a Cloudflare Worker.
 The browser never connects. Store `SUPABASE_SECRET_KEY` as an encrypted
 Cloudflare secret; never commit it or expose it through `NEXT_PUBLIC_*`.
 
-Migrations applied to production, in order:
+Tracked migrations, in order:
 
 1. `202609210001_v1_storefront.sql` — V1 storefront schema
    (products, product_variants, collections, product_collections, orders,
@@ -29,6 +29,11 @@ Migrations applied to production, in order:
    fields used by the protected Orders Desk.
 7. `202609240003_design_placements.sql` — stores Cloudinary overlay placement
    and selected tee/tank colors for the protected Design Adjuster.
+8. `202610140001_order_notified_at.sql` — records when order notification
+   emails were sent.
+9. `202610140002_design_garments.sql` — permits SS3000 crewneck and SS4500
+   hoodie placements in the Design Adjuster and stores a separate placement
+   for each design + garment combination.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor

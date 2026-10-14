@@ -65,7 +65,7 @@ export default function DesignAdjusterDesk() {
   return <main className="admin-shell design-desk-shell">
     <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1></div><div><a href="/admin">Product desk</a><a href="/admin/orders">Orders</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a></div></header>
     <section className="design-desk">
-      <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Place it once.<br /><em>Wear it everywhere.</em></h2><p>Upload transparent artwork, position it on a Tultex 202 tee or Tultex 105 tank, choose the colors, and send the generated mockups to a storefront product.</p></div>
+      <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Place it once.<br /><em>Wear it everywhere.</em></h2><p>Upload transparent artwork, position it on a tee, tank, SS3000 crewneck, or SS4500 hoodie, choose the colors, and send the generated mockups to a storefront product.</p></div>
       <DesignAdjuster products={products} onUpload={upload} onSave={save} />
     </section>
   </main>;

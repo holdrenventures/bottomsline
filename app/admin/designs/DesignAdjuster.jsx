@@ -3,22 +3,22 @@
 /* eslint-disable @next/next/no-img-element -- Cloudinary composition previews use generated URLs. */
 
 // Bottom's Line — admin design adjuster.
-// Upload a PNG, drag/scale it on a shirt, pick the colors it ships in,
-// and save. Placement is stored once; the storefront renders every color
-// from Cloudinary using that single placement.
+// Upload a PNG, then position, scale, and rotate it on each selected color.
 
 import { useRef, useState } from "react";
-import { COLORS, GARMENTS, blankUrl, mockupUrl, slugify } from "../../lib/blc-cloudinary";
+import { COLORS, GARMENTS, blankUrl, designUrl as designAssetUrl, mockupUrl, slugify } from "../../lib/blc-cloudinary";
 
 const AR_CONTAINER = 2 / 3; // all current blank canvases are 2:3
+const DEFAULT_PLACEMENT = { w: 0.34, x: 0, y: 0.3, angle: 0 };
 const GARMENT_OPTIONS = Object.entries(GARMENTS).map(([id, garment]) => ({ id, label: garment.label }));
 
 /**
  * @param {{
- *   initial?: { slug?: string, productSlug?: string, garment?: 'tee'|'tank'|'crewneck'|'hoodie', placement?: {w:number,x:number,y:number}, colors?: string[] } | null,
+ *   initial?: { slug?: string, productSlug?: string, garment?: 'tee'|'tank'|'crewneck'|'hoodie', placement?: {w:number,x:number,y:number,angle?:number}, placements?: Record<string,{w:number,x:number,y:number,angle?:number}>, colors?: string[] } | null,
  *   products?: Array<{name:string,slug:string,active:boolean}>,
  *   onUpload?: (file: File, slug: string) => Promise<{assetSlug?: string}>,
- *   onSave?: (payload: {slug:string,productSlug:string|null,garment:string,placement:{w:number,x:number,y:number},colors:string[]}) => Promise<unknown>
+ *   onSave?: (payload: {slug:string,productSlug:string|null,garment:string,placement:{w:number,x:number,y:number,angle:number},placements:Record<string,{w:number,x:number,y:number,angle:number}>,colors:string[]}) => Promise<unknown>,
+ *   onLoad?: (productSlug:string,garment:string) => Promise<{slug:string,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle:number}>}>
  * }} props
  */
 export default function DesignAdjuster({
@@ -26,6 +26,7 @@ export default function DesignAdjuster({
   products = [],
   onUpload = async () => {},
   onSave = async () => {},      // async (payload) => persist to Supabase
+  onLoad = async () => {},
 }) {
   const [garment, setGarment] = useState(initial?.garment || "tee");
   const [slug, setSlug] = useState(initial?.slug || "");
@@ -33,7 +34,8 @@ export default function DesignAdjuster({
   const [previewColor, setPreviewColor] = useState("black");
   const [designUrl, setDesignUrl] = useState(null);   // local objectURL for the editor
   const [ar, setAr] = useState(1);                    // design aspect (w/h)
-  const [placement, setPlacement] = useState(initial?.placement || { w: 0.34, x: 0, y: 0.3 });
+  const [defaultPlacement] = useState({ ...DEFAULT_PLACEMENT, ...initial?.placement });
+  const [placementsByGarment, setPlacementsByGarment] = useState(() => ({ [initial?.garment || "tee"]: initial?.placements || {} }));
   const [selected, setSelected] = useState(() => new Set(initial?.colors || ["black", "white", "navy"]));
   const [uploaded, setUploaded] = useState(!!initial?.slug); // slug exists on Cloudinary
   const [busy, setBusy] = useState(false);
@@ -42,6 +44,16 @@ export default function DesignAdjuster({
 
   const stageRef = useRef(null);
   const palette = COLORS[garment];
+  const placementFor = (token) => ({ ...defaultPlacement, ...placementsByGarment[garment]?.[token] });
+  const placement = placementFor(previewColor);
+
+  function updatePlacement(changes) {
+    setPlacementsByGarment((all) => ({
+      ...all,
+      [garment]: { ...all[garment], [previewColor]: { ...defaultPlacement, ...all[garment]?.[previewColor], ...changes } },
+    }));
+    setSaved(false);
+  }
 
   function changeGarment(nextGarment) {
     const nextPalette = COLORS[nextGarment];
@@ -53,6 +65,32 @@ export default function DesignAdjuster({
       return valid;
     });
     setSaved(false);
+  }
+
+  async function loadSaved() {
+    if (!productSlug) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await onLoad(productSlug, garment);
+      if (!result?.slug || !result?.colors?.length) throw new Error("No saved mockups found for this garment.");
+      const url = designAssetUrl(result.slug);
+      const img = new Image();
+      setUploaded(false);
+      img.onload = () => { setAr(img.naturalWidth / img.naturalHeight); setUploaded(true); };
+      img.onerror = () => setError("Saved artwork could not be previewed. Upload the PNG again before saving.");
+      img.src = url;
+      setDesignUrl(url);
+      setSlug(result.slug);
+      setSelected(new Set(result.colors));
+      setPreviewColor(result.colors[0]);
+      setPlacementsByGarment((all) => ({ ...all, [garment]: result.placements || {} }));
+      setSaved(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load saved mockups.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   // ---- file pick ----
@@ -83,18 +121,27 @@ export default function DesignAdjuster({
   }
 
   // ---- geometry <-> placement ----
+  function rotatedHeight(w, h, angle) {
+    const radians = (angle || 0) * Math.PI / 180;
+    return Math.abs(h * Math.cos(radians)) + Math.abs(w * AR_CONTAINER * Math.sin(radians));
+  }
   function rectFromPlacement() {
     const w = placement.w;                       // fraction of stage width
     // Convert the artwork width from a fraction of the stage width to a
     // fraction of the stage height while preserving the PNG's aspect ratio.
     const h = (w * AR_CONTAINER) / ar;
     const left = 0.5 + placement.x - w / 2;
-    const top = placement.y;
+    // Cloudinary's north gravity positions the rotated bounding box. Keep the
+    // local drag preview aligned with that same top edge.
+    const top = placement.y + (rotatedHeight(w, h, placement.angle) - h) / 2;
     return { left, top, w, h };
   }
   function setFromRect(left, top, w) {
     const x = left + w / 2 - 0.5;
-    setPlacement((p) => ({ ...p, w: clamp(w, 0.05, 0.95), x: round(x), y: round(clamp(top, -0.1, 0.95)) }));
+    const width = clamp(w, 0.05, 0.95);
+    const height = (width * AR_CONTAINER) / ar;
+    const y = top - (rotatedHeight(width, height, placement.angle) - height) / 2;
+    updatePlacement({ w: width, x: round(clamp(x, -0.6, 0.6)), y: round(clamp(y, -0.1, 0.95)) });
   }
 
   // ---- drag to move ----
@@ -140,11 +187,13 @@ export default function DesignAdjuster({
     setBusy(true);
     setError("");
     try {
+      const placements = Object.fromEntries([...selected].map((token) => [token, roundedPlacement(placementFor(token))]));
       await onSave({
         slug,
         productSlug: productSlug || null,
         garment,
-        placement: { w: round(placement.w), x: round(placement.x), y: round(placement.y) },
+        placement: roundedPlacement(placement),
+        placements,
         colors: [...selected],
       });
       setSaved(true);
@@ -184,6 +233,9 @@ export default function DesignAdjuster({
           </select>
           <span style={S.help}>{productSlug ? `Saving will update this product’s ${GARMENTS[garment].label.toLowerCase()} colorways only.` : "Choose a product to send the generated mockups directly to its colorways."}</span>
         </label>
+        <button type="button" onClick={loadSaved} disabled={!productSlug || busy} style={S.load}>
+          Load saved mockups for this product and garment
+        </button>
 
         <div ref={stageRef} style={S.stage}
           onPointerMove={(e) => { onPointerMove(e); onResizeMove(e); }}
@@ -194,6 +246,7 @@ export default function DesignAdjuster({
               position: "absolute", cursor: "grab",
               left: `${r.left * 100}%`, top: `${r.top * 100}%`,
               width: `${r.w * 100}%`, height: `${r.h * 100}%`,
+              transform: `rotate(${placement.angle}deg)`,
             }} onPointerDown={onPointerDownMove}>
               <img src={designUrl} alt="" draggable={false}
                 style={{ width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none" }} />
@@ -204,12 +257,20 @@ export default function DesignAdjuster({
 
         <div style={S.sizeRow}>
           <span style={S.lab}>Size</span>
-          <input type="range" min="5" max="95" step="0.5" value={(placement.w * 100).toFixed(1)}
-            onChange={(e) => setPlacement((p) => ({ ...p, w: +e.target.value / 100 }))}
+          <input type="range" min="5" max="95" step="0.5" aria-label={`Size on ${palette.find((c) => c.token === previewColor)?.label || previewColor}`} value={(placement.w * 100).toFixed(1)}
+            onChange={(e) => updatePlacement({ w: +e.target.value / 100 })}
             style={{ flex: 1 }} />
           <code style={S.code}>
             w {placement.w.toFixed(3)} · x {placement.x.toFixed(3)} · y {placement.y.toFixed(3)}
           </code>
+        </div>
+
+        <div style={S.sizeRow}>
+          <label htmlFor="design-rotation" style={S.lab}>Rotate</label>
+          <input id="design-rotation" type="range" min="-20" max="20" step="0.5" value={placement.angle}
+            onChange={(e) => updatePlacement({ angle: +e.target.value })} style={{ flex: 1 }} />
+          <code style={S.code}>{placement.angle.toFixed(1)}°</code>
+          <button type="button" onClick={() => updatePlacement({ angle: 0 })} style={S.zero}>Reset</button>
         </div>
 
         <div style={S.previewPick}>
@@ -217,6 +278,7 @@ export default function DesignAdjuster({
           <select value={previewColor} onChange={(e) => setPreviewColor(e.target.value)} style={S.select}>
             {palette.map((c) => <option key={c.token} value={c.token}>{c.label}</option>)}
           </select>
+          <span style={S.help}>Changes affect this color only.</span>
           {busy && <span style={{ color: "#ff4f3d", fontSize: 12 }}>working…</span>}
         </div>
       </div>
@@ -228,8 +290,8 @@ export default function DesignAdjuster({
           {palette.map((c) => {
             const on = selected.has(c.token);
             return (
-              <button key={c.token} title={c.label}
-                onClick={() => setSelected((s) => toggle(s, c.token))}
+              <button key={c.token} title={c.label} aria-label={`${c.label}${on ? " selected" : ""}`}
+                onClick={() => { setSelected((s) => toggle(s, c.token)); setPreviewColor(c.token); setSaved(false); }}
                 style={{ ...S.sw, outline: on ? "2.5px solid #ff4f3d" : "1px solid #ddd", background: c.hex }} />
             );
           })}
@@ -241,13 +303,14 @@ export default function DesignAdjuster({
         <div style={S.grid}>
           {uploaded && slug
             ? selectedList.map((c) => (
-                <div key={c.token} style={S.cell}>
-                  <img src={mockupUrl({ slug, garment, colorToken: c.token, placement })}
+                <button type="button" key={c.token} onClick={() => setPreviewColor(c.token)}
+                  aria-label={`Edit placement on ${c.label}`} style={{ ...S.cell, outline: previewColor === c.token ? "2px solid #ff4f3d" : "none" }}>
+                  <img src={mockupUrl({ slug, garment, colorToken: c.token, placement: placementFor(c.token) })}
                     alt={c.label} style={S.cellImg} loading="lazy" />
                   <span style={S.cellLab}>{c.label}</span>
-                </div>
+                </button>
               ))
-            : <div style={S.hint}>Upload a PNG to preview every color here. They all use the one placement on the left.</div>}
+            : <div style={S.hint}>Upload a PNG or load saved mockups. Choose a color to adjust its placement.</div>}
         </div>
 
         <div style={S.actions}>
@@ -265,6 +328,7 @@ export default function DesignAdjuster({
 // ---- helpers ----
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const round = (v) => +Number(v).toFixed(4);
+const roundedPlacement = (p) => ({ w: round(p.w), x: round(p.x), y: round(p.y), angle: round(p.angle || 0) });
 function toggle(set, k) { const n = new Set(set); if (n.has(k)) n.delete(k); else n.add(k); return n; }
 
 // ---- inline styles (no CSS framework needed) ----
@@ -287,11 +351,13 @@ const S = {
   productLabel: { display: "grid", gap: 6, marginBottom: 12, color: "#5f584f", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" },
   optional: { color: "#8b847b", fontSize: 9, fontWeight: 600 },
   productSelect: { width: "100%", padding: "10px", border: "1px solid #d1cbc1", borderRadius: 4, background: "#fff", color: "#111", fontSize: 13, textTransform: "none" },
+  load: { marginBottom: 12, padding: "9px 12px", border: "1px solid #d1cbc1", borderRadius: 4, background: "#fff", color: "#1a1720", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+  zero: { padding: "5px 8px", border: "1px solid #d1cbc1", borderRadius: 4, background: "#fff", fontSize: 11, cursor: "pointer" },
   help: { color: "#777066", fontSize: 10, fontWeight: 500, letterSpacing: 0, lineHeight: 1.4, textTransform: "none" },
   swatches: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(30px, 1fr))", gap: 6, marginTop: 8 },
   sw: { width: 30, height: 30, borderRadius: 7, cursor: "pointer", outlineOffset: 2, border: "none" },
   grid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginTop: 8, maxHeight: 360, overflowY: "auto" },
-  cell: { background: "#141018", borderRadius: 10, padding: 6, display: "flex", flexDirection: "column", alignItems: "center" },
+  cell: { background: "#141018", border: "none", borderRadius: 10, padding: 6, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer" },
   cellImg: { width: "100%", aspectRatio: "3 / 4", objectFit: "contain" },
   cellLab: { fontSize: 10, color: "#b7b2c0", marginTop: 2 },
   hint: { fontSize: 12, color: "#6b6675", lineHeight: 1.5, gridColumn: "1 / -1" },

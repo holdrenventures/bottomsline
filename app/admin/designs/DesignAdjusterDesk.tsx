@@ -60,13 +60,21 @@ export default function DesignAdjusterDesk() {
     return result;
   }
 
-  if (!token || !loaded) return <main className="admin-login"><form onSubmit={login}><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1><p>One PNG. One placement. An unreasonable number of shirts.</p><label>Admin token<input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} /></label><button disabled={busy}>{busy ? 'Checking…' : 'Open adjuster'}</button><output role="status">{status}</output></form></main>;
+  async function loadSaved(productSlug: string, garment: string) {
+    const query = new URLSearchParams({ productSlug, garment });
+    const response = await fetch(`/api/admin/designs?${query}`, { headers: { Authorization: `Bearer ${token}` } });
+    const result = await response.json() as { error?: string; slug?: string; colors?: string[]; placements?: Record<string, { w: number; x: number; y: number; angle: number }> };
+    if (!response.ok) throw new Error(result.error || 'Unable to load saved mockups.');
+    return result;
+  }
+
+  if (!token || !loaded) return <main className="admin-login"><form onSubmit={login}><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1><p>Place artwork separately on every shirt color.</p><label>Admin token<input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} /></label><button disabled={busy}>{busy ? 'Checking…' : 'Open adjuster'}</button><output role="status">{status}</output></form></main>;
 
   return <main className="admin-shell design-desk-shell">
     <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1></div><div><a href="/admin">Product desk</a><a href="/admin/orders">Orders</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a></div></header>
     <section className="design-desk">
-      <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Place it once.<br /><em>Wear it everywhere.</em></h2><p>Upload transparent artwork, position it on a tee, tank, SS3000 crewneck, or SS4500 hoodie, choose the colors, and send the generated mockups to a storefront product.</p></div>
-      <DesignAdjuster products={products} onUpload={upload} onSave={save} />
+      <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Make every color<br /><em>fit the shirt.</em></h2><p>Upload transparent artwork or load a saved product. Choose each garment color, then set its position, size, and angle independently before saving the mockups.</p></div>
+      <DesignAdjuster products={products} onUpload={upload} onSave={save} onLoad={loadSaved} />
     </section>
   </main>;
 }

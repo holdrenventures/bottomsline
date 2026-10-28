@@ -136,7 +136,7 @@ export default async function Home() {
       <footer>
         <div className="shell footer__top">
           <p>Still here? You’re probably<br /><em>our kind of people.</em></p>
-          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="#top">Instagram</a><a href="#top">TikTok</a></div></div>
+          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
         </div>
         <div className="shell footer__bottom"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>© 2026 Bottom’s Line Clothing <span>Made with poor judgment.</span></p></div>
       </footer>

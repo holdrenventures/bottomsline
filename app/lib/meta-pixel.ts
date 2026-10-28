@@ -2,7 +2,7 @@
 
 export const META_PIXEL_ID = '1023195525937892';
 
-type PixelEvent = 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase';
+type PixelEvent = 'ViewContent' | 'InitiateCheckout' | 'Purchase';
 type PixelPayload = Record<string, string | number | string[]>;
 type Fbq = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void;
@@ -29,8 +29,8 @@ export function initMetaPixel() {
   window.fbq = fbq;
   window._fbq = fbq;
 
-  // We send explicit commerce events below; automatic button detection can
-  // otherwise report a second, parameter-free AddToCart for the same click.
+  // Keep base Pixel automatic configuration off; Meta's existing event setup
+  // still detects the store's Add to bag button separately.
   fbq('set', 'autoConfig', false, META_PIXEL_ID);
   fbq('init', META_PIXEL_ID);
   fbq('track', 'PageView');

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import MetaPixel from './MetaPixel';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bottomslineclothing.com'),
@@ -28,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><MetaPixel />{children}</body>
     </html>
   );
 }

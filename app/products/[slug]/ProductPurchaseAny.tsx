@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CatalogColor, CatalogProduct, CatalogVariant } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
+import { trackMeta } from '../../lib/meta-pixel';
 import ProductGuide from './ProductGuide';
 import { useProductHero } from './ProductHero';
 
@@ -24,6 +25,15 @@ function variantIsAvailable(variant: CatalogVariant) {
 }
 
 export default function ProductPurchaseAny({ product }: { product: PurchaseProduct }) {
+  useEffect(() => {
+    trackMeta('ViewContent', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: product.price,
+      currency: 'USD',
+    });
+  }, [product.id, product.name, product.price]);
   const displayColors = useMemo(
     () => product.colors.filter((color) => color.active),
     [product.colors],
@@ -97,6 +107,14 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       colorMockup: selectedColor?.mockupUrl ?? null,
       style: selectedVariant?.style ?? (selectedColor ? styleName(selectedColor) : style),
       garment: selectedVariant?.garment ?? selectedColor?.garment ?? null,
+    });
+    trackMeta('AddToCart', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: selectedPrice * quantity,
+      currency: 'USD',
+      num_items: quantity,
     });
     if (composedSku && typeof console !== 'undefined') {
       // Recorded on the client for now; the Worker will re-derive this at checkout.

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CART_UPDATED_EVENT, clearCart, readCart, removeCartItem, updateCartItem, type CartItem } from '../lib/cart';
+import { trackMeta } from '../lib/meta-pixel';
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -65,6 +66,13 @@ export default function BagClient() {
       if (destination.protocol !== 'https:' || !destination.hostname.endsWith('.stripe.com')) {
         throw new Error('Checkout returned an unexpected destination.');
       }
+      trackMeta('InitiateCheckout', {
+        content_ids: [...new Set(items.map((item) => item.productId))],
+        content_type: 'product',
+        value: items.reduce((total, item) => total + item.unitPrice * item.quantity, 0),
+        currency: 'USD',
+        num_items: items.reduce((total, item) => total + item.quantity, 0),
+      });
       window.location.assign(destination.href);
     } catch (error) {
       setCheckoutError(error instanceof Error ? error.message : 'Checkout is temporarily unavailable.');

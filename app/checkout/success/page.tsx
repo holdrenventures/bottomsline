@@ -4,6 +4,8 @@ import { stripeClient } from '../../lib/stripe';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import ClearPaidBag, { type VerifiedPurchase } from './ClearPaidBag';
 
+export const dynamic = 'force-dynamic';
+
 type PageProps = { searchParams: Promise<{ session_id?: string }> };
 
 async function verifiedPurchase(sessionId: string | undefined): Promise<VerifiedPurchase | null> {
@@ -51,7 +53,7 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
       <main className="bag-page shell checkout-success">
         <section className="bag-empty">
           <p className="eyebrow"><span /> {purchase ? 'Payment received' : 'Payment confirmation pending'}</p>
-          <h1>EXCELLENT<br /><em>judgment.</em></h1>
+          <h1>{purchase ? <>EXCELLENT<br /><em>judgment.</em></> : <>PAYMENT<br /><em>pending.</em></>}</h1>
           <p>{purchase
             ? 'Your order is being confirmed. Keep an eye on your inbox for the paper trail.'
             : 'We could not confirm your payment yet. Your bag is saved; check your email before trying checkout again.'}</p>

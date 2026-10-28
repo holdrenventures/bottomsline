@@ -6,21 +6,18 @@ import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
 import ProductPurchase from './ProductPurchase';
 
-export const metadata: Metadata = {
-  title: 'Support Local Bottoms — Bottom’s Line Clothing',
-  description: 'Support Local Bottoms. Community outreach you can wear.',
-  openGraph: {
-    title: 'Support Local Bottoms — Bottom’s Line Clothing',
-    description: 'Community outreach you can wear.',
-    images: [],
-  },
-  twitter: {
-    card: 'summary',
-    title: 'Support Local Bottoms — Bottom’s Line Clothing',
-    description: 'Community outreach you can wear.',
-    images: [],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const product = await getProductBySlug('support-local-bottoms');
+  const image = product?.colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? product?.catalogImage ?? null;
+  const title = 'Support Local Bottoms — Bottom’s Line Clothing';
+  const description = 'Support Local Bottoms. Community outreach you can wear.';
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: image ? [{ url: image }] : [] },
+    twitter: { card: 'summary_large_image', title, description, images: image ? [image] : [] },
+  };
+}
 
 export default async function SupportLocalBottomsPage() {
   const product = await getProductBySlug('support-local-bottoms');

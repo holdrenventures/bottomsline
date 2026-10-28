@@ -108,14 +108,6 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       style: selectedVariant?.style ?? (selectedColor ? styleName(selectedColor) : style),
       garment: selectedVariant?.garment ?? selectedColor?.garment ?? null,
     });
-    trackMeta('AddToCart', {
-      content_ids: [product.id],
-      content_name: product.name,
-      content_type: 'product',
-      value: selectedPrice * quantity,
-      currency: 'USD',
-      num_items: quantity,
-    });
     if (composedSku && typeof console !== 'undefined') {
       // Recorded on the client for now; the Worker will re-derive this at checkout.
       console.debug('cart:add', composedSku);

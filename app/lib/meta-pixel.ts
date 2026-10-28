@@ -29,6 +29,9 @@ export function initMetaPixel() {
   window.fbq = fbq;
   window._fbq = fbq;
 
+  // We send explicit commerce events below; automatic button detection can
+  // otherwise report a second, parameter-free AddToCart for the same click.
+  fbq('set', 'autoConfig', false, META_PIXEL_ID);
   fbq('init', META_PIXEL_ID);
   fbq('track', 'PageView');
 

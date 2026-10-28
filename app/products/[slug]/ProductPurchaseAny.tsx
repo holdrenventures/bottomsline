@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CatalogColor, CatalogProduct, CatalogVariant } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
 import ProductGuide from './ProductGuide';
+import { useProductHero } from './ProductHero';
 
 type PurchaseProduct = Pick<
   CatalogProduct,
@@ -61,6 +62,10 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
   );
 
   const heroImage = selectedColor?.mockupUrl ?? product.catalogImage ?? null;
+  const heroAlt = `${product.name}${selectedColor ? ` — ${selectedColor.color}` : ''}`;
+  const hero = useProductHero();
+  const setHero = hero?.setHero;
+  useEffect(() => { setHero?.(heroImage, heroAlt); }, [setHero, heroImage, heroAlt]);
   const selectedVariant = useMemo(
     () => sellableVariants.find((variant) => variant.style === style && variant.size === size) ?? null,
     [sellableVariants, size, style],
@@ -102,9 +107,9 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
 
   return (
     <div className="purchase-controls">
-      {heroImage && (
+      {!hero && heroImage && (
         <div className="purchase-hero">
-          <img src={heroImage} alt={`${product.name}${selectedColor ? ` — ${selectedColor.color}` : ''}`} />
+          <img src={heroImage} alt={heroAlt} />
         </div>
       )}
 

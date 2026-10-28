@@ -4,6 +4,7 @@ import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import { getProductBySlug, productPriceLabel } from '../../data/products';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
+import { ProductHeroImage, ProductHeroProvider } from './ProductHero';
 import ProductPurchaseAny from './ProductPurchaseAny';
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -45,14 +46,16 @@ export default async function ProductPage({ params }: PageProps) {
           <span>{eyebrow} / {product.slug}</span>
         </div>
 
+        <ProductHeroProvider
+          initialImage={product.colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? product.catalogImage}
+          initialAlt={product.name}
+        >
         <section className="product-detail shell">
           <div className="product-detail__visual" data-ghost={nameParts[0]?.toUpperCase() || 'BOTTOMS'}>
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
             <ProductAnnotation>{product.productAnnotation || <>Read the shirt.<br />Twice, if needed.</>}</ProductAnnotation>
             <span className="product-detail__index">BL / {product.slug}</span>
-            {product.catalogImage
-              ? <img className="product-detail__image" src={product.catalogImage} alt={product.name} />
-              : <Shirt art={product.art} tone={product.tone} detail />}
+            <ProductHeroImage fallback={<Shirt art={product.art} tone={product.tone} detail />} />
           </div>
 
           <div className="product-detail__info">
@@ -78,6 +81,7 @@ export default async function ProductPage({ params }: PageProps) {
             <a className="continue-shopping" href="/shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
           </div>
         </section>
+        </ProductHeroProvider>
 
         <section className="product-statement">
           <div className="shell"><p>Read the room.<br /><em>Then ignore it.</em></p><span>Wear responsibly.</span></div>

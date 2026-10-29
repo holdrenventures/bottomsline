@@ -53,7 +53,7 @@ export default async function ProductPage({ params }: PageProps) {
         <section className="product-detail shell">
           <div className="product-detail__visual" data-ghost={nameParts[0]?.toUpperCase() || 'BOTTOMS'}>
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
-            <ProductAnnotation>{product.productAnnotation || <>Read the shirt.<br />Twice, if needed.</>}</ProductAnnotation>
+            <ProductAnnotation>Read the shirt.<br />Twice, if needed.</ProductAnnotation>
             <span className="product-detail__index">BL / {product.slug}</span>
             <ProductHeroImage fallback={<Shirt art={product.art} tone={product.tone} detail />} />
           </div>
@@ -65,6 +65,7 @@ export default async function ProductPage({ params }: PageProps) {
               <p>{priceLabel}</p>
             </div>
             {product.description && <p className="product-description">{product.description}</p>}
+            {product.productAnnotation && <p className="product-aside">{product.productAnnotation}</p>}
             {product.draft && <p className="product-aside">Draft listing — final copy and pricing pending.</p>}
 
             <ProductPurchaseAny product={product} />

@@ -59,6 +59,7 @@ const supportedCollections: ProductCollection[] = [
   'Parodies',
   'Nashville',
   'Pride',
+  'Holiday',
   'New Drops',
 ];
 

@@ -1,7 +1,7 @@
 import { getSupabaseCatalogProducts } from './supabase-products';
 import { trimMockup } from '../lib/cloudinary';
 
-export type ProductCollection = 'Support Local Bottoms' | 'Cruising' | 'Parodies' | 'Nashville' | 'Pride' | 'New Drops';
+export type ProductCollection = 'Support Local Bottoms' | 'Cruising' | 'Parodies' | 'Nashville' | 'Pride' | 'Holiday' | 'New Drops';
 
 export type CatalogVariant = {
   id: string;
@@ -88,7 +88,7 @@ export async function getProductBySlug(slug: string) {
   return products.find((product) => product.slug === slug) ?? null;
 }
 
-export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'New Drops'] as const;
+export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'Holiday', 'New Drops'] as const;
 
 export function collectionSlug(collection: string) {
   return collection.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

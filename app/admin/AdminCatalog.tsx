@@ -505,7 +505,7 @@ export default function AdminCatalog() {
                 <small className="admin-field-hint">Sizes priced the same follow this automatically.</small>
               </label>
               <label className="admin-field--wide">Description<textarea rows={3} value={draft.description ?? ''} onChange={(event) => patch('description', event.target.value)} /></label>
-              <label className="admin-field--wide">Image annotation<input value={draft.product_annotation ?? ''} onChange={(event) => patch('product_annotation', event.target.value)} placeholder="A public service, more or less." /></label>
+              <label className="admin-field--wide">Product aside<input value={draft.product_annotation ?? ''} onChange={(event) => patch('product_annotation', event.target.value)} placeholder="A line worth reading twice." /></label>
             </div>
           </section>
 

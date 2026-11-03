@@ -941,3 +941,23 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
   .custom-gallery__item--design img { aspect-ratio:1/1; }
   .custom-gallery__note { text-align:center; }
 }
+
+
+/* Compact custom work gallery */
+.custom-gallery__grid { max-width:1000px; margin-inline:auto; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.custom-gallery__item--wide { grid-column:auto; }
+.custom-gallery__item img { height:180px; }
+.custom-gallery__item--design { background:#f1eee8; }
+.custom-gallery__item--design img { flex:none; min-height:0; height:180px; padding:8px; object-fit:contain; background:transparent; }
+@media (max-width:900px) {
+  .custom-gallery__grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .custom-gallery__item img,.custom-gallery__item--design img { height:165px; }
+}
+@media (max-width:560px) {
+  .custom-gallery__heading { margin-bottom:24px; }
+  .custom-gallery__grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .custom-gallery__item img,.custom-gallery__item--design img { height:138px; aspect-ratio:auto; }
+  .custom-gallery__item--design img { min-height:0; }
+  .custom-gallery__item figcaption { padding:9px 10px; font-size:9px; letter-spacing:.8px; }
+  .custom-gallery__note { margin-top:22px; }
+}

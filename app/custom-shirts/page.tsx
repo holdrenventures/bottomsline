@@ -23,6 +23,47 @@ export default function CustomShirtsPage() {
             <CustomShirtInquiry />
           </div>
         </section>
+
+        <section className="custom-gallery section" aria-labelledby="custom-gallery-title">
+          <div className="shell">
+            <div className="custom-gallery__heading">
+              <p className="eyebrow"><span /> Past custom work</p>
+              <h2 id="custom-gallery-title">Made for <em>your people.</em></h2>
+              <p>From team gear to a one-off idea, here are a few shirts made for groups and good times.</p>
+            </div>
+            <div className="custom-gallery__grid">
+              <figure className="custom-gallery__item custom-gallery__item--wide">
+                <img src="/custom-work/invictus-pink.jpg" alt="A school community wearing custom pink charity walk shirts" loading="lazy" />
+                <figcaption>Community shirts · Invictus Nashville</figcaption>
+              </figure>
+              <figure className="custom-gallery__item custom-gallery__item--wide">
+                <img src="/custom-work/pink-walk.jpg" alt="A crowd wearing custom shirts at a pink charity walk" loading="lazy" />
+                <figcaption>Event shirts · made for the whole crew</figcaption>
+              </figure>
+              <figure className="custom-gallery__item">
+                <img src="/custom-work/pink-family.jpg" alt="A family wearing custom charity walk shirts" loading="lazy" />
+                <figcaption>Matching shirts · made personal</figcaption>
+              </figure>
+              <figure className="custom-gallery__item">
+                <img src="/custom-work/yellow-team.jpg" alt="A school team wearing matching custom yellow shirts" loading="lazy" />
+                <figcaption>Team shirts · Invictus Nashville</figcaption>
+              </figure>
+              <figure className="custom-gallery__item">
+                <img src="/custom-work/kick-pics-team.jpg" alt="A group wearing custom Nashville's Unsolicited Kick Pics shirts" loading="lazy" />
+                <figcaption>Group shirts · Nashville’s Unsolicited Kick Pics</figcaption>
+              </figure>
+              <figure className="custom-gallery__item custom-gallery__item--design">
+                <img src="/custom-work/kick-pics-mockup.jpg" alt="A custom multi-shirt design concept for Nashville’s Unsolicited Kick Pics" loading="lazy" />
+                <figcaption>From-scratch design · Nashville’s Unsolicited Kick Pics</figcaption>
+              </figure>
+              <figure className="custom-gallery__item custom-gallery__item--design">
+                <img src="/custom-work/two-hits-custom.jpg" alt="A custom Two Hits and Anything Fits shirt design with a personal name added" loading="lazy" />
+                <figcaption>Custom detail · made it their own</figcaption>
+              </figure>
+            </div>
+            <p className="custom-gallery__note">Have a group idea of your own? <a href="#custom-inquiry">Tell me about it <span aria-hidden="true">↗</span></a></p>
+          </div>
+        </section>
       </main>
       <footer className="custom-page-footer">
         <div className="shell footer__bottom">

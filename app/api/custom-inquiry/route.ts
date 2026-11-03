@@ -3,13 +3,11 @@ import { escapeHtml } from '../../lib/emails/types';
 
 export const dynamic = 'force-dynamic';
 
-const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const projectTypes = {
   modify: 'Customize an existing design',
   scratch: 'Create a design from scratch',
 } as const;
-
-type ProjectType = keyof typeof projectTypes;
 
 function readString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
@@ -33,18 +31,18 @@ export async function POST(request: Request) {
 
   const name = readString(fields.name);
   const email = readString(fields.email).toLowerCase();
-  const projectType = readString(fields.project_type) as ProjectType;
+  const projectType = readString(fields.project_type);
   const message = readString(fields.message);
   const rawQuantity = readString(fields.quantity);
   const quantity = rawQuantity ? Number(rawQuantity) : null;
 
-  if (!name || name.length > 100 || /[\\r\\n]/.test(name)) {
+  if (!name || name.length > 100 || /[\r\n]/.test(name)) {
     return Response.json({ error: 'Please enter your name.' }, { status: 400 });
   }
   if (!email || email.length > 254 || !emailPattern.test(email)) {
     return Response.json({ error: 'Please enter a valid email address.' }, { status: 400 });
   }
-  if (!(projectType in projectTypes)) {
+  if (projectType !== 'modify' && projectType !== 'scratch') {
     return Response.json({ error: 'Please choose what kind of custom shirt you have in mind.' }, { status: 400 });
   }
   if (rawQuantity && (!Number.isInteger(quantity) || Number(quantity) < 1 || Number(quantity) > 5000)) {
@@ -71,8 +69,8 @@ export async function POST(request: Request) {
     '',
     'Idea:',
     message,
-  ].join('\\n');
-  const html = `<h2>New custom shirt inquiry</h2><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Request:</strong> ${escapeHtml(projectTypes[projectType])}</p><p><strong>Approximate quantity:</strong> ${escapeHtml(quantityLabel)}</p><p><strong>Idea:</strong></p><p>${escapeHtml(message).replace(/\\n/g, '<br>')}</p>`;
+  ].join('\n');
+  const html = `<h2>New custom shirt inquiry</h2><p><strong>Name:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><p><strong>Request:</strong> ${escapeHtml(projectTypes[projectType])}</p><p><strong>Approximate quantity:</strong> ${escapeHtml(quantityLabel)}</p><p><strong>Idea:</strong></p><p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>`;
 
   const result = await sendEmail({
     to: recipient,

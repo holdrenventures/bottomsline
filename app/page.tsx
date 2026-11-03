@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import EmailSignup from './EmailSignup';
+import CustomShirtInquiry from './CustomShirtInquiry';
 import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
 import { collectionSlug, getCatalogProducts, productPriceLabel } from './data/products';
@@ -63,7 +64,10 @@ export default async function Home() {
           <h1>Skip the<br /><em>Small Talk.</em></h1>
           <p className="hero__lead">Wear something worth talking about.</p>
           <p className="hero__body">Bottom’s Line makes conversation-starting apparel for people who would rather be honest than boring.</p>
-          <a className="button button--primary" href="/shop">Shop the collection <span aria-hidden="true">↗</span></a>
+          <div className="hero__actions">
+            <a className="button button--primary" href="/shop">Shop the collection <span aria-hidden="true">↗</span></a>
+            <a className="button button--secondary" href="#custom">Custom shirts <span aria-hidden="true">↘</span></a>
+          </div>
         </div>
         <div className="hero__visual">
           <span className="hero__line" aria-hidden="true"><Clothespin /></span>
@@ -118,6 +122,18 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="custom-work section" id="custom">
+        <div className="shell custom-work__inner">
+          <div className="custom-work__copy">
+            <p className="eyebrow"><span /> Made for you</p>
+            <h2>Custom shirts.<br /><em>Your idea.</em></h2>
+            <p className="custom-work__lead">Love a design and want to make it your own? I can customize something you’ve seen or make a shirt from scratch.</p>
+            <p>Need a bigger order for your team, crew, or group? I can help with that, too. Tell me what you have in mind and I’ll be in touch.</p>
+          </div>
+          <CustomShirtInquiry />
+        </div>
+      </section>
+
       <section className="collections section">
         <div className="shell">
           <div className="section-heading section-heading--collections"><div><p className="eyebrow"><span /> Pick your poison</p><h2>Shop by<br /><em>mood.</em></h2></div><p>There’s a shirt for that.</p></div>
@@ -137,7 +153,7 @@ export default async function Home() {
       <footer>
         <div className="shell footer__top">
           <p>Still here? You’re probably<br /><em>our kind of people.</em></p>
-          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
+          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="#custom">Custom shirts</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
         </div>
         <div className="shell footer__bottom"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>© 2026 Bottom’s Line Clothing <span>Made with poor judgment.</span></p></div>
       </footer>

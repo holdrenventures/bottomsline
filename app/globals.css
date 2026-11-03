@@ -894,3 +894,13 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
   .custom-form__row { grid-template-columns:1fr; }
   .custom-form { gap:16px; padding:22px 18px; }
 }
+
+
+.custom-work__cta { display:grid; justify-items:start; gap:16px; margin-top:32px; }
+.custom-work__cta p { margin:0; color:#55514b; font-family:Georgia,'Times New Roman',serif; font-size:18px; line-height:1.5; }
+.custom-work--page { min-height:calc(100svh - 92px); display:grid; align-content:center; }
+.custom-work--page .custom-work__copy h1 { font-size:clamp(54px,6.2vw,90px); }
+.custom-work--page .custom-work__copy>p:not(.eyebrow) { max-width:54ch; }
+
+.custom-page-footer { padding-block:0; background:var(--coral); }
+.custom-page-footer .footer__bottom { color:var(--white); }

@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import EmailSignup from './EmailSignup';
-import CustomShirtInquiry from './CustomShirtInquiry';
 import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
 import { collectionSlug, getCatalogProducts, productPriceLabel } from './data/products';
@@ -66,7 +65,7 @@ export default async function Home() {
           <p className="hero__body">Bottom’s Line makes conversation-starting apparel for people who would rather be honest than boring.</p>
           <div className="hero__actions">
             <a className="button button--primary" href="/shop">Shop the collection <span aria-hidden="true">↗</span></a>
-            <a className="button button--secondary" href="#custom">Custom shirts <span aria-hidden="true">↘</span></a>
+            <a className="button button--secondary" href="/custom-shirts">Custom shirts <span aria-hidden="true">↗</span></a>
           </div>
         </div>
         <div className="hero__visual">
@@ -130,7 +129,7 @@ export default async function Home() {
             <p className="custom-work__lead">Love a design and want to make it your own? I can customize something you’ve seen or make a shirt from scratch.</p>
             <p>Need a bigger order for your team, crew, or group? I can help with that, too. Tell me what you have in mind and I’ll be in touch.</p>
           </div>
-          <CustomShirtInquiry />
+          <div className="custom-work__cta"><p>Tell me what you have in mind—one shirt or a whole group order.</p><a className="button button--primary" href="/custom-shirts">Start a custom order <span aria-hidden="true">↗</span></a></div>
         </div>
       </section>
 
@@ -153,7 +152,7 @@ export default async function Home() {
       <footer>
         <div className="shell footer__top">
           <p>Still here? You’re probably<br /><em>our kind of people.</em></p>
-          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="#custom">Custom shirts</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
+          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="/custom-shirts">Custom shirts</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
         </div>
         <div className="shell footer__bottom"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>© 2026 Bottom’s Line Clothing <span>Made with poor judgment.</span></p></div>
       </footer>

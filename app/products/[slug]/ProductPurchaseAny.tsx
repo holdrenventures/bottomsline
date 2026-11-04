@@ -170,7 +170,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       )}
 
       <fieldset className="size-selector">
-        <legend><span>Choose a size</span><ProductGuide selectedStyle={style} availableStyles={styles} externalGuideUrl={product.sizeGuideUrl} /></legend>
+        <legend><span>Choose a size</span><ProductGuide selectedStyle={style} selectedGarment={selectedColor?.garment} availableStyles={styles} externalGuideUrl={product.sizeGuideUrl} /></legend>
         <div>
           {sizesForStyle.map((option) => (
             <button
@@ -213,3 +213,4 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
     </div>
   );
 }
+

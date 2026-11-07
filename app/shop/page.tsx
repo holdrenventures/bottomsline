@@ -1,16 +1,20 @@
 import type { Metadata } from 'next';
 import SiteHeader from '../SiteHeader';
 import { collectionFromParam, getCatalogProducts } from '../data/products';
+import { SHOP_DESCRIPTION, SHOP_TITLE, pageMetadata } from '../lib/seo';
 import ShopCatalog from './ShopCatalog';
-
-export const metadata: Metadata = {
-  title: 'Shop the Line — Bottom’s Line Clothing',
-  description: 'Conversation-starting shirts. Say it with your chest.',
-};
 
 type ShopPageProps = {
   searchParams: Promise<{ collection?: string; q?: string; sort?: string }>;
 };
+
+export function generateMetadata(): Metadata {
+  return pageMetadata({
+    title: SHOP_TITLE,
+    description: SHOP_DESCRIPTION,
+    path: '/shop',
+  });
+}
 
 const validSorts = ['featured', 'newest', 'price-asc', 'price-desc', 'name'] as const;
 

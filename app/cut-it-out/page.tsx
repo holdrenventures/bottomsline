@@ -1,19 +1,22 @@
 import type { Metadata } from 'next';
 import SiteHeader from '../SiteHeader';
 import { getCatalogProducts } from '../data/products';
+import { CUT_META_DESCRIPTION, CUT_TITLE, SITE_ORIGIN, pageMetadata } from '../lib/seo';
 import CutItOutModeler from './CutItOutModeler';
 import DiyGuide from './DiyGuide';
 
-const SITE_URL = 'https://bottomslineclothing.com';
+const SITE_URL = SITE_ORIGIN;
 const PAGE_URL = `${SITE_URL}/cut-it-out`;
-const OG_IMAGE = `${SITE_URL}/og.png`;
 
 const description =
   'Free step-by-step DIY guide with diagrams and a live modeler that previews the cut on your own shirt. Turn any t-shirt into a muscle tank, drop-arm tank, or crop top — no sewing, one pair of scissors.';
 
 export const metadata: Metadata = {
-  title: 'How to Cut a T-Shirt: DIY Muscle Tee, Tank & Crop Top Guide',
-  description,
+  ...pageMetadata({
+    title: CUT_TITLE,
+    description: CUT_META_DESCRIPTION,
+    path: '/cut-it-out',
+  }),
   keywords: [
     'how to cut a t-shirt',
     'how to cut a shirt',
@@ -26,22 +29,6 @@ export const metadata: Metadata = {
     'cut off shirt DIY',
     'no-sew shirt modifications',
   ],
-  alternates: { canonical: PAGE_URL },
-  openGraph: {
-    type: 'article',
-    url: PAGE_URL,
-    title: 'How to Cut a T-Shirt: DIY Muscle Tee, Tank & Crop Top Guide',
-    description,
-    siteName: 'Bottom’s Line Clothing',
-    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'Cut It Out — DIY shirt cutting guide' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'How to Cut a T-Shirt: DIY Muscle Tee, Tank & Crop Top Guide',
-    description,
-    images: [OG_IMAGE],
-  },
-  robots: { index: true, follow: true },
 };
 
 // HowTo structured data — Google surfaces these as rich results for

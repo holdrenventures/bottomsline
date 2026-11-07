@@ -31,6 +31,7 @@ export type CatalogProduct = {
   name: string;
   slug: string;
   price: number;
+  currency?: string;
   editorialDescriptor: string;
   description: string;
   productAnnotation?: string | null;

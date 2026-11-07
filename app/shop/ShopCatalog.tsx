@@ -77,7 +77,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}
                     {product.catalogImage
-                      ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} />
+                      ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
                       : <Shirt art={product.art} tone={product.tone} />}
                   </a>
                   <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>

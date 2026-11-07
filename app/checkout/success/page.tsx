@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import SiteHeader from '../../SiteHeader';
 import { stripeClient } from '../../lib/stripe';
+import { CHECKOUT_DESCRIPTION, CHECKOUT_TITLE, pageMetadata } from '../../lib/seo';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import ClearPaidBag, { type VerifiedPurchase } from './ClearPaidBag';
 
@@ -39,10 +40,12 @@ async function verifiedPurchase(sessionId: string | undefined): Promise<Verified
   }
 }
 
-export const metadata: Metadata = {
-  title: 'Order Received — Bottom’s Line Clothing',
-  description: 'Your Bottom’s Line order has been received.',
-};
+export const metadata: Metadata = pageMetadata({
+  title: CHECKOUT_TITLE,
+  description: CHECKOUT_DESCRIPTION,
+  path: '/checkout/success',
+  index: false,
+});
 
 export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
   const purchase = await verifiedPurchase((await searchParams).session_id);

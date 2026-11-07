@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import { getProductBySlug, productPriceLabel } from '../../data/products';
+import { JsonLd } from '../../lib/JsonLd';
+import { productPageMetadata, productStructuredData } from '../../lib/seo';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
 import { ProductHeroImage, ProductHeroProvider } from './ProductHero';
@@ -12,15 +14,8 @@ type PageProps = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
-  if (!product) return { title: 'Not found — Bottom’s Line Clothing' };
-  const title = `${product.name} — Bottom’s Line Clothing`;
-  const description = product.description?.trim() || `${product.editorialDescriptor}. Say it with your chest.`;
-  return {
-    title,
-    description,
-    openGraph: { title, description, images: product.catalogImage ? [{ url: product.catalogImage }] : [] },
-    twitter: { card: 'summary', title, description, images: product.catalogImage ? [product.catalogImage] : [] },
-  };
+  if (!product) return { title: 'Not found — Bottom’s Line Clothing', robots: { index: false, follow: false } };
+  return productPageMetadata(product, productPriceLabel(product));
 }
 
 export default async function ProductPage({ params }: PageProps) {
@@ -39,6 +34,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <>
+      <JsonLd data={productStructuredData(product)} />
       <SiteHeader />
       <main className="product-page">
         <div className="shell product-back-row">

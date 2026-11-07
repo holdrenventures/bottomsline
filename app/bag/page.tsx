@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import SiteHeader from '../SiteHeader';
+import { BAG_DESCRIPTION, BAG_TITLE, pageMetadata } from '../lib/seo';
 import BagClient from './BagClient';
 
-export const metadata: Metadata = {
-  title: 'Your Bag — Bottom’s Line Clothing',
-  description: 'The shirts you were bold enough to choose.',
-};
+export const metadata: Metadata = pageMetadata({
+  title: BAG_TITLE,
+  description: BAG_DESCRIPTION,
+  path: '/bag',
+  index: false,
+});
 
 export default function BagPage() {
   return (

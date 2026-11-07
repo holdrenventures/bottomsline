@@ -130,6 +130,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     name: product.name,
     slug: product.slug,
     price: product.base_price_cents / 100,
+    currency: product.currency?.toLowerCase() || 'usd',
     editorialDescriptor: product.editorial_descriptor ?? 'Conversation Starter',
     description: product.description ?? '',
     productAnnotation: product.product_annotation,

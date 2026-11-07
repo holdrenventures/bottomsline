@@ -2,21 +2,16 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
 import { getProductBySlug, productPriceLabel } from '../../data/products';
+import { JsonLd } from '../../lib/JsonLd';
+import { productPageMetadata, productStructuredData } from '../../lib/seo';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
 import ProductPurchase from './ProductPurchase';
 
 export async function generateMetadata(): Promise<Metadata> {
   const product = await getProductBySlug('support-local-bottoms');
-  const image = product?.colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? product?.catalogImage ?? null;
-  const title = 'Support Local Bottoms — Bottom’s Line Clothing';
-  const description = 'Support Local Bottoms. Community outreach you can wear.';
-  return {
-    title,
-    description,
-    openGraph: { title, description, images: image ? [{ url: image }] : [] },
-    twitter: { card: 'summary_large_image', title, description, images: image ? [image] : [] },
-  };
+  if (!product) return { title: 'Not found — Bottom’s Line Clothing', robots: { index: false, follow: false } };
+  return productPageMetadata(product, productPriceLabel(product));
 }
 
 export default async function SupportLocalBottomsPage() {
@@ -27,6 +22,7 @@ export default async function SupportLocalBottomsPage() {
 
   return (
     <>
+      <JsonLd data={productStructuredData(product)} />
       <SiteHeader />
       <main className="product-page">
         <div className="shell product-back-row"><a href="/shop">← Back to the line</a><span>Community Outreach / 001</span></div>

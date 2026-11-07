@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import CustomShirtInquiry from '../CustomShirtInquiry';
+import { CUSTOM_DESCRIPTION, CUSTOM_TITLE, pageMetadata } from '../lib/seo';
 import SiteHeader from '../SiteHeader';
 
-export const metadata: Metadata = {
-  title: 'Custom Shirts — Bottom’s Line Clothing',
-  description: 'Customize a Bottom’s Line design or start from scratch. Custom team and group shirt orders are welcome.',
-};
+export const metadata: Metadata = pageMetadata({
+  title: CUSTOM_TITLE,
+  description: CUSTOM_DESCRIPTION,
+  path: '/custom-shirts',
+});
 
 export default function CustomShirtsPage() {
   return (

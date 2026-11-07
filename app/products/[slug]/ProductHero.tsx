@@ -19,5 +19,5 @@ export function ProductHeroProvider({ initialImage, initialAlt, children }: { in
 export function ProductHeroImage({ fallback }: { fallback: ReactNode }) {
   const hero = useProductHero();
   if (!hero?.image) return <>{fallback}</>;
-  return <img className="product-detail__image" src={hero.image} alt={hero.alt} />;
+  return <img className="product-detail__image" src={hero.image} alt={hero.alt} fetchPriority="high" decoding="async" />;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CART_UPDATED_EVENT, clearCart, readCart, removeCartItem, updateCartItem, type CartItem } from '../lib/cart';
+import { storefrontImage } from '../lib/storefront-images';
 import { trackMeta } from '../lib/meta-pixel';
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -100,11 +101,13 @@ export default function BagClient() {
           <span>{String(items.length).padStart(2, '0')} selections</span>
           <button type="button" onClick={() => setItems(clearCart())}>Clear the evidence</button>
         </div>
-        {items.map((item, index) => (
+        {items.map((item, index) => {
+          const mockup = storefrontImage(item.colorMockup);
+          return (
           <article className="bag-item" key={`${item.productId}-${item.variantId}-${item.colorId}-${item.size}-${index}`}>
             <a className="bag-item__visual" href={`/products/${item.slug}`} aria-label={`View ${item.name}`}>
-              {item.colorMockup
-                ? <img src={item.colorMockup} alt="" />
+              {mockup
+                ? <img src={mockup} alt="" />
                 : <span>{item.name.split(/\s+/).slice(0, 3).join('\n')}</span>}
             </a>
             <div className="bag-item__copy">
@@ -122,7 +125,8 @@ export default function BagClient() {
             </div>
             <p className="bag-item__price">{money.format(item.unitPrice * item.quantity)}</p>
           </article>
-        ))}
+          );
+        })}
         <a className="bag-continue" href="/shop">← Keep looking. We won’t judge.</a>
       </section>
 

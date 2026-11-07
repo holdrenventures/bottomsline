@@ -34,6 +34,10 @@ Tracked migrations, in order:
 9. `202610140002_design_garments.sql` — permits SS3000 crewneck and SS4500
    hoodie placements in the Design Adjuster and stores a separate placement
    for each design + garment combination.
+10. `202611070001_r2_catalog_images.sql` — NOT applied yet. Copies each
+    Cloudinary `catalog_image` / `mockup_url` into a `*_cloudinary` backup
+    column and points the live column at the archived R2 WebP. Review and run
+    it in the SQL editor. Roll back with `scripts/rollback-r2-catalog-images.sql`.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor

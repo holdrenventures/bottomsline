@@ -1,4 +1,7 @@
 // Cloudinary helpers for the Bottom's Line design adjuster.
+// The public storefront does not request these URLs. Archived renders are
+// served from R2 via app/lib/cloudinary-image-manifest.json. This module still
+// builds live transform URLs for new mockups in the admin design editor.
 // One design asset can have a separate placement on each garment color.
 
 import CATALOG from "./blc-colors.json";

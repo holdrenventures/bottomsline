@@ -5,7 +5,7 @@ import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
 import { collectionSlug, getCatalogProducts, productPriceLabel } from './data/products';
 import { pinShift, pinSlant } from './lib/pin-shift';
-import { trimMockup } from './lib/cloudinary';
+import { storefrontImage } from './lib/storefront-images';
 import { HOME_DESCRIPTION, HOME_TITLE, pageMetadata } from './lib/seo';
 
 export const metadata: Metadata = pageMetadata({
@@ -24,7 +24,7 @@ const collections = [
   { name: 'New Drops', number: '07', note: 'Freshly inappropriate.' },
 ];
 
-const originStoryImage = 'https://res.cloudinary.com/bihiyho3/image/upload/l_designs:spread-legs-mugtl36x,fl_relative,w_0.3859,g_north,x_-0.0007,y_0.2681/e_trim/blanks/tultex202/202_navy_front.png';
+const originStoryImage = storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/l_designs:spread-legs-mugtl36x,fl_relative,w_0.3859,g_north,x_-0.0007,y_0.2681/e_trim/blanks/tultex202/202_navy_front.png') ?? undefined;
 
 function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snapshot' }: { imageSrc?: string; imageAlt?: string }) {
   return (
@@ -76,7 +76,7 @@ export default async function Home() {
         <div className="hero__visual">
           <span className="hero__line" aria-hidden="true"><Clothespin /></span>
           <span className="scribble scribble--top">GOOD FROM<br />EVERY ANGLE</span>
-          <img className="hero-shirt" src={trimMockup('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png') ?? undefined} alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" fetchPriority="high" decoding="async" />
+          <img className="hero-shirt" src={storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png') ?? undefined} alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" fetchPriority="high" decoding="async" />
           <span className="scribble scribble--bottom">Wear responsibly.<br />Or don’t.</span>
         </div>
       </section>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type GuideTab = 'fabric' | 'fit' | 'care';
-type GuideKind = 'tee' | 'tank' | 'other';
+type GuideKind = 'tee' | 'tank' | 'crewneck' | 'other';
 
 const teeMeasurements = [
   ['XXS', '15', '25'], ['XS', '16', '26'], ['S', '18', '28'], ['M', '20', '29'],
@@ -16,21 +16,30 @@ const tankMeasurements = [
   ['L', '21', '30.25'], ['XL', '23', '31.25'], ['2XL', '24', '32.25'],
 ];
 
+// Independent Trading Co. SS3000 flat garment measurements, in inches.
+const ss3000Measurements = [
+  ['S', '20.5', '26.5'], ['M', '22', '28'], ['L', '23.5', '29.5'],
+  ['XL', '25', '31'], ['2XL', '26.5', '32.5'], ['3XL', '28', '34'],
+];
+
 function guideKind(style: string | null): GuideKind {
   const value = style?.toLowerCase() ?? '';
   if (value.includes('tank')) return 'tank';
-  if (value.includes('tee') || value.includes('t-shirt') || value.includes('tshirt')) return 'tee';
+  if (/\b(?:sweatshirt|crewneck|crew neck)\b/.test(value)) return 'crewneck';
+  if (/\b(?:tee|t-shirt|tshirt)\b/.test(value)) return 'tee';
   return 'other';
 }
 
-function guideLabel(kind: GuideKind, fallback: string | null) {
+function guideLabel(kind: GuideKind, fallback: string | null, isSs3000: boolean) {
   if (kind === 'tee') return 'T-shirt / Tultex 202';
   if (kind === 'tank') return 'Tank / Tultex 105';
+  if (kind === 'crewneck') return isSs3000 ? 'Crewneck sweatshirt / Independent Trading Co. SS3000' : 'Crewneck sweatshirt';
   return fallback || 'Garment details';
 }
 
-export default function ProductGuide({ selectedStyle, availableStyles, externalGuideUrl }: {
+export default function ProductGuide({ selectedStyle, selectedGarment, availableStyles, externalGuideUrl }: {
   selectedStyle: string | null;
+  selectedGarment?: string | null;
   availableStyles: string[];
   externalGuideUrl?: string | null;
 }) {
@@ -38,7 +47,8 @@ export default function ProductGuide({ selectedStyle, availableStyles, externalG
   const [tab, setTab] = useState<GuideTab>('fit');
   const [style, setStyle] = useState<string | null>(selectedStyle);
   const kind = guideKind(style);
-  const measurementRows = kind === 'tank' ? tankMeasurements : teeMeasurements;
+  const isSs3000 = kind === 'crewneck' && selectedGarment?.toLowerCase() === 'ss3000';
+  const measurementRows = isSs3000 ? ss3000Measurements : kind === 'tank' ? tankMeasurements : teeMeasurements;
   const guideStyles = useMemo(() => {
     const recognized = availableStyles.filter((option) => guideKind(option) !== 'other');
     return Array.from(new Map(recognized.map((option) => [guideKind(option), option])).values());
@@ -68,10 +78,10 @@ export default function ProductGuide({ selectedStyle, availableStyles, externalG
           </header>
 
           {guideStyles.length > 1 && <div className="product-guide__styles" aria-label="Garment guide">
-            {guideStyles.map((option) => <button type="button" key={option} className={guideKind(option) === kind ? 'is-selected' : ''} aria-pressed={guideKind(option) === kind} onClick={() => setStyle(option)}>{guideKind(option) === 'tank' ? 'Tank' : 'T-shirt'}</button>)}
+            {guideStyles.map((option) => <button type="button" key={option} className={guideKind(option) === kind ? 'is-selected' : ''} aria-pressed={guideKind(option) === kind} onClick={() => setStyle(option)}>{guideKind(option) === 'tank' ? 'Tank' : guideKind(option) === 'crewneck' ? 'Sweatshirt' : 'T-shirt'}</button>)}
           </div>}
 
-          <p className="product-guide__garment">{guideLabel(kind, style)}</p>
+          <p className="product-guide__garment">{guideLabel(kind, style, isSs3000)}</p>
           <div className="product-guide__tabs" role="tablist" aria-label="Product guide sections">
             {(['fabric', 'fit', 'care'] as GuideTab[]).map((option) => <button type="button" role="tab" key={option} aria-selected={tab === option} className={tab === option ? 'is-selected' : ''} onClick={() => setTab(option)}>{option === 'fit' ? 'Size & fit' : option}</button>)}
           </div>
@@ -79,14 +89,17 @@ export default function ProductGuide({ selectedStyle, availableStyles, externalG
           <div className="product-guide__content">
             {tab === 'fabric' && kind === 'tee' && <><h3>Soft, lightweight cotton jersey.</h3><p>4.5 oz. ring-spun cotton jersey. Solid colors are 100% cotton; Heather Grey is 90% cotton and 10% polyester; other heathers are 50% cotton and 50% polyester. Pre-washed to help minimize shrinkage.</p><p className="product-guide__aside">The shirt has already relaxed. Your turn.</p></>}
             {tab === 'fabric' && kind === 'tank' && <><h3>Soft, lightweight cotton jersey.</h3><p>4.5 oz. ring-spun cotton jersey. Solid colors are 100% cotton; Heather Grey is 90% cotton and 10% polyester. Pre-washed, with ribbed binding at the neckline and armholes.</p><p className="product-guide__aside">Sleeves were not invited.</p></>}
+            {tab === 'fabric' && isSs3000 && <><h3>Midweight fleece.</h3><p>8.5 oz. cotton/polyester blend fleece. Solid and camo colors are 80% cotton and 20% polyester; heather blends vary by color.</p></>}
+            {tab === 'fabric' && kind === 'crewneck' && !isSs3000 && <><h3>Garment details are being confirmed.</h3><p>Check the specific blank before relying on a fabric claim.</p></>}
             {tab === 'fabric' && kind === 'other' && <><h3>Garment details are being confirmed.</h3><p>This style needs its exact blank and fabric specification before we publish a claim. Accuracy remains hotter than guessing.</p></>}
 
-            {tab === 'fit' && kind !== 'other' && <>
-              <h3>{kind === 'tank' ? 'Unisex tank fit.' : 'Unisex short-sleeve fit.'}</h3>
+            {tab === 'fit' && (kind === 'tee' || kind === 'tank' || isSs3000) && <>
+              <h3>{kind === 'tank' ? 'Unisex tank fit.' : isSs3000 ? 'Unisex standard crewneck fit.' : 'Unisex short-sleeve fit.'}</h3>
               <p>Measure a garment you already like, laid flat and unstretched. These are garment measurements in inches, not body measurements. Width is measured straight across, not around.</p>
               <div className="product-guide__table-wrap"><table><thead><tr><th>Size</th><th>Width</th><th>Length</th></tr></thead><tbody>{measurementRows.map(([size, width, length]) => <tr key={size}><th>{size}</th><td>{width}&quot;</td><td>{length}&quot;</td></tr>)}</tbody></table></div>
               <p className="product-guide__aside">Between sizes? Compare both measurements. Confidence is attractive. A tape measure is useful.</p>
             </>}
+            {tab === 'fit' && kind === 'crewneck' && !isSs3000 && <><h3>Measure before committing.</h3><p>This sweatshirt’s exact blank and chart have not been added yet.</p></>}
             {tab === 'fit' && kind === 'other' && <><h3>Measure before committing.</h3><p>This style’s exact chart has not been added yet. Use the manufacturer guide when available, or compare the listed garment measurements with something you already own.</p></>}
 
             {tab === 'care' && <><h3>Get dirty. Wash gently.</h3><p>Turn inside out and machine wash cold with similar colors on a gentle cycle. Use mild detergent. Avoid bleach and fabric softener. Air-dry when possible; otherwise use low heat only when the garment and print instructions allow it. Do not iron directly over the design.</p><p className="product-guide__aside">Pre-washed means less shrinkage, not permission to cook it.</p></>}

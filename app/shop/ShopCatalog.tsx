@@ -4,6 +4,21 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Clothespin, Shirt } from '../BrandVisuals';
 import { catalogCollections, productPriceLabel, type CatalogProduct } from '../data/products';
 import { pinShift, pinSlant } from '../lib/pin-shift';
+import { styleName, variantIsAvailable } from '../products/product-selection';
+
+function StyleStackIcon() {
+  return <svg viewBox="0 0 30 26" fill="none" aria-hidden="true" focusable="false">
+    <path d="m7 5 3.5-2 2.2 1.5h4.6L19.5 3 23 5l3 4-3.4 2.4-1.3-1.5V23H8.7V9.9l-1.3 1.5L4 9l3-4Z" />
+    <path d="m4 8-2 3 3.5 2.2L7 11.8V25h12" />
+  </svg>;
+}
+
+function availableStyles(product: CatalogProduct) {
+  const styles = product.variants?.length
+    ? product.variants.filter(variantIsAvailable).map((variant) => variant.style)
+    : product.colors.filter((color) => color.active).map(styleName);
+  return [...new Set(styles.filter(Boolean))];
+}
 
 type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'name';
 
@@ -65,20 +80,23 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
       </div>
 
       <div className="catalog-count"><span>{String(visibleProducts.length).padStart(2, '0')}</span> shirts on the line</div>
+      {visibleProducts.some((product) => availableStyles(product).length > 1) && <p className="catalog-style-key"><StyleStackIcon /> <span>More ways to wear it — this mark means a design comes in multiple garment styles.</span></p>}
 
       {rows.length ? rows.map((row, rowIndex) => (
         <div key={`${collection}-${query}-${sort}-${rowIndex}`}>
           <div className="catalog-line">
             {row.map((product, productIndex) => {
               const href = `/products/${product.slug}`;
+              const styles = availableStyles(product);
               return (
                 <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg`, '--pin-shift': pinShift(product.slug), '--pin-slant': pinSlant(product.slug) } as CSSProperties} key={product.slug}>
-                  <a className="catalog-product__visual" href={href} aria-label={`Shop ${product.name}`}>
+                  <a className="catalog-product__visual" href={href} aria-label={`Shop ${product.name}${styles.length > 1 ? `, available in ${styles.join(', ')}` : ''}`}>
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}
                     {product.catalogImage
                       ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
                       : <Shirt art={product.art} tone={product.tone} />}
+                    {styles.length > 1 && <span className="catalog-product__styles" title={`Available in ${styles.join(', ')}`}><StyleStackIcon /><span>{styles.length} styles</span></span>}
                   </a>
                   <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>
                   <h2><a href={href}>{product.name}</a></h2>

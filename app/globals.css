@@ -292,6 +292,11 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .catalog-tools input::placeholder { color:#777; }
 .catalog-count { margin:42px 0 36px; color:var(--muted); font-size:9px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; }
 .catalog-count span { margin-right:9px; color:var(--coral); }
+.catalog-style-key { display:flex; align-items:center; gap:8px; margin:-24px 0 36px; color:#aba49b; font-family:var(--serif); font-size:13px; font-style:italic; line-height:1.35; }
+.catalog-style-key svg,.catalog-product__styles svg { width:21px; height:19px; flex:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:round; stroke-linecap:round; }
+.catalog-style-key svg { color:var(--coral); }
+.catalog-product__styles { position:absolute; z-index:3; right:5%; bottom:10px; display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid #e8d9c9; border-radius:3px; background:var(--paper); color:var(--ink); font-size:8px; font-weight:900; letter-spacing:.7px; line-height:1; text-transform:uppercase; box-shadow:1px 2px 0 #0003; }
+.catalog-product__styles svg { width:18px; height:17px; color:var(--coral); }
 .catalog-line { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(18px,2.4vw,38px); margin-bottom:clamp(86px,9vw,132px); }
 .catalog-line::before { content:""; position:absolute; z-index:0; top:14px; left:-3vw; width:calc(100% + 6vw); height:2px; background:#b7a998; box-shadow:0 1px 0 rgba(255,255,255,.1); transform:rotate(-.1deg); }
 .catalog-product { position:relative; min-width:0; }

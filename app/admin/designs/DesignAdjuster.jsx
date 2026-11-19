@@ -36,9 +36,9 @@ function ArtLayer({ url, placement, aspect, canvasRatio, handle, onMove, onResiz
 
 /**
  * The browser previews R2 originals. Cloudinary runs once per saved color.
- * @param {{products?: Array<{name:string,slug:string,active:boolean,product_variants?:Array<{style:string,active:boolean}>}>, lockedProduct?:string,initialGarment?:string,onCreate:(input:{name:string,garment:string,priceCents:number,sizes:string[]})=>Promise<{slug:string}>, onUpload:(file:File,slug:string)=>Promise<{artworkUrl:string,assetSlug?:string}>, onSave:(value:unknown)=>Promise<unknown>, onLoad:(productSlug:string,garment:string)=>Promise<{slug:string,artworkUrl?:string,artworkUrls?:Record<string,string>,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle?:number,brightness?:number}>}>}} props
+ * @param {{products?: Array<{name:string,slug:string,active:boolean,product_variants?:Array<{style:string,active:boolean}>}>, lockedProduct?:string,saveBlockedReason?:string,initialGarment?:string,onCreate:(input:{name:string,garment:string,priceCents:number,sizes:string[]})=>Promise<{slug:string}>, onUpload:(file:File,slug:string)=>Promise<{artworkUrl:string,assetSlug?:string}>, onSave:(value:unknown)=>Promise<unknown>, onLoad:(productSlug:string,garment:string)=>Promise<{slug:string,artworkUrl?:string,artworkUrls?:Record<string,string>,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle?:number,brightness?:number}>}>}} props
  */
-export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad, onCreate, lockedProduct = '', initialGarment = 'tee' }) {
+export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad, onCreate, lockedProduct = '', saveBlockedReason = '', initialGarment = 'tee' }) {
   const [garment, setGarment] = useState(initialGarment);
   const [slug, setSlug] = useState('');
   const [productSlug, setProductSlug] = useState(lockedProduct);
@@ -70,6 +70,7 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
   const palette = COLORS[garment];
   const canvasRatio = GARMENTS[garment].aspect || 2 / 3;
   const defaults = garment === 'hat' ? HAT_DEFAULT : SHIRT_DEFAULT;
+  const effectiveProductSlug = lockedProduct || productSlug;
   const placementFor = (token) => colorPlacement(placements[garment], defaults, token);
   const current = placementFor(previewColor);
   const useAlternate = alternateColors[garment]?.[previewColor] === true;
@@ -108,10 +109,10 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
   }
 
   async function loadSaved() {
-    if (!productSlug) return;
+    if (!effectiveProductSlug) return;
     setBusy(true); setError('');
     try {
-      const result = await onLoad(productSlug, garment);
+      const result = await onLoad(effectiveProductSlug, garment);
       if (!result?.slug || !result?.colors?.length) throw new Error('No saved front mockups found for this garment.');
       setLocalUrl(''); setSourceUrl(result.artworkUrl || '');
       const alternate = Object.values(result.artworkUrls || {}).find((url) => url && url !== result.artworkUrl) || '';
@@ -216,12 +217,13 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
   async function handleSave() {
     setBusy(true); setError('');
     try {
+      if (saveBlockedReason) throw new Error(saveBlockedReason);
       if (!sourceUrl) throw new Error('Upload the first PNG before saving.');
       const colors = palette.filter((color) => selected.has(color.token)).map((color) => color.token);
       const byColor = Object.fromEntries(colors.map((token) => [token, normalized(placementFor(token))]));
       if (colors.some((token) => alternateColors[garment]?.[token]) && !alternateUrl) throw new Error('Upload the second PNG before saving its assigned colors.');
       const artworkUrls = Object.fromEntries(colors.map((token) => [token, alternateColors[garment]?.[token] ? alternateUrl : sourceUrl]));
-      const result = await onSave({ slug, artworkUrl: sourceUrl, artworkUrls, productSlug: productSlug || null, garment, placement: normalized(current), placements: byColor, colors });
+      const result = await onSave({ slug, artworkUrl: sourceUrl, artworkUrls, productSlug: effectiveProductSlug || null, garment, placement: normalized(current), placements: byColor, colors });
       setRenderedUrls(result?.mockupUrls || {}); setSaved(true);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to save design.'); }
     finally { setBusy(false); }
@@ -251,8 +253,8 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
         <span style={S.help}>Creates a draft with this garment’s sizes and price. Your artwork and placements stay here. Save the mockups, then publish the product from Product Desk.</span>
         <button type="button" disabled={busy} onClick={createProduct} style={S.load}>Create draft and use it</button>
       </div>}
-      <button type="button" onClick={loadSaved} disabled={!productSlug || busy} style={S.load}>Load saved front mockups</button>
-      <div style={S.row}><span style={S.label}>Copy placement from</span><select value={copySource} onChange={(event) => setCopySource(event.target.value)} style={S.select}><option value="">Choose another product…</option>{eligibleProducts.filter((product) => product.slug !== productSlug).map((product) => <option key={product.slug} value={product.slug}>{product.name}</option>)}</select><button type="button" onClick={copyPlacement} disabled={!copySource || busy} style={S.smallButton}>Copy fit</button><span style={S.help}>Copies position, size, tilt and brightness for this garment. Your PNGs stay assigned.</span></div><p style={S.help}>{garment === 'hat' ? 'Hats need their own standalone product. Create a hat-only product with Yupoong 6606, One Size, and a price in ' : 'To add a new garment to this product, add its sizes, price, and Tultex blank in '}{lockedProduct ? 'the garment options above' : <a href="/admin">Product Desk</a>}{garment === 'hat' ? ' first.' : ' first. Saving here adds its selected colors alongside the other garment choices.'}</p>
+      <button type="button" onClick={loadSaved} disabled={!effectiveProductSlug || busy} style={S.load}>Load saved front mockups</button>
+      <div style={S.row}><span style={S.label}>Copy placement from</span><select value={copySource} onChange={(event) => setCopySource(event.target.value)} style={S.select}><option value="">Choose another product…</option>{eligibleProducts.filter((product) => product.slug !== effectiveProductSlug).map((product) => <option key={product.slug} value={product.slug}>{product.name}</option>)}</select><button type="button" onClick={copyPlacement} disabled={!copySource || busy} style={S.smallButton}>Copy fit</button><span style={S.help}>Copies position, size, tilt and brightness for this garment. Your PNGs stay assigned.</span></div><p style={S.help}>{garment === 'hat' ? 'Hats need their own standalone product. Create a hat-only product with Yupoong 6606, One Size, and a price in ' : 'To add a new garment to this product, add its sizes, price, and Tultex blank in '}{lockedProduct ? 'the garment options above' : <a href="/admin">Product Desk</a>}{garment === 'hat' ? ' first.' : ' first. Saving here adds its selected colors alongside the other garment choices.'}</p>
       <div ref={stageRef} style={{ ...S.stage, aspectRatio: String(canvasRatio) }} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}>
         <img src={blankUrl(garment, previewColor)} alt={`${palette.find((color) => color.token === previewColor)?.label || previewColor} front blank`} style={S.blank} draggable={false} />
         <ArtLayer url={art} placement={current} aspect={artAspect} canvasRatio={canvasRatio} handle onMove={(event) => startPointer(event, 'move')} onResize={(event) => startPointer(event, 'resize')} />
@@ -271,8 +273,9 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
       <div style={S.swatches}>{palette.map((color) => <button type="button" key={color.token} title={color.label} aria-label={`${color.label}${selected.has(color.token) ? ' selected' : ''}`} onClick={() => { setSelected((old) => { const next = new Set(old); if (next.has(color.token)) next.delete(color.token); else next.add(color.token); return next; }); setPreviewColor(color.token); setSaved(false); }} style={{ ...S.swatch, background: color.hex, backgroundImage: garment === 'hat' ? `url(${blankUrl(garment, color.token)})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', outline: selected.has(color.token) ? '2px solid #ff4f3d' : '1px solid #ddd' }} />)}</div>
       <p style={S.help}>{saved && Object.keys(renderedUrls).length ? 'Saved mockups below are the exact R2 images now used by the storefront.' : 'Preview uses the R2 originals. Saving renders only the selected front colors.'}</p>
       <div style={S.grid}>{localUrl || sourceUrl || alternateLocalUrl || alternateUrl ? selectedColors.map((color) => <button type="button" key={color.token} onClick={() => setPreviewColor(color.token)} aria-label={`Edit placement on ${color.label}`} style={{ ...S.cell, outline: previewColor === color.token ? '2px solid #ff4f3d' : 'none' }}><div style={{ ...S.thumbnail, aspectRatio: String(canvasRatio) }}>{saved && renderedUrls[color.token] ? <img src={renderedUrls[color.token]} alt="" style={{ ...S.blank, objectFit: 'contain' }} loading="lazy" /> : <><img src={blankUrl(garment, color.token)} alt="" style={S.blank} loading="lazy" /><ArtLayer url={artFor(color.token)} placement={placementFor(color.token)} aspect={aspectFor(color.token)} canvasRatio={canvasRatio} /><Foreground garment={garment} color={color.token} /></>}</div><span style={S.cellLabel}>{color.label}</span></button>) : <p style={S.help}>Upload a PNG or load a saved design to preview its selected colors.</p>}</div>
+      {saveBlockedReason && <p style={S.help}>{saveBlockedReason}</p>}
       {error && <p role="alert" style={S.error}>{error}</p>}
-      <button type="button" onClick={handleSave} disabled={busy || !sourceUrl || !slug || !selected.size} style={{ ...S.save, opacity: busy || !sourceUrl || !slug || !selected.size ? 0.5 : 1 }}>{busy ? 'Working…' : saved ? 'Saved ✓' : 'Save front mockups'}</button>
+      <button type="button" onClick={handleSave} disabled={busy || !!saveBlockedReason || !sourceUrl || !slug || !selected.size} style={{ ...S.save, opacity: busy || saveBlockedReason || !sourceUrl || !slug || !selected.size ? 0.5 : 1 }}>{busy ? 'Working…' : saveBlockedReason ? 'Save product changes first' : saved ? 'Saved ✓' : 'Save front mockups'}</button>
     </div>
   </div>;
 }

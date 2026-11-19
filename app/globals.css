@@ -293,10 +293,11 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .catalog-count { margin:42px 0 36px; color:var(--muted); font-size:9px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; }
 .catalog-count span { margin-right:9px; color:var(--coral); }
 .catalog-style-key { display:flex; align-items:center; gap:8px; margin:-24px 0 36px; color:#aba49b; font-family:var(--serif); font-size:13px; font-style:italic; line-height:1.35; }
-.catalog-style-key svg,.catalog-product__styles svg { width:21px; height:19px; flex:none; stroke:currentColor; stroke-width:1.5; stroke-linejoin:round; stroke-linecap:round; }
-.catalog-style-key svg { color:var(--coral); }
-.catalog-product__styles { position:absolute; z-index:3; right:5%; bottom:10px; display:inline-flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid #e8d9c9; border-radius:3px; background:var(--paper); color:var(--ink); font-size:8px; font-weight:900; letter-spacing:.7px; line-height:1; text-transform:uppercase; box-shadow:1px 2px 0 #0003; }
-.catalog-product__styles svg { width:18px; height:17px; color:var(--coral); }
+.catalog-style-key__sample { display:inline-flex; gap:2px; flex:none; color:#bc6559; }
+.catalog-style-key svg,.catalog-product__styles svg { width:19px; height:20px; flex:none; stroke:currentColor; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
+.catalog-product__styles { position:absolute; z-index:3; right:5%; bottom:10px; display:inline-flex; align-items:center; gap:3px; padding:4px 6px; border:1px solid #d8c8bc; border-radius:3px; background:rgba(243,240,233,.94); color:#bc6559; box-shadow:1px 2px 0 #0002; }
+.catalog-product__styles>span { display:inline-flex; }
+.catalog-product__styles svg { width:19px; height:20px; }
 .catalog-line { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(18px,2.4vw,38px); margin-bottom:clamp(86px,9vw,132px); }
 .catalog-line::before { content:""; position:absolute; z-index:0; top:14px; left:-3vw; width:calc(100% + 6vw); height:2px; background:#b7a998; box-shadow:0 1px 0 rgba(255,255,255,.1); transform:rotate(-.1deg); }
 .catalog-product { position:relative; min-width:0; }
@@ -988,6 +989,12 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 
 /* A little garland on the existing clothesline, without changing its shape. */
 .hero__line--holiday::after { content:''; position:absolute; left:0; right:0; top:0; height:20px; background:url('/holiday-garland.svg') repeat-x left top / 112px 20px; opacity:.9; }
+.site-header::after { content:''; position:absolute; left:0; right:0; bottom:-13px; height:13px; background:url('/holiday-garland.svg') repeat-x left top / 84px 15px; opacity:.52; pointer-events:none; }
+.shop-intro { position:relative; }
+.shop-intro::before { content:''; position:absolute; top:24px; right:28px; width:64px; height:74px; background:url('/holiday-elf.svg') center / contain no-repeat; opacity:.83; transform:rotate(5deg); pointer-events:none; }
+.catalog-line::after { content:''; position:absolute; z-index:0; top:14px; left:-3vw; width:calc(100% + 6vw); height:15px; background:url('/holiday-garland.svg') repeat-x left top / 84px 15px; opacity:.65; pointer-events:none; }
+.product-detail__line::after { content:''; position:absolute; left:0; right:0; top:0; height:18px; background:url('/holiday-garland.svg') repeat-x left top / 100px 18px; opacity:.75; pointer-events:none; }
+.product-detail__info .eyebrow::after { content:'✦'; margin-left:2px; color:#bc6559; font-size:13px; line-height:1; }
 .holiday-home { padding-top:clamp(52px,6vw,84px); padding-bottom:clamp(32px,4vw,60px); }
 .holiday-home__heading { align-items:end; }
 .holiday-home__heading h2 { font-size:clamp(56px,7.2vw,106px); }
@@ -1002,3 +1009,4 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .holiday-home__all { display:inline-flex; gap:16px; margin-top:22px; padding-bottom:7px; border-bottom:1px solid var(--coral); color:var(--paper); font-size:11px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; }
 .holiday-home__all span { color:var(--coral); }
 @media (max-width:680px) { .holiday-home__heading { align-items:start; } .holiday-home__aside { margin-left:0; } .holiday-home__track .product-card { width:230px; } }
+@media (max-width:680px) { .shop-intro::before { top:16px; right:4px; width:46px; height:53px; } .catalog-product__styles { right:2%; bottom:5px; gap:1px; padding:3px 4px; } .catalog-product__styles svg { width:16px; height:17px; } }

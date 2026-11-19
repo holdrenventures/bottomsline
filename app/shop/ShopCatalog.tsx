@@ -1,16 +1,26 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Clothespin, Shirt } from '../BrandVisuals';
 import { catalogCollections, productPriceLabel, type CatalogProduct } from '../data/products';
 import { pinShift, pinSlant } from '../lib/pin-shift';
 import { styleName, variantIsAvailable } from '../products/product-selection';
 
-function StyleStackIcon() {
-  return <svg viewBox="0 0 30 26" fill="none" aria-hidden="true" focusable="false">
-    <path d="m7 5 3.5-2 2.2 1.5h4.6L19.5 3 23 5l3 4-3.4 2.4-1.3-1.5V23H8.7V9.9l-1.3 1.5L4 9l3-4Z" />
-    <path d="m4 8-2 3 3.5 2.2L7 11.8V25h12" />
-  </svg>;
+function GarmentIcon({ style }: { style: string }) {
+  const name = style.toLowerCase();
+  let outline: ReactNode;
+  if (name.includes('tank')) {
+    outline = <path d="M8 2h3l1 4h8l1-4h3l3 5-2 5-3-2v21H10V10l-3 2-2-5 3-5Z" />;
+  } else if (name.includes('hood')) {
+    outline = <><path d="M10 4c1-3 11-3 12 0l2 4 4 4-3 5-3-2v16H10V15l-3 2-3-5 4-4 2-4Z" /><path d="M10 4c1 6 11 6 12 0M14 9l-1 9m6-9 1 9M12 24h8" /></>;
+  } else if (name.includes('sweat') || name.includes('sweater') || name.includes('crew')) {
+    outline = <><path d="M9 4h4c1 3 5 3 6 0h4l6 5-3 8-4-2v16H10V15l-4 2-3-8 6-5Z" /><path d="M10 27h12M3 14l4 1m18 0 4-1" /></>;
+  } else if (name.includes('hat') || name.includes('cap')) {
+    outline = <><path d="M7 18v-4a9 9 0 0 1 18 0v4H7Z" /><path d="M4 18h25c-2 4-7 5-12 5H4v-5Z" /></>;
+  } else {
+    outline = <><path d="m7 5 4-2 2 3h6l2-3 4 2 5 7-5 4-3-3v18H10V13l-3 3-5-4 5-7Z" /><path d="M13 6c1 2 5 2 6 0" /></>;
+  }
+  return <svg viewBox="0 0 32 33" fill="none" aria-hidden="true" focusable="false">{outline}</svg>;
 }
 
 function availableStyles(product: CatalogProduct) {
@@ -80,7 +90,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
       </div>
 
       <div className="catalog-count"><span>{String(visibleProducts.length).padStart(2, '0')}</span> shirts on the line</div>
-      {visibleProducts.some((product) => availableStyles(product).length > 1) && <p className="catalog-style-key"><StyleStackIcon /> <span>More ways to wear it — this mark means a design comes in multiple garment styles.</span></p>}
+      {visibleProducts.some((product) => availableStyles(product).length > 1) && <p className="catalog-style-key"><span className="catalog-style-key__sample" aria-hidden="true"><GarmentIcon style="Tank" /><GarmentIcon style="Hoodie" /></span><span>Garment outlines show the styles available for each design.</span></p>}
 
       {rows.length ? rows.map((row, rowIndex) => (
         <div key={`${collection}-${query}-${sort}-${rowIndex}`}>
@@ -96,7 +106,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
                     {product.catalogImage
                       ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
                       : <Shirt art={product.art} tone={product.tone} />}
-                    {styles.length > 1 && <span className="catalog-product__styles" title={`Available in ${styles.join(', ')}`}><StyleStackIcon /><span>{styles.length} styles</span></span>}
+                    {styles.length > 1 && <span className="catalog-product__styles" aria-hidden="true" title={`Available in ${styles.join(', ')}`}>{styles.map((style) => <span key={style} title={style}><GarmentIcon style={style} /></span>)}</span>}
                   </a>
                   <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>
                   <h2><a href={href}>{product.name}</a></h2>

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 type Garment = keyof typeof GARMENTS;
 type Placement = { w: number; x: number; y: number; angle?: number; brightness?: number };
-type Input = { slug?: string; artworkUrl?: string; garment?: string; placement?: Placement; placements?: Record<string, Placement>; colors?: string[]; productSlug?: string | null };
+type Input = { slug?: string; artworkUrl?: string; artworkUrls?: Record<string,string>; garment?: string; placement?: Placement; placements?: Record<string, Placement>; colors?: string[]; productSlug?: string | null };
 type Assignment = { slug: string; artwork_url: string; placements: Record<string, Placement>; colors: string[] };
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -39,7 +39,11 @@ export async function GET(request: Request) {
     if (!slug || !isGarment(garment)) throw new Error('Choose a product and garment to load.');
     const id = await productId(slug);
     const assigned = await supabaseAdmin(`design_assignments?select=slug,artwork_url,placements,colors&product_id=eq.${id}&garment=eq.${garment}&limit=1`) as Assignment[];
-    if (assigned[0]) return Response.json({ slug: assigned[0].slug, garment, artworkUrl: assigned[0].artwork_url, placements: assigned[0].placements, colors: assigned[0].colors });
+    if (assigned[0]) {
+      // Preserve per-color source PNGs in the existing private JSONB placement record.
+      const { __artworkUrls, ...placements } = assigned[0].placements;
+      return Response.json({ slug: assigned[0].slug, garment, artworkUrl: assigned[0].artwork_url, artworkUrls: __artworkUrls || {}, placements, colors: assigned[0].colors });
+    }
 
     // Existing storefront renders are already archived in R2. Their old
     // Cloudinary URL is retained solely to recover editable placement values.
@@ -78,9 +82,12 @@ export async function POST(request: Request) {
       if (!validPlacement(placement)) throw new Error(`Placement for ${token} is outside the supported canvas.`);
       return [token, normalize(placement)];
     }));
+    const artworkUrls = Object.fromEntries(colors.map((token) => [token, input.artworkUrls?.[token] ?? source]));
+    if (Object.values(artworkUrls).some((url) => !artworkPattern.test(url))) throw new Error('Every selected color needs uploaded PNG artwork.');
     const storage = bucket();
-    const artworkKey = source.slice(`${R2_ORIGIN}/`.length);
-    if (!await storage.head(artworkKey)) throw new Error('Uploaded artwork was not found in R2.');
+    for (const url of new Set([source, ...Object.values(artworkUrls)])) {
+      if (!await storage.head(url.slice(`${R2_ORIGIN}/`.length))) throw new Error('Uploaded artwork was not found in R2.');
+    }
     const id = productSlug ? await productId(productSlug) : null;
     if (id) {
       const config = GARMENTS[garment];
@@ -97,7 +104,7 @@ export async function POST(request: Request) {
     const rendered: Array<{ token: string; url: string }> = [];
     if (id) {
       for (const token of colors) {
-        const transform = mockupUrl({ artwork: source, garment, colorToken: token, placement: placements[token] });
+        const transform = mockupUrl({ artwork: artworkUrls[token], garment, colorToken: token, placement: placements[token] });
         const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(transform))))
           .map((byte) => byte.toString(16).padStart(2, '0')).join('').slice(0, 16);
         const format = garment === 'hat' ? 'jpg' : 'png';
@@ -122,9 +129,9 @@ export async function POST(request: Request) {
       const selectedLabels = new Set(rows.map((row) => row.color.toLowerCase()));
       const staleIds = existingColors.filter((row) => !selectedLabels.has(row.color.toLowerCase())).map((row) => row.id);
       if (staleIds.length) await supabaseAdmin(`product_colors?id=in.(${staleIds.join(',')})`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ active: false }) });
-      await supabaseAdmin('design_assignments?on_conflict=product_id,garment', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ product_id: id, garment, slug, artwork_url: source, placements, colors, updated_at: new Date().toISOString() }]) });
+      await supabaseAdmin('design_assignments?on_conflict=product_id,garment', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ product_id: id, garment, slug, artwork_url: source, placements: { ...placements, __artworkUrls: artworkUrls }, colors, updated_at: new Date().toISOString() }]) });
     }
-    await supabaseAdmin('designs?on_conflict=slug,garment', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ slug, garment, placement: { ...normalize(input.placement!), artworkUrl: source, byColor: placements }, colors, updated_at: new Date().toISOString() }]) });
+    await supabaseAdmin('designs?on_conflict=slug,garment', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ slug, garment, placement: { ...normalize(input.placement!), artworkUrl: source, artworkUrls, byColor: placements }, colors, updated_at: new Date().toISOString() }]) });
     return Response.json({ ok: true, slug, productId: id, colors: colors.length, mockups: rendered.length, mockupUrls: Object.fromEntries(rendered.map((item) => [item.token, item.url])) });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to save design.';

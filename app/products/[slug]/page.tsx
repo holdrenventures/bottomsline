@@ -6,6 +6,7 @@ import { JsonLd } from '../../lib/JsonLd';
 import { productPageMetadata, productStructuredData } from '../../lib/seo';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
+import { defaultHeroImage } from '../product-selection';
 import { ProductHeroImage, ProductHeroProvider } from './ProductHero';
 import ProductPurchaseAny from './ProductPurchaseAny';
 
@@ -42,10 +43,7 @@ export default async function ProductPage({ params }: PageProps) {
           <span>{eyebrow} / {product.slug}</span>
         </div>
 
-        <ProductHeroProvider
-          initialImage={product.colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? product.catalogImage}
-          initialAlt={product.name}
-        >
+        <ProductHeroProvider initialImage={defaultHeroImage(product)} initialAlt={product.name}>
         <section className="product-detail shell">
           <div className="product-detail__visual" data-ghost={nameParts[0]?.toUpperCase() || 'BOTTOMS'}>
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>

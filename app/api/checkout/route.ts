@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { normalizePromoCode, quote } from '../../lib/pricing';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient } from '../../lib/stripe';
 
@@ -11,6 +12,7 @@ type CheckoutInput = {
     colorId?: string | null;
     quantity?: number;
   }>;
+  promoCode?: string | null;
 };
 
 type ProductRow = {
@@ -31,6 +33,11 @@ type VariantRow = {
   active: boolean;
   inventory_quantity: number | null;
   price_cents: number;
+};
+
+type SignupCodeRow = {
+  discount_code: string;
+  redeemed_at: string | null;
 };
 
 type ColorRow = {
@@ -85,6 +92,15 @@ export async function POST(request: Request) {
       return badRequest('Each quantity must be between 1 and 9.');
     }
 
+    const rawPromoCode = typeof input.promoCode === 'string' ? input.promoCode.trim() : '';
+    const promoCode = rawPromoCode ? normalizePromoCode(rawPromoCode) : null;
+    if (rawPromoCode) {
+      const codes = promoCode
+        ? await supabaseAdmin(`email_signups?select=discount_code,redeemed_at&discount_code=eq.${encodeURIComponent(promoCode)}`) as SignupCodeRow[]
+        : [];
+      if (!codes[0] || codes[0].redeemed_at) return badRequest('That code is invalid or has already been used.');
+    }
+
     const productIds = [...new Set(selections.map((item) => item.productId))];
     const variantIds = [...new Set(selections.map((item) => item.variantId))];
     const colorIds = [...new Set(selections.flatMap((item) => item.colorId ? [item.colorId] : []))];
@@ -136,6 +152,12 @@ export async function POST(request: Request) {
     if (currencies.size !== 1) throw new Error('All bag items must use the same currency.');
     const currency = trusted[0].product.currency;
 
+    const pricing = quote(
+      trusted.map(({ selection, variant }) => ({ style: variant.style, unitCents: variant.price_cents, quantity: selection.quantity })),
+      Boolean(promoCode),
+    );
+    const appliedPromoCode = pricing.discountKind === 'welcome' ? promoCode : null;
+
     const stripe = stripeClient();
     const attemptId = crypto.randomUUID();
     await supabaseAdmin('checkout_attempts', {
@@ -146,6 +168,18 @@ export async function POST(request: Request) {
     let createdSession: Stripe.Checkout.Session | null = null;
     try {
       const origin = checkoutOrigin(request);
+      // One single-use coupon per session carries the server-computed discount,
+      // since Checkout accepts only one discount and we pick the best deal ourselves.
+      const coupon = pricing.discountCents > 0 && pricing.discountLabel
+        ? await stripe.coupons.create({
+          amount_off: pricing.discountCents,
+          currency,
+          duration: 'once',
+          max_redemptions: 1,
+          name: pricing.discountLabel,
+          metadata: { checkout_attempt_id: attemptId },
+        })
+        : null;
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         client_reference_id: attemptId,
@@ -167,7 +201,19 @@ export async function POST(request: Request) {
           },
           quantity: selection.quantity,
         })),
-        metadata: { checkout_attempt_id: attemptId },
+        metadata: {
+          checkout_attempt_id: attemptId,
+          discount_kind: pricing.discountKind ?? '',
+          promo_code: appliedPromoCode ?? '',
+        },
+        ...(coupon ? { discounts: [{ coupon: coupon.id }] } : {}),
+        shipping_options: [{
+          shipping_rate_data: {
+            type: 'fixed_amount',
+            display_name: pricing.shippingCents === 0 ? 'Free standard shipping' : 'Standard shipping',
+            fixed_amount: { amount: pricing.shippingCents, currency },
+          },
+        }],
         payment_intent_data: { metadata: { checkout_attempt_id: attemptId } },
         billing_address_collection: 'auto',
         shipping_address_collection: { allowed_countries: ['US'] },

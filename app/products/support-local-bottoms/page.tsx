@@ -6,6 +6,8 @@ import { JsonLd } from '../../lib/JsonLd';
 import { productPageMetadata, productStructuredData } from '../../lib/seo';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
+import { defaultHeroImage } from '../product-selection';
+import { ProductHeroImage, ProductHeroProvider } from '../[slug]/ProductHero';
 import ProductPurchase from './ProductPurchase';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,12 +29,13 @@ export default async function SupportLocalBottomsPage() {
       <main className="product-page">
         <div className="shell product-back-row"><a href="/shop">← Back to the line</a><span>Community Outreach / 001</span></div>
 
+        <ProductHeroProvider initialImage={defaultHeroImage(product)} initialAlt={product.name}>
         <section className="product-detail shell">
           <div className="product-detail__visual" data-ghost="LOCAL">
             <div className="product-detail__line" aria-hidden="true"><Clothespin /></div>
             <ProductAnnotation>A public service,<br />more or less.</ProductAnnotation>
             <span className="product-detail__index">BL / 001</span>
-            <Shirt art={['SUPPORT', 'LOCAL', 'BOTTOMS']} tone="coral" detail />
+            <ProductHeroImage fallback={<Shirt art={['SUPPORT', 'LOCAL', 'BOTTOMS']} tone="coral" detail />} />
           </div>
 
           <div className="product-detail__info">
@@ -48,6 +51,7 @@ export default async function SupportLocalBottomsPage() {
             <a className="continue-shopping" href="/shop" aria-label="Keep looking at related products">Keep looking. We won’t judge. <span>↗</span></a>
           </div>
         </section>
+        </ProductHeroProvider>
 
         <section className="product-statement">
           <div className="shell"><p>Community support<br />looks good <em>on you.</em></p><span>Wear locally.</span></div>

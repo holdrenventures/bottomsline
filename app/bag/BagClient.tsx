@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CART_UPDATED_EVENT, clearCart, readCart, removeCartItem, updateCartItem, type CartItem } from '../lib/cart';
 import { storefrontImage } from '../lib/storefront-images';
 import { trackMeta } from '../lib/meta-pixel';
+import { FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quote } from '../lib/pricing';
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -16,6 +17,7 @@ export default function BagClient() {
   const [ready, setReady] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+  const [promoInput, setPromoInput] = useState('');
 
   useEffect(() => {
     const sync = () => {
@@ -31,10 +33,16 @@ export default function BagClient() {
     };
   }, []);
 
-  const subtotal = useMemo(
-    () => items.reduce((total, item) => total + item.unitPrice * item.quantity, 0),
-    [items],
+  const promoCode = normalizePromoCode(promoInput);
+  // Preview only — the checkout Worker recomputes from catalog prices and validates the code.
+  const pricing = useMemo(
+    () => quote(
+      items.map((item) => ({ style: item.style, unitCents: Math.round(item.unitPrice * 100), quantity: item.quantity })),
+      Boolean(promoCode),
+    ),
+    [items, promoCode],
   );
+  const toFreeShipping = FREE_SHIPPING_MIN_CENTS - (pricing.subtotalCents - pricing.discountCents);
 
   function setQuantity(index: number, quantity: number) {
     setItems(updateCartItem(index, quantity));
@@ -58,6 +66,7 @@ export default function BagClient() {
             colorId: item.colorId ?? null,
             quantity: item.quantity,
           })),
+          promoCode: promoInput.trim() || null,
         }),
       });
       const result = await response.json() as { url?: string; error?: string };
@@ -132,8 +141,31 @@ export default function BagClient() {
 
       <aside className="bag-summary">
         <p className="eyebrow"><span /> The bottom line</p>
-        <div><span>Subtotal</span><strong>{money.format(subtotal)}</strong></div>
-        <p>Secure payment and shipping details are handled at checkout.</p>
+        <dl className="bag-summary__lines">
+          <div><dt>Subtotal</dt><dd>{money.format(pricing.subtotalCents / 100)}</dd></div>
+          {pricing.discountCents > 0 && (
+            <div className="bag-summary__discount"><dt>{pricing.discountLabel}</dt><dd>−{money.format(pricing.discountCents / 100)}</dd></div>
+          )}
+          <div><dt>Shipping</dt><dd>{pricing.shippingCents === 0 ? 'Free' : money.format(pricing.shippingCents / 100)}</dd></div>
+        </dl>
+        <div><span>Total</span><strong>{money.format(pricing.totalCents / 100)}</strong></div>
+        <label className="bag-summary__promo">
+          <span>Promo code</span>
+          <input
+            value={promoInput}
+            onChange={(event) => { setPromoInput(event.target.value); setCheckoutError(''); }}
+            placeholder="QUIET-XXXXXX"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        <p>
+          {pricing.welcomeCodeSkipped
+            ? 'Your 3-tee deal beats 10% off, so we’re using that. Your code stays saved for next time.'
+            : toFreeShipping > 0
+              ? `${money.format(toFreeShipping / 100)} away from free shipping.`
+              : 'Free shipping unlocked. Taxes are calculated at checkout.'}
+        </p>
         <button type="button" disabled={checkingOut} onClick={checkout}>
           {checkingOut ? 'Opening checkout…' : 'Checkout'} <span>↗</span>
         </button>

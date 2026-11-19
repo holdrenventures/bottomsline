@@ -143,7 +143,7 @@ export default async function Home() {
       </section>
 
       <section className="signup shell section">
-        <div className="signup__copy"><p className="eyebrow"><span /> Get on the list</p><h2>Be the first to hear<br /><em>the quiet part.</em></h2><p>New drops, bad ideas, and the occasional excellent one.</p></div>
+        <div className="signup__copy"><p className="eyebrow"><span /> Get on the list</p><h2>Be the first to hear<br /><em>the quiet part.</em></h2><p>Get 10% off your first order, plus first dibs on new drops and holiday sweaters.</p></div>
         <EmailSignup />
       </section>
 

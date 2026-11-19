@@ -121,7 +121,11 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
     stripe_payment_intent_id: paymentIntentId,
     customer_email: session.customer_details?.email ?? session.customer_email ?? null,
     customer_name: shipping?.name ?? session.customer_details?.name ?? null,
-    shipping_address: shipping?.address ?? null,
+    shipping_address: shipping?.address ? {
+      line1: shipping.address.line1, line2: shipping.address.line2,
+      city: shipping.address.city, state: shipping.address.state,
+      postal_code: shipping.address.postal_code, country: shipping.address.country,
+    } : null,
     payment_status: session.payment_status,
     currency: session.currency,
     subtotal_cents: session.amount_subtotal,
@@ -161,6 +165,20 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
     }),
   });
   await setAttemptStatus(attemptId, 'paid', session.id);
+
+  // Burn the welcome code only once payment lands, so abandoned checkouts keep it usable.
+  const promoCode = session.metadata?.promo_code;
+  if (promoCode) {
+    try {
+      await supabaseAdmin(`email_signups?discount_code=eq.${encodeURIComponent(promoCode)}&redeemed_at=is.null`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ redeemed_at: new Date().toISOString(), redeemed_checkout_session_id: session.id }),
+      });
+    } catch (error) {
+      console.error('[promo] Failed to mark welcome code redeemed:', error);
+    }
+  }
 
   // Fire-and-forget notification emails. Wrapped in try/catch so Resend
   // outages never cause Stripe to retry the webhook — the authoritative

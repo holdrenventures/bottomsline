@@ -65,6 +65,8 @@ function validateProduct(input: ProductInput) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('Slug must use lowercase letters, numbers, and hyphens.');
   if (!Number.isInteger(price) || price < 0) throw new Error('Price must be a non-negative number of cents.');
   if (!/^[a-z]{3}$/.test(currency)) throw new Error('Currency must be a three-letter lowercase code.');
+  const activeStyles = new Set((input.product_variants ?? []).filter((variant) => variant.active).map((variant) => variant.style?.trim()));
+  if (activeStyles.has('Hat') && activeStyles.size > 1) throw new Error('Hats must be standalone products with no apparel styles.');
   return { name, slug, price, currency };
 }
 

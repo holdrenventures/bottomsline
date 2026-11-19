@@ -49,6 +49,7 @@ export default async function Home() {
   const catalog = await getCatalogProducts();
   const featured = catalog.filter((product) => product.featured);
   const featuredIds = new Set(featured.map((product) => product.id));
+  const holidayProducts = catalog.filter((product) => (product.collections ?? [product.collection]).includes('Holiday'));
   const products = [...featured, ...catalog.filter((product) => !featuredIds.has(product.id))]
     .slice(0, 4)
     .map((product) => ({
@@ -74,14 +75,38 @@ export default async function Home() {
           <a className="button button--primary" href="/shop">Shop the collection <span aria-hidden="true">↗</span></a>
         </div>
         <div className="hero__visual">
-          <span className="hero__line" aria-hidden="true"><Clothespin /></span>
+          <span className="hero__line hero__line--holiday" aria-hidden="true"><Clothespin /></span>
           <span className="scribble scribble--top">GOOD FROM<br />EVERY ANGLE</span>
           <img className="hero-shirt" src={storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png') ?? undefined} alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" fetchPriority="high" decoding="async" />
           <span className="scribble scribble--bottom">Wear responsibly.<br />Or don’t.</span>
         </div>
       </section>
 
-      <div className="ticker" aria-hidden="true"><div>FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span> FLIRT RESPONSIBLY <span>✦</span> SAY THE QUIET PART OUT LOUD <span>✦</span> HOT PEOPLE READ THE SHIRT <span>✦</span></div></div>
+      <div className="ticker" aria-hidden="true"><div>FLIRT RESPONSIBLY <span>✦</span> DEAR SANTA, THE BEARD IS WORKING <span>✦</span> SPIN THE DREIDEL, START A CONVERSATION <span>✦</span> FLIRT RESPONSIBLY <span>✦</span> DEAR SANTA, THE BEARD IS WORKING <span>✦</span> SPIN THE DREIDEL, START A CONVERSATION <span>✦</span></div></div>
+
+      {holidayProducts.length > 0 && <section className="holiday-home shell section" aria-labelledby="holiday-title">
+        <div className="section-heading holiday-home__heading">
+          <div><p className="eyebrow"><span /> Seasonal misbehavior</p><h2 id="holiday-title">Ho, ho,<br /><em>hold my drink.</em></h2></div>
+          <div className="holiday-home__aside"><svg viewBox="0 0 48 64" role="img" aria-label="Dreidel ornament"><path d="M24 4v12m-11 0h22M9 22l15-8 15 8v24L24 60 9 46V22Z"/><path d="m9 22 15 9 15-9M24 31v29"/><text x="24" y="43" textAnchor="middle">נ</text></svg><p>Dear Santa, the beard is working.<br />A little something for every kind of holiday gathering.</p></div>
+        </div>
+        <div className="holiday-home__rail" aria-label="Holiday designs">
+          <div className="holiday-home__track">
+            {holidayProducts.map((product, index) => (
+              <article className="product-card" key={product.id} style={{ ["--pin-shift" as string]: pinShift(product.slug), ["--pin-slant" as string]: pinSlant(product.slug) } as CSSProperties}>
+                <a className="product-card__image" href={`/products/${product.slug}`} aria-label={`Shop ${product.name}`}>
+                  <Clothespin />
+                  <span className="product-card__number">{String(index + 1).padStart(2, '0')}</span>
+                  <div className="product-card__media">{product.catalogImage ? <img src={product.catalogImage} alt={product.name} loading="lazy" decoding="async" /> : <Shirt art={product.art} tone={product.tone} />}</div>
+                </a>
+                <div className="product-card__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>
+                <h3>{product.name}</h3>
+                <a href={`/products/${product.slug}`} aria-label={`Read the shirt: ${product.name}`}>Read the shirt <span aria-hidden="true">↗</span></a>
+              </article>
+            ))}
+          </div>
+        </div>
+        <a className="holiday-home__all" href="/shop?collection=holiday#catalog">See the whole holiday line <span aria-hidden="true">↗</span></a>
+      </section>}
 
       {products.length > 0 && <section className="products shell section" id="shop">
         <div className="section-heading">

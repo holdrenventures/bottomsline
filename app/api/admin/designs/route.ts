@@ -84,8 +84,10 @@ export async function POST(request: Request) {
     const id = productSlug ? await productId(productSlug) : null;
     if (id) {
       const config = GARMENTS[garment];
-      const variants = await supabaseAdmin(`product_variants?select=garment,active&product_id=eq.${id}&style=eq.${encodeURIComponent(config.style)}`) as Array<{ garment: string | null; active: boolean }>;
-      if (!variants.some((variant) => variant.active && (variant.garment === config.model || (garment === 'tee' && !variant.garment)))) {
+      const variants = await supabaseAdmin(`product_variants?select=style,garment,active&product_id=eq.${id}`) as Array<{ style: string; garment: string | null; active: boolean }>;
+      if (garment === 'hat' && variants.some((variant) => variant.active && variant.style !== 'Hat')) throw new Error('Hats must be a standalone product. Choose a hat-only product in Product Desk.');
+      if (garment !== 'hat' && variants.some((variant) => variant.active && variant.style === 'Hat')) throw new Error('This is a standalone hat product. Choose an apparel product instead.');
+      if (!variants.some((variant) => variant.active && variant.style === config.style && (variant.garment === config.model || (garment === 'tee' && !variant.garment)))) {
         throw new Error(`Add ${config.style} sizes with blank ${config.model} in Product Desk before publishing this mockup.`);
       }
     }
@@ -98,13 +100,15 @@ export async function POST(request: Request) {
         const transform = mockupUrl({ artwork: source, garment, colorToken: token, placement: placements[token] });
         const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(transform))))
           .map((byte) => byte.toString(16).padStart(2, '0')).join('').slice(0, 16);
-        const key = `editor/mockups/${id}/${garment}/${token}.${hash}.png`;
+        const format = garment === 'hat' ? 'jpg' : 'png';
+        const mime = garment === 'hat' ? 'image/jpeg' : 'image/png';
+        const key = `editor/mockups/${id}/${garment}/${token}.${hash}.${format}`;
         if (!await storage.head(key)) {
           const response = await fetch(transform);
-          if (!response.ok || !(response.headers.get('content-type') ?? '').startsWith('image/png')) throw new Error(`Could not render ${token} front mockup (Cloudinary ${response.status}).`);
+          if (!response.ok || !(response.headers.get('content-type') ?? '').startsWith(mime)) throw new Error(`Could not render ${token} front mockup (Cloudinary ${response.status}).`);
           const bytes = await response.arrayBuffer();
           if (bytes.byteLength > 20 * 1024 * 1024) throw new Error(`${token} mockup exceeds the size limit.`);
-          await storage.put(key, bytes, { httpMetadata: { contentType: 'image/png', cacheControl: 'public, max-age=31536000, immutable' } });
+          await storage.put(key, bytes, { httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' } });
         }
         rendered.push({ token, url: r2Url(key) });
       }

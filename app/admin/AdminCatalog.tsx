@@ -46,7 +46,7 @@ const GARMENT_PRESETS: Array<{ id: GarmentPresetId; label: string; detail: strin
   { id: 'tank', label: 'Tank', detail: 'Sleeveless option', style: 'Tank', garment: 'tultex105', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
   { id: 'sweatshirt', label: 'Sweatshirt', detail: 'Tultex 340 crewneck', style: 'Sweatshirt', garment: 'tultex340', sizes: 'S, M, L, XL, 2XL, 3XL' },
   { id: 'hoodie', label: 'Hoodie', detail: 'Tultex 320 pullover', style: 'Hoodie', garment: 'tultex320', sizes: 'S, M, L, XL, 2XL, 3XL' },
-  { id: 'hat', label: 'Hat', detail: 'Starts as one size', style: 'Hat', sizes: 'One Size' },
+  { id: 'hat', label: 'Hat', detail: 'Standalone Yupoong 6606', style: 'Hat', garment: 'yupoong6606', sizes: 'One Size' },
   { id: 'custom', label: 'Custom', detail: 'Anything else', style: '', sizes: DEFAULT_SIZES },
 ];
 /** Public URL for one product. Change this if the storefront route is different. */

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import DesignAdjuster from './DesignAdjuster';
 
-type ProductSummary = { id: string; name: string; slug: string; active: boolean };
+type ProductSummary = { id: string; name: string; slug: string; active: boolean; product_variants: Array<{ style: string; active: boolean }> };
 
 const tokenKey = 'bl-admin-token';
 
@@ -21,7 +21,7 @@ export default function DesignAdjusterDesk() {
       const response = await fetch('/api/admin/catalog', { headers: { Authorization: `Bearer ${accessToken}` } });
       const payload = await response.json() as { products?: ProductSummary[]; error?: string };
       if (!response.ok) throw new Error(payload.error || 'Unable to load products.');
-      setProducts((payload.products ?? []).map(({ id, name, slug, active }) => ({ id, name, slug, active })));
+      setProducts((payload.products ?? []).map(({ id, name, slug, active, product_variants }) => ({ id, name, slug, active, product_variants: product_variants ?? [] })));
       setLoaded(true); setStatus('');
     } catch (error) {
       sessionStorage.removeItem(tokenKey); setLoaded(false);

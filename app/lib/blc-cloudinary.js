@@ -16,7 +16,7 @@ const n = (value, digits = 4) => {
 export function blankUrl(garment, colorToken) {
   const config = GARMENTS[garment];
   if (!config) throw new Error('Unsupported garment blank.');
-  return `${R2_ORIGIN}/editor/blanks/${config.folder}/${config.prefix}_${colorToken}_front.png`;
+  return `${R2_ORIGIN}/editor/blanks/${config.folder}/${config.prefix}_${colorToken}_front.${config.ext || 'png'}`;
 }
 
 export function artworkUrl(key) {
@@ -35,7 +35,7 @@ export function placementFromMockupUrl(url) {
   return { slug: layer[1], placement: { w: value('w', 0.34), x: value('x', 0), y: value('y', 0), angle: value('a', 0), brightness: 0 } };
 }
 
-export function mockupUrl({ artwork, garment, colorToken, placement, trim = true }) {
+export function mockupUrl({ artwork, garment, colorToken, placement, trim = undefined }) {
   const { w, x, y, angle = 0, brightness = 0 } = placement;
   const encodedArtwork = btoa(artwork).replace(/\+/g, '-').replace(/\//g, '_');
   const steps = [`l_fetch:${encodedArtwork}`, `c_scale,fl_relative,w_${n(w)}`];
@@ -45,7 +45,7 @@ export function mockupUrl({ artwork, garment, colorToken, placement, trim = true
   if (n(x)) apply += `,x_${n(x)}`;
   if (n(y)) apply += `,y_${n(y)}`;
   steps.push(apply);
-  if (trim) steps.push('e_trim');
+  if (trim ?? (GARMENTS[garment].trim !== false)) steps.push('e_trim');
   return `${fetchBase}/${steps.join('/')}/${blankUrl(garment, colorToken)}`;
 }
 

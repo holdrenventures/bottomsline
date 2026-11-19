@@ -5,23 +5,23 @@ import { useRef, useState } from 'react';
 import { COLORS, GARMENTS, blankUrl, slugify } from '../../lib/blc-cloudinary';
 import restoredArtwork from '../../lib/editor-artwork.json';
 
-const RATIO = 2 / 3;
-const DEFAULT = { w: 0.34, x: 0, y: 0.3, angle: 0, brightness: 0 };
+const SHIRT_DEFAULT = { w: 0.34, x: 0, y: 0.3, angle: 0, brightness: 0 };
+const HAT_DEFAULT = { w: 0.22, x: 0, y: 0.36, angle: 0, brightness: 0 };
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const round = (value) => +Number(value).toFixed(4);
 const normalized = (value) => ({ w: round(value.w), x: round(value.x), y: round(value.y), angle: round(value.angle || 0), brightness: round(value.brightness || 0) });
 
-function artworkRect(placement, aspect) {
+function artworkRect(placement, aspect, canvasRatio) {
   const width = placement.w;
-  const height = width * RATIO / aspect;
+  const height = width * canvasRatio / aspect;
   const radians = (placement.angle || 0) * Math.PI / 180;
-  const rotatedHeight = Math.abs(height * Math.cos(radians)) + Math.abs(width * RATIO * Math.sin(radians));
+  const rotatedHeight = Math.abs(height * Math.cos(radians)) + Math.abs(width * canvasRatio * Math.sin(radians));
   return { left: 0.5 + placement.x - width / 2, top: placement.y + (rotatedHeight - height) / 2, width, height };
 }
 
-function ArtLayer({ url, placement, aspect, handle, onMove, onResize }) {
+function ArtLayer({ url, placement, aspect, canvasRatio, handle, onMove, onResize }) {
   if (!url) return null;
-  const rect = artworkRect(placement, aspect);
+  const rect = artworkRect(placement, aspect, canvasRatio);
   return <div onPointerDown={onMove} style={{ position: 'absolute', left: `${rect.left * 100}%`, top: `${rect.top * 100}%`, width: `${rect.width * 100}%`, height: `${rect.height * 100}%`, transform: `rotate(${placement.angle || 0}deg)`, cursor: handle ? 'grab' : 'inherit', touchAction: 'none' }}>
     <img src={url} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'fill', pointerEvents: 'none', filter: `brightness(${100 + (placement.brightness || 0)}%)` }} />
     {handle && <span onPointerDown={onResize} style={S.handle} aria-label="Drag to resize artwork" />}
@@ -30,7 +30,7 @@ function ArtLayer({ url, placement, aspect, handle, onMove, onResize }) {
 
 /**
  * The browser previews R2 originals. Cloudinary runs once per saved color.
- * @param {{products?: Array<{name:string,slug:string,active:boolean}>, onUpload:(file:File,slug:string)=>Promise<{artworkUrl:string,assetSlug?:string}>, onSave:(value:unknown)=>Promise<unknown>, onLoad:(productSlug:string,garment:string)=>Promise<{slug:string,artworkUrl?:string,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle?:number,brightness?:number}>}>}} props
+ * @param {{products?: Array<{name:string,slug:string,active:boolean,product_variants?:Array<{style:string,active:boolean}>}>, onUpload:(file:File,slug:string)=>Promise<{artworkUrl:string,assetSlug?:string}>, onSave:(value:unknown)=>Promise<unknown>, onLoad:(productSlug:string,garment:string)=>Promise<{slug:string,artworkUrl?:string,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle?:number,brightness?:number}>}>}} props
  */
 export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad }) {
   const [garment, setGarment] = useState('tee');
@@ -49,17 +49,24 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
   const stageRef = useRef(null);
   const pointer = useRef(null);
   const palette = COLORS[garment];
-  const placementFor = (token) => ({ ...DEFAULT, ...placements[garment]?.[token] });
+  const canvasRatio = GARMENTS[garment].aspect || 2 / 3;
+  const defaults = garment === 'hat' ? HAT_DEFAULT : SHIRT_DEFAULT;
+  const placementFor = (token) => ({ ...defaults, ...placements[garment]?.[token] });
   const current = placementFor(previewColor);
   const art = localUrl || sourceUrl;
+  const eligibleProducts = products.filter((product) => {
+    const styles = new Set((product.product_variants || []).filter((variant) => variant.active).map((variant) => variant.style));
+    return garment === 'hat' ? styles.size === 1 && styles.has('Hat') : !styles.has('Hat');
+  });
 
   function updatePlacement(changes) {
-    setPlacements((all) => ({ ...all, [garment]: { ...all[garment], [previewColor]: { ...DEFAULT, ...all[garment]?.[previewColor], ...changes } } }));
+    setPlacements((all) => ({ ...all, [garment]: { ...all[garment], [previewColor]: { ...defaults, ...all[garment]?.[previewColor], ...changes } } }));
     setSaved(false);
   }
 
   function changeGarment(next) {
     setGarment(next);
+    if ((next === 'hat') !== (garment === 'hat')) setProductSlug('');
     const nextPalette = COLORS[next];
     const valid = new Set([...selected].filter((token) => nextPalette.some((color) => color.token === token)));
     if (!valid.size) nextPalette.slice(0, 3).forEach((color) => valid.add(color.token));
@@ -118,7 +125,7 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
     if (!stage) return;
     event.preventDefault(); event.stopPropagation();
     const placement = { ...current };
-    const rect = artworkRect(placement, aspect);
+    const rect = artworkRect(placement, aspect, canvasRatio);
     const centerX = stage.left + (rect.left + rect.width / 2) * stage.width;
     const centerY = stage.top + (rect.top + rect.height / 2) * stage.height;
     const distance = Math.hypot((event.clientX - centerX) / stage.width, (event.clientY - centerY) / stage.width);
@@ -163,26 +170,26 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
       <label style={S.productLabel}>Storefront product <span style={S.help}>Optional. Saving with a product publishes the selected front mockups to its colorways.</span>
         <select value={productSlug} onChange={(event) => { setProductSlug(event.target.value); setSaved(false); }} style={S.select}>
           <option value="">Save placement only</option>
-          {products.map((product) => <option key={product.slug} value={product.slug}>{product.name}{product.active ? '' : ' — Draft'}</option>)}
+          {eligibleProducts.map((product) => <option key={product.slug} value={product.slug}>{product.name}{product.active ? '' : ' — Draft'}</option>)}
         </select>
       </label>
-      <button type="button" onClick={loadSaved} disabled={!productSlug || busy} style={S.load}>Load saved front mockups</button><p style={S.help}>To add a new garment to this product, add its sizes, price, and Tultex blank in <a href="/admin">Product Desk</a> first. Saving here then adds its selected colors alongside the other garment choices.</p>
-      <div ref={stageRef} style={S.stage} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}>
+      <button type="button" onClick={loadSaved} disabled={!productSlug || busy} style={S.load}>Load saved front mockups</button><p style={S.help}>{garment === 'hat' ? 'Hats need their own standalone product. Create a hat-only product with Yupoong 6606, One Size, and a price in ' : 'To add a new garment to this product, add its sizes, price, and Tultex blank in '}<a href="/admin">Product Desk</a>{garment === 'hat' ? ' first.' : ' first. Saving here adds its selected colors alongside the other garment choices.'}</p>
+      <div ref={stageRef} style={{ ...S.stage, aspectRatio: String(canvasRatio) }} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}>
         <img src={blankUrl(garment, previewColor)} alt={`${palette.find((color) => color.token === previewColor)?.label || previewColor} front blank`} style={S.blank} draggable={false} />
-        <ArtLayer url={art} placement={current} aspect={aspect} handle onMove={(event) => startPointer(event, 'move')} onResize={(event) => startPointer(event, 'resize')} />
+        <ArtLayer url={art} placement={current} aspect={aspect} canvasRatio={canvasRatio} handle onMove={(event) => startPointer(event, 'move')} onResize={(event) => startPointer(event, 'resize')} />
         <div style={S.centerGuide} aria-hidden="true" />
       </div>
       <div style={S.row}><span style={S.label}>Size</span><input type="range" min="5" max="95" step="0.5" value={current.w * 100} onChange={(event) => updatePlacement({ w: Number(event.target.value) / 100 })} style={S.slider} aria-label="Artwork size" /><code style={S.value}>{Math.round(current.w * 100)}%</code></div>
       <div style={S.row}><span style={S.label}>Tilt</span><input type="range" min="-20" max="20" step="0.5" value={current.angle} onChange={(event) => updatePlacement({ angle: Number(event.target.value) })} style={S.slider} aria-label="Artwork tilt" /><code style={S.value}>{current.angle.toFixed(1)}°</code><button type="button" onClick={() => updatePlacement({ angle: 0 })} style={S.smallButton}>Reset</button></div>
       <div style={S.row}><span style={S.label}>Brightness</span><input type="range" min="-50" max="50" step="1" value={current.brightness} onChange={(event) => updatePlacement({ brightness: Number(event.target.value) })} style={S.slider} aria-label="Artwork brightness" /><code style={S.value}>{current.brightness > 0 ? '+' : ''}{current.brightness}</code><button type="button" onClick={() => updatePlacement({ brightness: 0 })} style={S.smallButton}>Reset</button></div>
-      <div style={S.row}><span style={S.label}>Position</span><button type="button" onClick={() => updatePlacement({ x: 0 })} style={S.smallButton}>Center horizontally</button><button type="button" onClick={() => updatePlacement({ x: 0, y: DEFAULT.y })} style={S.smallButton}>Reset to chest</button><code style={S.value}>x {current.x.toFixed(3)} · y {current.y.toFixed(3)}</code></div>
+      <div style={S.row}><span style={S.label}>Position</span><button type="button" onClick={() => updatePlacement({ x: 0 })} style={S.smallButton}>Center horizontally</button><button type="button" onClick={() => updatePlacement({ x: 0, y: defaults.y })} style={S.smallButton}>Reset to chest</button><code style={S.value}>x {current.x.toFixed(3)} · y {current.y.toFixed(3)}</code></div>
       <div style={S.row}><span style={S.label}>Editing on</span><select value={previewColor} onChange={(event) => setPreviewColor(event.target.value)} style={S.select}>{palette.map((color) => <option key={color.token} value={color.token}>{color.label}</option>)}</select><span style={S.help}>Each color keeps its own size, tilt, brightness, and position.</span></div>
     </div>
     <div>
       <div style={S.label}>Front colors ({selected.size})</div>
-      <div style={S.swatches}>{palette.map((color) => <button type="button" key={color.token} title={color.label} aria-label={`${color.label}${selected.has(color.token) ? ' selected' : ''}`} onClick={() => { setSelected((old) => { const next = new Set(old); if (next.has(color.token)) next.delete(color.token); else next.add(color.token); return next; }); setPreviewColor(color.token); setSaved(false); }} style={{ ...S.swatch, background: color.hex, outline: selected.has(color.token) ? '2px solid #ff4f3d' : '1px solid #ddd' }} />)}</div>
+      <div style={S.swatches}>{palette.map((color) => <button type="button" key={color.token} title={color.label} aria-label={`${color.label}${selected.has(color.token) ? ' selected' : ''}`} onClick={() => { setSelected((old) => { const next = new Set(old); if (next.has(color.token)) next.delete(color.token); else next.add(color.token); return next; }); setPreviewColor(color.token); setSaved(false); }} style={{ ...S.swatch, background: color.hex, backgroundImage: garment === 'hat' ? `url(${blankUrl(garment, color.token)})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', outline: selected.has(color.token) ? '2px solid #ff4f3d' : '1px solid #ddd' }} />)}</div>
       <p style={S.help}>{saved && Object.keys(renderedUrls).length ? 'Saved mockups below are the exact R2 images now used by the storefront.' : 'Preview uses the R2 originals. Saving renders only the selected front colors.'}</p>
-      <div style={S.grid}>{art ? selectedColors.map((color) => <button type="button" key={color.token} onClick={() => setPreviewColor(color.token)} aria-label={`Edit placement on ${color.label}`} style={{ ...S.cell, outline: previewColor === color.token ? '2px solid #ff4f3d' : 'none' }}><div style={S.thumbnail}>{saved && renderedUrls[color.token] ? <img src={renderedUrls[color.token]} alt="" style={{ ...S.blank, objectFit: 'contain' }} loading="lazy" /> : <><img src={blankUrl(garment, color.token)} alt="" style={S.blank} loading="lazy" /><ArtLayer url={art} placement={placementFor(color.token)} aspect={aspect} /></>}</div><span style={S.cellLabel}>{color.label}</span></button>) : <p style={S.help}>Upload a PNG or load a saved design to preview its selected colors.</p>}</div>
+      <div style={S.grid}>{art ? selectedColors.map((color) => <button type="button" key={color.token} onClick={() => setPreviewColor(color.token)} aria-label={`Edit placement on ${color.label}`} style={{ ...S.cell, outline: previewColor === color.token ? '2px solid #ff4f3d' : 'none' }}><div style={{ ...S.thumbnail, aspectRatio: String(canvasRatio) }}>{saved && renderedUrls[color.token] ? <img src={renderedUrls[color.token]} alt="" style={{ ...S.blank, objectFit: 'contain' }} loading="lazy" /> : <><img src={blankUrl(garment, color.token)} alt="" style={S.blank} loading="lazy" /><ArtLayer url={art} placement={placementFor(color.token)} aspect={aspect} canvasRatio={canvasRatio} /></>}</div><span style={S.cellLabel}>{color.label}</span></button>) : <p style={S.help}>Upload a PNG or load a saved design to preview its selected colors.</p>}</div>
       {error && <p role="alert" style={S.error}>{error}</p>}
       <button type="button" onClick={handleSave} disabled={busy || !sourceUrl || !slug || !selected.size} style={{ ...S.save, opacity: busy || !sourceUrl || !slug || !selected.size ? 0.5 : 1 }}>{busy ? 'Working…' : saved ? 'Saved ✓' : 'Save front mockups'}</button>
     </div>

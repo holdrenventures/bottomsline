@@ -41,21 +41,24 @@ type ShopCatalogProps = {
   initialCollection: (typeof catalogCollections)[number];
   initialQuery: string;
   initialSort: SortOption;
+  initialStyle: 'tee' | null;
 };
 
-export default function ShopCatalog({ products, initialCollection, initialQuery, initialSort }: ShopCatalogProps) {
+export default function ShopCatalog({ products, initialCollection, initialQuery, initialSort, initialStyle }: ShopCatalogProps) {
   const [collection, setCollection] = useState<(typeof catalogCollections)[number]>(initialCollection);
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortOption>(initialSort);
+  const [styleFilter, setStyleFilter] = useState(initialStyle);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (collection !== 'All') params.set('collection', collection.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
     if (query.trim()) params.set('q', query.trim());
     if (sort !== 'featured') params.set('sort', sort);
+    if (styleFilter) params.set('style', styleFilter);
     const search = params.toString();
     window.history.replaceState(null, '', `/shop${search ? `?${search}` : ''}#catalog`);
-  }, [collection, query, sort]);
+  }, [collection, query, sort, styleFilter]);
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -63,7 +66,8 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
       const productCollections = product.collections ?? [product.collection];
       const matchesCollection = collection === 'All' || productCollections.includes(collection);
       const matchesQuery = !normalizedQuery || `${product.name} ${productCollections.join(' ')} ${product.editorialDescriptor}`.toLowerCase().includes(normalizedQuery);
-      return matchesCollection && matchesQuery;
+      const matchesStyle = !styleFilter || availableStyles(product).some((style) => style.toLowerCase() === styleFilter);
+      return matchesCollection && matchesQuery && matchesStyle;
     });
 
     return [...filtered].sort((a, b) => {
@@ -73,7 +77,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
       if (sort === 'name') return a.name.localeCompare(b.name);
       return Number(b.featured) - Number(a.featured);
     });
-  }, [collection, products, query, sort]);
+  }, [collection, products, query, sort, styleFilter]);
 
   const rows = chunkProducts(visibleProducts, 4);
 
@@ -90,6 +94,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
       </div>
 
       <div className="catalog-count"><span>{String(visibleProducts.length).padStart(2, '0')}</span> shirts on the line</div>
+      {styleFilter && <button className="catalog-style-filter" type="button" onClick={() => setStyleFilter(null)}>Showing tees only <span aria-hidden="true">×</span><span className="sr-only">Clear tee filter</span></button>}
       {visibleProducts.some((product) => availableStyles(product).length > 1) && <p className="catalog-style-key"><span className="catalog-style-key__sample" aria-hidden="true"><GarmentIcon style="Tank" /><GarmentIcon style="Hoodie" /></span><span>Garment outlines show the styles available for each design.</span></p>}
 
       {rows.length ? rows.map((row, rowIndex) => (
@@ -98,13 +103,16 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
             {row.map((product, productIndex) => {
               const href = `/products/${product.slug}`;
               const styles = availableStyles(product);
+              const catalogImage = styleFilter === 'tee'
+                ? product.colors.find((color) => color.active && styleName(color).toLowerCase() === 'tee' && color.mockupUrl)?.mockupUrl ?? product.catalogImage
+                : product.catalogImage;
               return (
                 <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg`, '--pin-shift': pinShift(product.slug), '--pin-slant': pinSlant(product.slug) } as CSSProperties} key={product.slug}>
                   <a className="catalog-product__visual" href={href} aria-label={`Shop ${product.name}${styles.length > 1 ? `, available in ${styles.join(', ')}` : ''}`}>
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}
-                    {product.catalogImage
-                      ? <img className="catalog-product__image" src={product.catalogImage} alt={product.name} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
+                    {catalogImage
+                      ? <img className="catalog-product__image" src={catalogImage} alt={product.name} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
                       : <Shirt art={product.art} tone={product.tone} />}
                     {styles.length > 1 && <span className="catalog-product__styles" aria-hidden="true" title={`Available in ${styles.join(', ')}`}>{styles.map((style) => <span key={style} title={style}><GarmentIcon style={style} /></span>)}</span>}
                   </a>
@@ -122,7 +130,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
             </aside>
           )}
         </div>
-      )) : <div className="catalog-empty"><p>Nothing on that line.</p><button type="button" onClick={() => { setCollection('All'); setQuery(''); }}>Show everything</button></div>}
+      )) : <div className="catalog-empty"><p>Nothing on that line.</p><button type="button" onClick={() => { setCollection('All'); setQuery(''); setStyleFilter(null); }}>Show everything</button></div>}
     </section>
   );
 }

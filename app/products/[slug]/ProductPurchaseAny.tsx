@@ -5,6 +5,9 @@ import type { CatalogColor, CatalogProduct } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
 import { trackMeta } from '../../lib/meta-pixel';
 import { SHIPS_IN_BUSINESS_DAYS } from '../../lib/promo';
+import { BUNDLE_STYLES } from '../../lib/pricing';
+import { isBlackFridayPromo, isChristmasDeliveryWindow } from '../../lib/promo';
+import { usePromoClock } from '../../lib/use-promo-window';
 import { styleName, variantIsAvailable } from '../product-selection';
 import ProductGuide from './ProductGuide';
 import { useProductHero } from './ProductHero';
@@ -19,6 +22,7 @@ function slugify(input: string) {
 }
 
 export default function ProductPurchaseAny({ product }: { product: PurchaseProduct }) {
+  const now = usePromoClock();
   useEffect(() => {
     trackMeta('ViewContent', {
       content_ids: [product.id],
@@ -194,6 +198,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
             : `Add to bag — $${selectedPrice.toFixed(2)}`} <span aria-hidden="true">↗</span>
         </button>
       </div>
+      {isBlackFridayPromo(now) && BUNDLE_STYLES.includes(style ?? '') && <p className="purchase-bundle">Black Friday: any 3 tees for $65, shipped free. Through Cyber Monday.</p>}
       <p className={`purchase-note ${added ? 'purchase-note--success' : ''}`} role="status">
         {added
           ? 'Excellent judgment. It’s in the bag.'
@@ -206,7 +211,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
               : 'Pick a size. Commitment looks good on you.'}
       </p>
       <p className="purchase-shipping">
-        Ships in {SHIPS_IN_BUSINESS_DAYS} business days. Free shipping on orders of $60 or more. Wrong size? We’ll swap it within 30 days.
+        Ships in {SHIPS_IN_BUSINESS_DAYS} business days. {isChristmasDeliveryWindow(now) && 'Order by Wed, Dec 16 for Christmas delivery. '}Free shipping on orders of $60 or more. Wrong size? We’ll swap it within 30 days.
       </p>
     </div>
   );

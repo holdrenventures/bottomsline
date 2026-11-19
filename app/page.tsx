@@ -6,6 +6,7 @@ import SiteHeader from './SiteHeader';
 import { collectionSlug, getCatalogProducts, productPriceLabel } from './data/products';
 import { pinShift, pinSlant } from './lib/pin-shift';
 import { storefrontImage } from './lib/storefront-images';
+import { isBlackFridayPromo } from './lib/promo';
 import { HOME_DESCRIPTION, HOME_TITLE, pageMetadata } from './lib/seo';
 
 export const metadata: Metadata = pageMetadata({
@@ -50,7 +51,14 @@ export default async function Home() {
   const featured = catalog.filter((product) => product.featured);
   const featuredIds = new Set(featured.map((product) => product.id));
   const holidayProducts = catalog.filter((product) => (product.collections ?? [product.collection]).includes('Holiday'));
-  const products = [...featured, ...catalog.filter((product) => !featuredIds.has(product.id))]
+  const regularFeatured = [...featured, ...catalog.filter((product) => !featuredIds.has(product.id))];
+  const comparableName = (name: string) => name.toLowerCase().replace(/[‘’]/g, "'");
+  const campaignNames = ["I'd Rather Sit on His Beard", 'Support Local Bottoms', 'Two Hits and Anything Fits', 'Happy HoliGays', 'Ho Ho Hole'];
+  const campaignFeatured = [
+    ...campaignNames.flatMap((name) => catalog.find((product) => comparableName(product.name) === comparableName(name)) ?? []),
+    ...regularFeatured.filter((product) => !campaignNames.some((name) => comparableName(name) === comparableName(product.name)) && !/lesbian turkey baster|just here for the stuffing/i.test(product.name)),
+  ];
+  const products = (isBlackFridayPromo() ? campaignFeatured : regularFeatured)
     .slice(0, 4)
     .map((product) => ({
       name: product.name,

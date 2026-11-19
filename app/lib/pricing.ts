@@ -1,5 +1,6 @@
 // Promo + shipping rules shared by the bag preview and the checkout Worker.
 // The Worker recomputes everything from catalog prices; the bag only previews.
+import { isTeeBundleActive } from './promo.ts';
 
 export const BUNDLE_SIZE = 3;
 export const BUNDLE_PRICE_CENTS = 6500;
@@ -52,9 +53,9 @@ export function shippingCents(lines: PricedLine[], discountedSubtotalCents: numb
   return 1100 + 200 * (garments - 3);
 }
 
-export function quote(lines: PricedLine[], hasWelcomeCode: boolean): Quote {
+export function quote(lines: PricedLine[], hasWelcomeCode: boolean, now = Date.now()): Quote {
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitCents * line.quantity, 0);
-  const bundle = bundleDiscountCents(lines);
+  const bundle = isTeeBundleActive(now) ? bundleDiscountCents(lines) : 0;
   const welcome = hasWelcomeCode ? Math.round((subtotalCents * WELCOME_PERCENT) / 100) : 0;
 
   // Best deal only — the two offers never stack.

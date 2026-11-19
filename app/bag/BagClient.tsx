@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { CART_UPDATED_EVENT, clearCart, readCart, removeCartItem, updateCartItem, type CartItem } from '../lib/cart';
 import { storefrontImage } from '../lib/storefront-images';
 import { trackMeta } from '../lib/meta-pixel';
-import { FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quote } from '../lib/pricing';
+import { BUNDLE_SIZE, BUNDLE_STYLES, FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quote } from '../lib/pricing';
+import { isTeeBundleActive } from '../lib/promo';
+import { usePromoClock } from '../lib/use-promo-window';
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -13,6 +15,7 @@ function itemDetails(item: CartItem) {
 }
 
 export default function BagClient() {
+  const now = usePromoClock();
   const [items, setItems] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -39,10 +42,13 @@ export default function BagClient() {
     () => quote(
       items.map((item) => ({ style: item.style, unitCents: Math.round(item.unitPrice * 100), quantity: item.quantity })),
       Boolean(promoCode),
+      now,
     ),
-    [items, promoCode],
+    [items, promoCode, now],
   );
   const toFreeShipping = FREE_SHIPPING_MIN_CENTS - (pricing.subtotalCents - pricing.discountCents);
+  const eligibleTees = items.reduce((total, item) => total + (BUNDLE_STYLES.includes(item.style ?? '') ? item.quantity : 0), 0);
+  const teesTowardNextBundle = eligibleTees % BUNDLE_SIZE;
 
   function setQuantity(index: number, quantity: number) {
     setItems(updateCartItem(index, quantity));
@@ -148,6 +154,8 @@ export default function BagClient() {
           )}
           <div><dt>Shipping</dt><dd>{pricing.shippingCents === 0 ? 'Free' : money.format(pricing.shippingCents / 100)}</dd></div>
         </dl>
+        {isTeeBundleActive(now) && pricing.discountKind === 'bundle' && <p className="bag-summary__bundle">{Math.floor(eligibleTees / BUNDLE_SIZE) > 1 ? `${Math.floor(eligibleTees / BUNDLE_SIZE)} sets of ` : ''}3 tees for $65 applied. Shipped free.</p>}
+        {isTeeBundleActive(now) && teesTowardNextBundle > 0 && <p className="bag-summary__bundle">Add {BUNDLE_SIZE - teesTowardNextBundle} more {BUNDLE_SIZE - teesTowardNextBundle === 1 ? 'tee' : 'tees'} {eligibleTees >= BUNDLE_SIZE ? 'for another 3 for $65.' : 'to get 3 for $65, shipped free.'}</p>}
         <div><span>Total</span><strong>{money.format(pricing.totalCents / 100)}</strong></div>
         <label className="bag-summary__promo">
           <span>Promo code</span>

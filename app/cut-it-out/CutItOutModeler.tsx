@@ -155,7 +155,7 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
       <div className="cut-modeler__head">
         <p className="eyebrow"><span /> The modeler</p>
         <h2>Pick a shirt.<br /><em>Cut it however.</em></h2>
-        <p>Choose a tee, pick the cut, drag the sliders. Toggle "Show cut" to see it before you commit.</p>
+        <p>Choose a tee, pick the cut, drag the sliders. Toggle &ldquo;Show cut&rdquo; to see it before you commit.</p>
       </div>
 
       <div className="cut-modeler__grid">

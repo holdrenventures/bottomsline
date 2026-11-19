@@ -65,7 +65,8 @@ export default function DesignAdjusterDesk() {
     const response = await fetch(`/api/admin/designs?${query}`, { headers: { Authorization: `Bearer ${token}` } });
     const result = await response.json() as { error?: string; slug?: string; colors?: string[]; placements?: Record<string, { w: number; x: number; y: number; angle: number }> };
     if (!response.ok) throw new Error(result.error || 'Unable to load saved mockups.');
-    return result;
+    if (!result.slug || !result.colors || !result.placements) throw new Error('Saved mockups are incomplete.');
+    return { slug: result.slug, colors: result.colors, placements: result.placements };
   }
 
   if (!token || !loaded) return <main className="admin-login"><form onSubmit={login}><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1><p>Place artwork separately on every shirt color.</p><label>Admin token<input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} /></label><button disabled={busy}>{busy ? 'Checking…' : 'Open adjuster'}</button><output role="status">{status}</output></form></main>;

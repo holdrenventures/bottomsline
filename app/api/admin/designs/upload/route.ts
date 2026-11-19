@@ -15,11 +15,12 @@ export async function POST(request: Request) {
     if (!(file instanceof File)) throw new Error('Choose a PNG file.');
     if (file.type !== 'image/png') throw new Error('Artwork must be a transparent PNG.');
     if (file.size > 12 * 1024 * 1024) throw new Error('Artwork must be 12 MB or smaller.');
+    const pngFile = file;
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) throw new Error('Design slug must use lowercase letters, numbers, and hyphens.');
 
     async function uploadAsset(publicId: string) {
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', pngFile);
       body.append('upload_preset', preset as string);
       body.append('folder', 'designs');
       body.append('public_id', publicId);

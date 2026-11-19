@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { CatalogColor, CatalogProduct, CatalogVariant } from '../../data/products';
+import type { CatalogColor, CatalogProduct } from '../../data/products';
 import { addCartItem } from '../../lib/cart';
 import { trackMeta } from '../../lib/meta-pixel';
+import { SHIPS_IN_BUSINESS_DAYS } from '../../lib/promo';
+import { styleName, variantIsAvailable } from '../product-selection';
 import ProductGuide from './ProductGuide';
 import { useProductHero } from './ProductHero';
 
@@ -14,14 +16,6 @@ type PurchaseProduct = Pick<
 
 function slugify(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'color';
-}
-
-function styleName(color: CatalogColor) {
-  return color.style?.trim() || 'Tee';
-}
-
-function variantIsAvailable(variant: CatalogVariant) {
-  return variant.active && (variant.inventoryQuantity === null || variant.inventoryQuantity > 0);
 }
 
 export default function ProductPurchaseAny({ product }: { product: PurchaseProduct }) {
@@ -73,6 +67,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
 
   const heroImage = selectedColor?.mockupUrl ?? product.catalogImage ?? null;
   const heroAlt = `${product.name}${selectedColor ? ` — ${selectedColor.color}` : ''}`;
+  // On product pages the clothesline visual shows the hero; only render it inline when nothing else does.
   const hero = useProductHero();
   const setHero = hero?.setHero;
   useEffect(() => { setHero?.(heroImage, heroAlt); }, [setHero, heroImage, heroAlt]);
@@ -209,6 +204,9 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
             : displayColors.length > 0 && !selectedColor
               ? 'Pick a color, then a size.'
               : 'Pick a size. Commitment looks good on you.'}
+      </p>
+      <p className="purchase-shipping">
+        Ships in {SHIPS_IN_BUSINESS_DAYS} business days. Free shipping on orders of $60 or more. Wrong size? We’ll swap it within 30 days.
       </p>
     </div>
   );

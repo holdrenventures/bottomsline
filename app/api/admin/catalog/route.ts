@@ -1,3 +1,4 @@
+import { uniqueVariantWrites } from '../../../lib/variant-combos.mjs';
 import { isAdminRequest, supabaseAdmin } from '../../../lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -171,11 +172,15 @@ export async function POST(request: Request) {
       active: color.active !== false,
     }));
 
-    if (variants.length) {
+    // Old clients may still send a second row for a style/size already on this product.
+    // Keep the saved row and ignore duplicate additions before hitting the unique constraint.
+    const savedVariants = await supabaseAdmin(`product_variants?select=id,style,size&product_id=eq.${encodeURIComponent(productId)}`) as Array<{id:string;style:string;size:string}>;
+    const uniqueVariants = uniqueVariantWrites(variants, savedVariants);
+    if (uniqueVariants.length) {
       await supabaseAdmin('product_variants?on_conflict=id', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(variants),
+        body: JSON.stringify(uniqueVariants),
       });
     }
     if (colors.length) {

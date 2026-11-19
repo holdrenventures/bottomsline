@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Admin previews use existing R2 mockups or a custom image URL. */
 
 import ProductDesignWorkspace from './ProductDesignWorkspace';
+import { variantKey } from '../lib/variant-combos.mjs';
 import ProductDetailImages, { type DetailImage } from './ProductDetailImages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes } from 'react';
@@ -69,7 +70,7 @@ function slugify(value: string) {
 const uid = () => Math.random().toString(36).slice(2, 10);
 const dollars = (cents: number) => (cents / 100).toFixed(2);
 const splitList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
-const comboKey = (v: Pick<Variant, 'style' | 'garment' | 'size'>) => [v.style, v.garment ?? '', v.size].map((part) => part.trim().toLowerCase()).join('|');
+const comboKey = variantKey;
 const formatDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 function sizeRank(size: string) {
@@ -372,7 +373,7 @@ export default function AdminCatalog() {
       product_variants: [...current.product_variants, ...added].sort(compareVariants),
       product_colors: hasMatchingColorway ? current.product_colors : [...current.product_colors, starterColorway],
     }));
-    setNotice({ text: `${style} added. Add its color and mockup below, then save.`, tone: 'info' });
+    setNotice({ text: `${style} added. Save the product, then save its mockups below.`, tone: 'info' });
     setGeneratorOpen(false);
   }
   function addColorway() {
@@ -588,7 +589,7 @@ export default function AdminCatalog() {
                   <label>Blank / model <span className="admin-optional">optional</span><input list="dl-garments" value={generator.garment} onChange={(event) => setGenerator({ ...generator, garment: event.target.value })} placeholder="e.g. Tultex 202" /><small className="admin-field-hint">For your internal garment reference.</small></label>
                   <label>Available sizes<input value={generator.sizes} onChange={(event) => setGenerator({ ...generator, sizes: event.target.value })} /><small className="admin-field-hint">Separate sizes with commas.</small></label>
                 </div>
-                <p className="admin-section__help">This adds {newCombos.length || 'no new'} sellable {newCombos.length === 1 ? 'option' : 'options'} at {`$${dollars(draft.base_price_cents)}`} and starts a matching colorway for its image.</p>
+                <p className="admin-section__help">{newCombos.length ? 'Existing style and size combinations are skipped. ' : 'Those sizes already exist for this style. '}This adds {newCombos.length || 'no new'} sellable {newCombos.length === 1 ? 'option' : 'options'} at {`$${dollars(draft.base_price_cents)}`} and starts a matching colorway for its image.</p>
                 <div className="admin-section__actions">
                   <button type="button" className="admin-save" disabled={!newCombos.length} onClick={addGenerated}>{newCombos.length ? `Add ${generator.style || 'garment'} · ${newCombos.length} ${newCombos.length === 1 ? 'size' : 'sizes'}` : 'Nothing new to add'}</button>
                   <button type="button" onClick={() => setGeneratorOpen(false)}>Cancel</button>
@@ -632,7 +633,7 @@ export default function AdminCatalog() {
             )}
           </section>
 
-          <section className="admin-section admin-product-design"><h3>Design and mockups</h3><p className="admin-section__help">Upload artwork, copy a placement from another product, assign PNGs by color, and save front mockups here.</p>{!draft.id ? <p className="admin-empty">Save this product to start its mockups.</p> : dirty ? <p className="admin-empty">Save your product changes before editing mockups.</p> : <div onKeyDown={(event) => { if (event.key === 'Enter' && (event.target as HTMLElement).tagName === 'INPUT') event.preventDefault(); }}><ProductDesignWorkspace key={draft.id} product={draft} products={products.filter((p) => !isArchived(p))} token={token} onSaved={async () => loadCatalog(token,draft.id,{text:'Mockups saved and product refreshed.',tone:'success'})} /></div>}</section>
+          <section className="admin-section admin-product-design"><h3>Design and mockups</h3><p className="admin-section__help">1. Add the garment and sizes above, then save the product. 2. Upload the first PNG and, if needed, a second PNG. 3. Select colors, assign each color its PNG, adjust placement, and save front mockups. Then choose the homepage image and publish.</p>{!draft.id ? <p className="admin-empty">Save this new product first. The editor will appear here without leaving this page.</p> : <><p className="admin-section__help">{dirty ? 'You have unsaved product changes. Save them with the button below; your artwork and color choices will stay here.' : 'Your garment options are saved. You can save mockups now.'}</p><div onKeyDown={(event) => { if (event.key === 'Enter' && (event.target as HTMLElement).tagName === 'INPUT') event.preventDefault(); }}><ProductDesignWorkspace key={draft.id} product={draft} products={products.filter((p) => !isArchived(p))} token={token} saveBlockedReason={dirty ? 'Save product changes first. Your artwork and colors will stay here.' : ''} onSaved={async () => loadCatalog(token,draft.id,{text:'Mockups saved and product refreshed.',tone:'success'})} /></div></>}</section>
 
           <details className="admin-section admin-details"><summary><h3>Advanced colorway controls</h3><span className="admin-section__help">Edit mockup URLs and visibility directly.</span></summary>
           {/* Colorways */}

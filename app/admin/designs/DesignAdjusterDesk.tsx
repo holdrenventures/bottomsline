@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import DesignAdjuster from './DesignAdjuster';
 import { GARMENTS, slugify } from '../../lib/blc-cloudinary';
 
-type ProductSummary = { id: string; name: string; slug: string; active: boolean; product_variants: Array<{ style: string; active: boolean }> };
+type ProductSummary = { id: string; name: string; slug: string; active: boolean; product_variants: Array<{ style: string; garment: string | null; active: boolean }> };
 
 const tokenKey = 'bl-admin-token';
 
@@ -58,7 +58,7 @@ export default function DesignAdjusterDesk() {
     });
     const result = await response.json() as {id?:string;error?:string};
     if (!response.ok || !result.id) throw new Error(result.error || 'Unable to create product.');
-    setProducts((all) => [{id:result.id!,name:input.name,slug,active:false,product_variants:[{style:config.style,active:true}]}, ...all]);
+    setProducts((all) => [{id:result.id!,name:input.name,slug,active:false,product_variants:[{style:config.style,garment:config.model,active:true}]}, ...all]);
     return { slug };
   }
 

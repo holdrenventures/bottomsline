@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- Admin previews use existing R2 mockups or a custom image URL. */
 
+import ProductDesignWorkspace from './ProductDesignWorkspace';
 import ProductDetailImages, { type DetailImage } from './ProductDetailImages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes } from 'react';
@@ -35,7 +36,7 @@ type Product = {
   product_collections: Array<{ collection_id: string; sort_order: number }>;
   collection_ids?: string[];
 };
-type Filter = 'all' | 'live' | 'draft';
+type Filter = 'all' | 'live' | 'draft' | 'archived';
 type Notice = { text: string; tone: 'info' | 'success' | 'error' };
 type GarmentPresetId = 'tee' | 'tank' | 'sweatshirt' | 'hoodie' | 'hat' | 'custom';
 type GarmentGenerator = { preset: GarmentPresetId; style: string; garment: string; sizes: string };
@@ -174,17 +175,19 @@ export default function AdminCatalog() {
   const missing = checks.filter((check) => !check.ok);
   const slugTaken = Boolean(draft.slug) && products.some((p) => p.slug === draft.slug && p.id !== draft.id);
 
-  const counts = useMemo(() => ({
-    all: products.length,
-    live: products.filter((p) => p.active).length,
-    draft: products.filter((p) => !p.active).length,
-  }), [products]);
+  const archiveCollectionId = collections.find((c) => c.slug === 'admin-archive')?.id;
+  const isArchived = (p: Product) => Boolean(archiveCollectionId && p.product_collections.some((link) => link.collection_id === archiveCollectionId));
+  const counts = ({
+    all: products.filter((p) => !isArchived(p)).length,
+    live: products.filter((p) => p.active && !isArchived(p)).length,
+    draft: products.filter((p) => !p.active && !isArchived(p)).length,
+    archived: products.filter(isArchived).length,
+  });
 
-  const visibleProducts = useMemo(() => products
-    .filter((p) => filter === 'all' || (filter === 'live' ? p.active : !p.active))
+  const visibleProducts = products
+    .filter((p) => filter === 'archived' ? isArchived(p) : !isArchived(p) && (filter === 'all' || (filter === 'live' ? p.active : !p.active)))
     .filter((p) => `${p.name} ${p.slug}`.toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name)),
-  [products, filter, query]);
+    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
 
   // Values already used across the catalog, offered as suggestions to prevent typos like "Tshirt" vs "T-Shirt".
   const suggestions = useMemo(() => {
@@ -316,6 +319,16 @@ export default function AdminCatalog() {
   }
   function refresh() { if (confirmDiscard()) void loadCatalog(); }
 
+  async function changeArchive(archived: boolean) {
+    if (!draft.id || !confirmDiscard()) return;
+    setBusy(true);
+    try {
+      await request('/api/admin/archive', {method:'POST',body:JSON.stringify({productId:draft.id,archived})});
+      await loadCatalog(token,draft.id,{text:archived ? 'Archived. This product is hidden from the shop and your main list.' : 'Restored as a draft. Publish it when ready.',tone:'success'});
+      setFilter(archived ? 'archived' : 'draft');
+    } catch (error) { setNotice({text:error instanceof Error ? error.message : 'Unable to update archive.',tone:'error'}); setBusy(false); }
+  }
+
   function patch<K extends keyof Product>(key: K, value: Product[K]) { setDraft((current) => ({ ...current, [key]: value })); }
   function patchVariant(index: number, value: Partial<Variant>) { patch('product_variants', draft.product_variants.map((item, i) => i === index ? { ...item, ...value } : item)); }
   function patchAllVariants(value: Partial<Variant>) { patch('product_variants', draft.product_variants.map((item) => ({ ...item, ...value }))); }
@@ -403,6 +416,9 @@ export default function AdminCatalog() {
   const productGarments = rankByFrequency(draft.product_variants.map((v) => v.garment));
   const productStyles = rankByFrequency(draft.product_variants.map((v) => v.style));
   const featuredColorways = draft.product_colors.filter((color) => color.active && color.mockup_url && draft.product_variants.some((variant) => variant.active && variant.style === (color.style || 'Tee') && (variant.inventory_quantity === null || variant.inventory_quantity > 0)));
+  const selectedArchived = isArchived(draft);
+  const overviewImage = draft.catalog_image || featuredColorways[0]?.mockup_url || draft.product_colors.find((color) => color.active && color.mockup_url)?.mockup_url;
+  const garmentSummary = [...new Set(draft.product_variants.filter((variant) => variant.active).map((variant) => variant.style))];
   const hasDetails = Boolean(draft.material || draft.fit_notes || draft.care_instructions || draft.shipping_note || draft.size_guide_url);
 
   return (
@@ -427,9 +443,9 @@ export default function AdminCatalog() {
             <button type="button" onClick={newProduct}>+ New</button>
           </div>
           <div className="admin-filter" role="tablist" aria-label="Filter products">
-            {(['all', 'live', 'draft'] as Filter[]).map((f) => (
+            {(['all', 'live', 'draft', 'archived'] as Filter[]).map((f) => (
               <button type="button" role="tab" key={f} aria-selected={filter === f} className={filter === f ? 'is-active' : ''} onClick={() => setFilter(f)}>
-                {f === 'all' ? 'All' : f === 'live' ? 'Live' : 'Drafts'} <span>{counts[f]}</span>
+                {f === 'all' ? 'All' : f === 'live' ? 'Live' : f === 'archived' ? 'Archive' : 'Drafts'} <span>{counts[f]}</span>
               </button>
             ))}
           </div>
@@ -441,7 +457,7 @@ export default function AdminCatalog() {
               const isSelected = selectedId === product.id;
               return (
                 <button type="button" key={product.id} className={`admin-product-item${isSelected ? ' is-active' : ''}`} onClick={() => pickProduct(product)}>
-                  {product.catalog_image ? <img src={product.catalog_image} alt="" loading="lazy" /> : <span className="admin-thumb-empty" aria-hidden="true" />}
+                  {(product.catalog_image || product.product_colors.find((color) => color.active && color.mockup_url)?.mockup_url) ? <img src={product.catalog_image || product.product_colors.find((color) => color.active && color.mockup_url)?.mockup_url || ''} alt="" loading="lazy" /> : <span className="admin-thumb-empty" aria-hidden="true" />}
                   <span className="admin-product-item__text">
                     <span>{product.name}{isSelected && dirty ? ' •' : ''}</span>
                     <small>
@@ -464,8 +480,11 @@ export default function AdminCatalog() {
             <div className="admin-editor__actions">
               {draft.id && draft.active && draft.slug && <a href={productPath(draft.slug)} target="_blank" rel="noreferrer">View product ↗</a>}
               {draft.id && <button type="button" onClick={duplicateProduct}>Duplicate</button>}
+              {draft.id && <button type="button" onClick={() => void changeArchive(!selectedArchived)} disabled={busy}>{selectedArchived ? 'Restore draft' : 'Archive'}</button>}
             </div>
           </div>
+
+          <section className="admin-section admin-overview"><div className="admin-overview__hero">{overviewImage ? <img src={overviewImage} alt={`${draft.name || 'Product'} preview`} /> : <div className="admin-image-empty">No mockup yet</div>}</div><div><h3>Product at a glance</h3><p>{selectedArchived ? 'Archived' : draft.active ? 'Live in shop' : 'Draft'} · {garmentSummary.length ? garmentSummary.join(', ') : 'No garments yet'} · {draft.product_colors.filter((color) => color.active && color.mockup_url).length} mockups</p><div className="admin-overview__colors">{draft.product_colors.filter((color) => color.active && color.mockup_url).slice(0,8).map((color) => <img key={color.id || color._key} src={color.mockup_url!} alt={`${color.style || 'Tee'} ${color.color}`} title={`${color.style || 'Tee'} · ${color.color}`} />)}</div><p className="admin-section__help">{missing.length ? `Still needed: ${missing.map((check) => check.label).join(', ')}` : 'Ready to publish.'}</p></div></section>
 
           {/* Visibility + publish checklist */}
           <section className="admin-section admin-publish">
@@ -476,7 +495,7 @@ export default function AdminCatalog() {
               </div>
               <div className="admin-segmented" role="radiogroup" aria-label="Visibility">
                 <button type="button" role="radio" aria-checked={!draft.active} className={!draft.active ? 'is-on' : ''} onClick={() => patch('active', false)}>Draft</button>
-                <button type="button" role="radio" aria-checked={draft.active} className={draft.active ? 'is-on' : ''} onClick={() => patch('active', true)}>Live</button>
+                <button type="button" role="radio" aria-checked={draft.active} className={draft.active ? 'is-on' : ''} onClick={() => patch('active', true)} disabled={selectedArchived}>Live</button>
               </div>
             </div>
             {missing.length > 0 ? (
@@ -534,7 +553,7 @@ export default function AdminCatalog() {
           <section className="admin-section">
             <h3>Collections</h3>
             <div className="admin-checks admin-checks--wrap">
-              {collections.map((collection) => (
+              {collections.filter((collection) => collection.slug !== 'admin-archive').map((collection) => (
                 <label key={collection.id}>
                   <input type="checkbox" checked={(draft.collection_ids ?? []).includes(collection.id)} onChange={(event) => patch('collection_ids', event.target.checked ? [...(draft.collection_ids ?? []), collection.id] : (draft.collection_ids ?? []).filter((id) => id !== collection.id))} /> {collection.name}
                 </label>
@@ -613,6 +632,9 @@ export default function AdminCatalog() {
             )}
           </section>
 
+          <section className="admin-section admin-product-design"><h3>Design and mockups</h3><p className="admin-section__help">Upload artwork, copy a placement from another product, assign PNGs by color, and save front mockups here.</p>{!draft.id ? <p className="admin-empty">Save this product to start its mockups.</p> : dirty ? <p className="admin-empty">Save your product changes before editing mockups.</p> : <div onKeyDown={(event) => { if (event.key === 'Enter' && (event.target as HTMLElement).tagName === 'INPUT') event.preventDefault(); }}><ProductDesignWorkspace key={draft.id} product={draft} products={products.filter((p) => !isArchived(p))} token={token} onSaved={async () => loadCatalog(token,draft.id,{text:'Mockups saved and product refreshed.',tone:'success'})} /></div>}</section>
+
+          <details className="admin-section admin-details"><summary><h3>Advanced colorway controls</h3><span className="admin-section__help">Edit mockup URLs and visibility directly.</span></summary>
           {/* Colorways */}
           <section className="admin-section">
             <div className="admin-section__heading">
@@ -652,6 +674,8 @@ export default function AdminCatalog() {
               </div>
             )}
           </section>
+
+          </details>
 
           <details className="admin-section admin-details" open={hasDetails}>
             <summary><h3>Product details</h3><span className="admin-section__help">Optional. Empty fields stay off the public page.</span></summary>

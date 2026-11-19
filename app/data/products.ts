@@ -43,6 +43,7 @@ export type CatalogProduct = {
   collection: ProductCollection;
   collections?: ProductCollection[];
   catalogImage: string | null;
+  galleryImages?: Array<{url:string;alt:string}>;
   availableSizes: string[];
   variants?: CatalogVariant[];
   colors: CatalogColor[];

@@ -1,6 +1,7 @@
 // The editor keeps originals and finished storefront mockups in Cloudflare R2.
 // Cloudinary is used only for a finalized composition at save time.
 import CATALOG from './blc-colors.json';
+import HOODIE_FOREGROUNDS from './hoodie-foregrounds.json';
 
 export const CLOUD = CATALOG.cloud;
 export const GARMENTS = CATALOG.garments;
@@ -17,6 +18,10 @@ export function blankUrl(garment, colorToken) {
   const config = GARMENTS[garment];
   if (!config) throw new Error('Unsupported garment blank.');
   return `${R2_ORIGIN}/editor/blanks/${config.folder}/${config.prefix}_${colorToken}_front.${config.ext || 'png'}`;
+}
+
+export function foregroundUrl(garment, colorToken) {
+  return garment === 'tultex320' ? HOODIE_FOREGROUNDS[colorToken] || null : null;
 }
 
 export function artworkUrl(key) {
@@ -45,6 +50,11 @@ export function mockupUrl({ artwork, garment, colorToken, placement, trim = unde
   if (n(x)) apply += `,x_${n(x)}`;
   if (n(y)) apply += `,y_${n(y)}`;
   steps.push(apply);
+  const foreground = foregroundUrl(garment, colorToken);
+  if (foreground) {
+    const encoded = btoa(foreground).replace(/\+/g, '-').replace(/\//g, '_');
+    steps.push(`l_fetch:${encoded}`, 'c_scale,fl_relative,w_1', 'fl_layer_apply,g_north_west,x_0,y_0');
+  }
   if (trim ?? (GARMENTS[garment].trim !== false)) steps.push('e_trim');
   return `${fetchBase}/${steps.join('/')}/${blankUrl(garment, colorToken)}`;
 }

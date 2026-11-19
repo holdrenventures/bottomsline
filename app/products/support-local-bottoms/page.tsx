@@ -1,3 +1,4 @@
+import ProductDetailGallery from '../ProductDetailGallery';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
@@ -44,6 +45,7 @@ export default async function SupportLocalBottomsPage() {
             <p className="product-description">A public service announcement.<br />Support locally.</p>
             <p className="product-aside">The right people will read it twice.</p>
             <ProductPurchase product={product} />
+            <ProductDetailGallery images={product.galleryImages} />
 
             {productDetails.length > 0 && <div className="product-specs">
               {productDetails.map(([label, value], index) => <div key={label}><span className="product-specs__index">0{index + 1}</span><span className="product-specs__label">{label}</span><p>{value}</p></div>)}

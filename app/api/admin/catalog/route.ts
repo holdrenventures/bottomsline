@@ -38,6 +38,7 @@ type ProductInput = {
   base_price_cents?: number;
   currency?: string;
   catalog_image?: string | null;
+  gallery_images?: Array<{url:string;alt:string}>;
   active?: boolean;
   featured?: boolean;
   new_drop?: boolean;
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
   try {
     const input = await request.json() as ProductInput;
     const { name, slug, price, currency } = validateProduct(input);
+    if (input.gallery_images !== undefined && (!Array.isArray(input.gallery_images) || input.gallery_images.length > 8 || input.gallery_images.some((image) => typeof image.url !== 'string' || !/^https:\/\/images\.bottomslineclothing\.com\/product-details\/[a-f0-9]{64}\.(png|jpg|webp)$/.test(image.url) || typeof image.alt !== 'string' || image.alt.length > 500))) throw new Error('Gallery images must be uploaded photos with descriptions up to 500 characters.');
     const productPayload = {
       name,
       slug,
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
       base_price_cents: price,
       currency,
       catalog_image: cleanNullable(input.catalog_image),
+      ...(input.gallery_images === undefined ? {} : {gallery_images: input.gallery_images}),
       active: Boolean(input.active),
       featured: Boolean(input.featured),
       new_drop: Boolean(input.new_drop),

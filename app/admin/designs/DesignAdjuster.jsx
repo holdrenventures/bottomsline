@@ -36,12 +36,13 @@ function ArtLayer({ url, placement, aspect, canvasRatio, handle, onMove, onResiz
 
 /**
  * The browser previews R2 originals. Cloudinary runs once per saved color.
- * @param {{products?: Array<{name:string,slug:string,active:boolean,product_variants?:Array<{style:string,active:boolean}>}>, onCreate:(input:{name:string,garment:string,priceCents:number,sizes:string[]})=>Promise<{slug:string}>, onUpload:(file:File,slug:string)=>Promise<{artworkUrl:string,assetSlug?:string}>, onSave:(value:unknown)=>Promise<unknown>, onLoad:(productSlug:string,garment:string)=>Promise<{slug:string,artworkUrl?:string,artworkUrls?:Record<string,string>,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle?:number,brightness?:number}>}>}} props
+ * @param {{products?: Array<{name:string,slug:string,active:boolean,product_variants?:Array<{style:string,active:boolean}>}>, lockedProduct?:string,initialGarment?:string,onCreate:(input:{name:string,garment:string,priceCents:number,sizes:string[]})=>Promise<{slug:string}>, onUpload:(file:File,slug:string)=>Promise<{artworkUrl:string,assetSlug?:string}>, onSave:(value:unknown)=>Promise<unknown>, onLoad:(productSlug:string,garment:string)=>Promise<{slug:string,artworkUrl?:string,artworkUrls?:Record<string,string>,colors:string[],placements:Record<string,{w:number,x:number,y:number,angle?:number,brightness?:number}>}>}} props
  */
-export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad, onCreate }) {
-  const [garment, setGarment] = useState('tee');
+export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad, onCreate, lockedProduct = '', initialGarment = 'tee' }) {
+  const [garment, setGarment] = useState(initialGarment);
   const [slug, setSlug] = useState('');
-  const [productSlug, setProductSlug] = useState('');
+  const [productSlug, setProductSlug] = useState(lockedProduct);
+  const [copySource, setCopySource] = useState('');
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -122,6 +123,18 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
       setSlug(result.slug); setSelected(new Set(result.colors)); setPreviewColor(result.colors[0]);
       setPlacements((all) => ({ ...all, [garment]: { base: result.placements[result.colors[0]], lead: result.colors[0], colors: result.placements } })); setSaved(false);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to load saved mockups.'); }
+    finally { setBusy(false); }
+  }
+
+  async function copyPlacement() {
+    if (!copySource) return;
+    setBusy(true); setError('');
+    try {
+      const result = await onLoad(copySource, garment);
+      if (!result?.colors?.length) throw new Error('No saved placements for that garment.');
+      setPlacements((all) => ({ ...all, [garment]: { base: result.placements[result.colors[0]], lead: result.colors[0], colors: result.placements } }));
+      setSaved(false);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to copy placement.'); }
     finally { setBusy(false); }
   }
 
@@ -224,21 +237,22 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
         <div style={S.segment}>{Object.entries(GARMENTS).map(([id, config]) => <button type="button" key={id} onClick={() => changeGarment(id)} style={{ ...S.segmentButton, ...(id === garment ? S.segmentSelected : {}) }}>{config.label}</button>)}</div>
         <input value={slug} onChange={(event) => { setSlug(slugify(event.target.value)); setSaved(false); }} placeholder="design-slug" style={S.slug} aria-label="Design name" />
       </div>
-      <label style={S.productLabel}>Storefront product <span style={S.help}>Optional. Saving with a product publishes the selected front mockups to its colorways.</span>
+      {!lockedProduct && <label style={S.productLabel}>Storefront product <span style={S.help}>Optional. Saving with a product publishes the selected front mockups to its colorways.</span>
         <select value={productSlug} onChange={(event) => { setProductSlug(event.target.value); setSaved(false); }} style={S.select}>
           <option value="">Save placement only</option>
           {eligibleProducts.map((product) => <option key={product.slug} value={product.slug}>{product.name}{product.active ? '' : ' — Draft'}</option>)}
         </select>
-      </label>
-      <button type="button" disabled={busy} onClick={() => setCreating(!creating)} style={S.load}>+ Create new product</button>
-      {creating && <div style={{ ...S.productLabel, padding: 12, border: '1px solid #d1cbc1' }}>
+      </label>}
+      {!lockedProduct && <button type="button" disabled={busy} onClick={() => setCreating(!creating)} style={S.load}>+ Create new product</button>}
+      {!lockedProduct && creating && <div style={{ ...S.productLabel, padding: 12, border: '1px solid #d1cbc1' }}>
         <label>Product name<input value={newName} onChange={(e) => setNewName(e.target.value)} style={S.select} /></label>
         <label>Price for {GARMENTS[garment].style} ($)<input type="number" min="0.01" step="0.01" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} style={S.select} /></label>
         <label>Available sizes<input value={newSizes} onChange={(e) => setNewSizes(e.target.value)} style={S.select} /></label>
         <span style={S.help}>Creates a draft with this garment’s sizes and price. Your artwork and placements stay here. Save the mockups, then publish the product from Product Desk.</span>
         <button type="button" disabled={busy} onClick={createProduct} style={S.load}>Create draft and use it</button>
       </div>}
-      <button type="button" onClick={loadSaved} disabled={!productSlug || busy} style={S.load}>Load saved front mockups</button><p style={S.help}>{garment === 'hat' ? 'Hats need their own standalone product. Create a hat-only product with Yupoong 6606, One Size, and a price in ' : 'To add a new garment to this product, add its sizes, price, and Tultex blank in '}<a href="/admin">Product Desk</a>{garment === 'hat' ? ' first.' : ' first. Saving here adds its selected colors alongside the other garment choices.'}</p>
+      <button type="button" onClick={loadSaved} disabled={!productSlug || busy} style={S.load}>Load saved front mockups</button>
+      <div style={S.row}><span style={S.label}>Copy placement from</span><select value={copySource} onChange={(event) => setCopySource(event.target.value)} style={S.select}><option value="">Choose another product…</option>{eligibleProducts.filter((product) => product.slug !== productSlug).map((product) => <option key={product.slug} value={product.slug}>{product.name}</option>)}</select><button type="button" onClick={copyPlacement} disabled={!copySource || busy} style={S.smallButton}>Copy fit</button><span style={S.help}>Copies position, size, tilt and brightness for this garment. Your PNGs stay assigned.</span></div><p style={S.help}>{garment === 'hat' ? 'Hats need their own standalone product. Create a hat-only product with Yupoong 6606, One Size, and a price in ' : 'To add a new garment to this product, add its sizes, price, and Tultex blank in '}{lockedProduct ? 'the garment options above' : <a href="/admin">Product Desk</a>}{garment === 'hat' ? ' first.' : ' first. Saving here adds its selected colors alongside the other garment choices.'}</p>
       <div ref={stageRef} style={{ ...S.stage, aspectRatio: String(canvasRatio) }} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}>
         <img src={blankUrl(garment, previewColor)} alt={`${palette.find((color) => color.token === previewColor)?.label || previewColor} front blank`} style={S.blank} draggable={false} />
         <ArtLayer url={art} placement={current} aspect={artAspect} canvasRatio={canvasRatio} handle onMove={(event) => startPointer(event, 'move')} onResize={(event) => startPointer(event, 'resize')} />

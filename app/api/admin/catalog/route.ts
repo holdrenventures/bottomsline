@@ -98,6 +98,13 @@ export async function POST(request: Request) {
     const input = await request.json() as ProductInput;
     const { name, slug, price, currency } = validateProduct(input);
     if (input.gallery_images !== undefined && (!Array.isArray(input.gallery_images) || input.gallery_images.length > 8 || input.gallery_images.some((image) => typeof image.url !== 'string' || !/^https:\/\/images\.bottomslineclothing\.com\/product-details\/[a-f0-9]{64}\.(png|jpg|webp)$/.test(image.url) || typeof image.alt !== 'string' || image.alt.length > 500))) throw new Error('Gallery images must be uploaded photos with descriptions up to 500 characters.');
+    if (input.id && input.active) {
+      const archive = await supabaseAdmin('collections?select=id&slug=eq.admin-archive&limit=1') as Array<{id:string}>;
+      if (archive[0]) {
+        const archived = await supabaseAdmin(`product_collections?select=product_id&product_id=eq.${encodeURIComponent(input.id)}&collection_id=eq.${archive[0].id}&limit=1`) as Array<{product_id:string}>;
+        if (archived.length) throw new Error('Restore this product from Archive before publishing it.');
+      }
+    }
     const productPayload = {
       name,
       slug,

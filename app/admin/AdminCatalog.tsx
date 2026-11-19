@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- Admin previews use existing R2 mockups or a custom image URL. */
 
+import ProductDetailImages, { type DetailImage } from './ProductDetailImages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes } from 'react';
 
@@ -23,6 +24,7 @@ type Product = {
   base_price_cents: number;
   currency: string;
   catalog_image: string | null;
+  gallery_images?: DetailImage[];
   active: boolean;
   featured: boolean;
   new_drop: boolean;
@@ -297,7 +299,7 @@ export default function AdminCatalog() {
       ...structuredClone(draft),
       id: undefined, created_at: undefined, updated_at: undefined,
       name, slug: slugify(name),
-      description: '', editorial_descriptor: '', product_annotation: '', catalog_image: '',
+      description: '', editorial_descriptor: '', product_annotation: '', catalog_image: '', gallery_images: [],
       active: false, featured: false, new_drop: false,
       product_collections: [],
       // Keep the size run and colorways, but clear SKUs and art so nothing from the original leaks into the new shirt.
@@ -526,6 +528,8 @@ export default function AdminCatalog() {
               {draft.catalog_image ? <img src={draft.catalog_image} alt="Homepage image preview" /> : <div className="admin-image-empty">First available mockup</div>}
             </div>
           </section>
+
+          <ProductDetailImages key={draft.id || draft.slug} images={draft.gallery_images ?? []} onChange={(images) => setDraft((current) => current.id === draft.id && current.slug === draft.slug ? { ...current, gallery_images: images } : current)} mockups={draft.product_colors} token={token} name={draft.name} />
 
           <section className="admin-section">
             <h3>Collections</h3>

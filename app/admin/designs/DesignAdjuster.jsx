@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- R2 originals are composed locally in the editor. */
 import { useRef, useState } from 'react';
-import { COLORS, GARMENTS, blankUrl, slugify } from '../../lib/blc-cloudinary';
+import { COLORS, GARMENTS, blankUrl, foregroundUrl, slugify } from '../../lib/blc-cloudinary';
 import restoredArtwork from '../../lib/editor-artwork.json';
 
 const SHIRT_DEFAULT = { w: 0.34, x: 0, y: 0.3, angle: 0, brightness: 0 };
@@ -17,6 +17,11 @@ function artworkRect(placement, aspect, canvasRatio) {
   const radians = (placement.angle || 0) * Math.PI / 180;
   const rotatedHeight = Math.abs(height * Math.cos(radians)) + Math.abs(width * canvasRatio * Math.sin(radians));
   return { left: 0.5 + placement.x - width / 2, top: placement.y + (rotatedHeight - height) / 2, width, height };
+}
+
+function Foreground({ garment, color }) {
+  const url = foregroundUrl(garment, color);
+  return url ? <img src={url} alt="" draggable={false} style={S.blank} /> : null;
 }
 
 function ArtLayer({ url, placement, aspect, canvasRatio, handle, onMove, onResize }) {
@@ -177,6 +182,7 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
       <div ref={stageRef} style={{ ...S.stage, aspectRatio: String(canvasRatio) }} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}>
         <img src={blankUrl(garment, previewColor)} alt={`${palette.find((color) => color.token === previewColor)?.label || previewColor} front blank`} style={S.blank} draggable={false} />
         <ArtLayer url={art} placement={current} aspect={aspect} canvasRatio={canvasRatio} handle onMove={(event) => startPointer(event, 'move')} onResize={(event) => startPointer(event, 'resize')} />
+        <Foreground garment={garment} color={previewColor} />
         <div style={S.centerGuide} aria-hidden="true" />
       </div>
       <div style={S.row}><span style={S.label}>Size</span><input type="range" min="5" max="95" step="0.5" value={current.w * 100} onChange={(event) => updatePlacement({ w: Number(event.target.value) / 100 })} style={S.slider} aria-label="Artwork size" /><code style={S.value}>{Math.round(current.w * 100)}%</code></div>
@@ -189,7 +195,7 @@ export default function DesignAdjuster({ products = [], onUpload, onSave, onLoad
       <div style={S.label}>Front colors ({selected.size})</div>
       <div style={S.swatches}>{palette.map((color) => <button type="button" key={color.token} title={color.label} aria-label={`${color.label}${selected.has(color.token) ? ' selected' : ''}`} onClick={() => { setSelected((old) => { const next = new Set(old); if (next.has(color.token)) next.delete(color.token); else next.add(color.token); return next; }); setPreviewColor(color.token); setSaved(false); }} style={{ ...S.swatch, background: color.hex, backgroundImage: garment === 'hat' ? `url(${blankUrl(garment, color.token)})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', outline: selected.has(color.token) ? '2px solid #ff4f3d' : '1px solid #ddd' }} />)}</div>
       <p style={S.help}>{saved && Object.keys(renderedUrls).length ? 'Saved mockups below are the exact R2 images now used by the storefront.' : 'Preview uses the R2 originals. Saving renders only the selected front colors.'}</p>
-      <div style={S.grid}>{art ? selectedColors.map((color) => <button type="button" key={color.token} onClick={() => setPreviewColor(color.token)} aria-label={`Edit placement on ${color.label}`} style={{ ...S.cell, outline: previewColor === color.token ? '2px solid #ff4f3d' : 'none' }}><div style={{ ...S.thumbnail, aspectRatio: String(canvasRatio) }}>{saved && renderedUrls[color.token] ? <img src={renderedUrls[color.token]} alt="" style={{ ...S.blank, objectFit: 'contain' }} loading="lazy" /> : <><img src={blankUrl(garment, color.token)} alt="" style={S.blank} loading="lazy" /><ArtLayer url={art} placement={placementFor(color.token)} aspect={aspect} canvasRatio={canvasRatio} /></>}</div><span style={S.cellLabel}>{color.label}</span></button>) : <p style={S.help}>Upload a PNG or load a saved design to preview its selected colors.</p>}</div>
+      <div style={S.grid}>{art ? selectedColors.map((color) => <button type="button" key={color.token} onClick={() => setPreviewColor(color.token)} aria-label={`Edit placement on ${color.label}`} style={{ ...S.cell, outline: previewColor === color.token ? '2px solid #ff4f3d' : 'none' }}><div style={{ ...S.thumbnail, aspectRatio: String(canvasRatio) }}>{saved && renderedUrls[color.token] ? <img src={renderedUrls[color.token]} alt="" style={{ ...S.blank, objectFit: 'contain' }} loading="lazy" /> : <><img src={blankUrl(garment, color.token)} alt="" style={S.blank} loading="lazy" /><ArtLayer url={art} placement={placementFor(color.token)} aspect={aspect} canvasRatio={canvasRatio} /><Foreground garment={garment} color={color.token} /></>}</div><span style={S.cellLabel}>{color.label}</span></button>) : <p style={S.help}>Upload a PNG or load a saved design to preview its selected colors.</p>}</div>
       {error && <p role="alert" style={S.error}>{error}</p>}
       <button type="button" onClick={handleSave} disabled={busy || !sourceUrl || !slug || !selected.size} style={{ ...S.save, opacity: busy || !sourceUrl || !slug || !selected.size ? 0.5 : 1 }}>{busy ? 'Working…' : saved ? 'Saved ✓' : 'Save front mockups'}</button>
     </div>

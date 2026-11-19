@@ -1,3 +1,4 @@
+import ProductDetailGallery from '../ProductDetailGallery';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
@@ -63,6 +64,7 @@ export default async function ProductPage({ params }: PageProps) {
             {product.draft && <p className="product-aside">Draft listing — final copy and pricing pending.</p>}
 
             <ProductPurchaseAny product={product} />
+            <ProductDetailGallery images={product.galleryImages} />
 
             {productDetails.length > 0 && <div className="product-specs">
               {productDetails.map(([label, value], index) => (

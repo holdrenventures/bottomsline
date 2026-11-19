@@ -11,6 +11,9 @@
   "vars": {
     "SUPABASE_URL": "https://agfbtxdikdwhlhcfvcer.supabase.co"
   },
+  "r2_buckets": [
+    { "binding": "EDITOR_ASSETS", "bucket_name": "bottomsline-catalog" }
+  ],
   "observability": {
     "enabled": true
   }

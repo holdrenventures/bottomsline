@@ -1,5 +1,5 @@
 {
- "cloud": "bihiyho3",
+ "cloud": "uyjt6eb2",
  "garments": {
   "tee": {
    "folder": "tultex202",
@@ -8,26 +8,19 @@
    "style": "Tee",
    "model": "tultex202"
   },
-  "tank": {
-   "folder": "tultex105",
-   "prefix": "105",
-   "label": "Tank",
-   "style": "Tank",
-   "model": "tultex105"
-  },
-  "crewneck": {
-   "folder": "ss3000",
-   "prefix": "ss3000",
-   "label": "Crewneck",
-   "style": "Sweatshirt",
-   "model": "ss3000"
-  },
-  "hoodie": {
-   "folder": "ss4500",
-   "prefix": "ss4500",
-   "label": "Hoodie",
+  "tultex320": {
+   "folder": "tultex320",
+   "prefix": "320",
+   "label": "Hoodie (Tultex 320)",
    "style": "Hoodie",
-   "model": "ss4500"
+   "model": "tultex320"
+  },
+  "tultex340": {
+   "folder": "tultex340",
+   "prefix": "340",
+   "label": "Sweatshirt (Tultex 340)",
+   "style": "Sweatshirt",
+   "model": "tultex340"
   }
  },
  "colors": {
@@ -407,6 +400,44 @@
    { "token": "charcoal_heather", "label": "Charcoal Heather", "hex": "#5c5b5d" },
    { "token": "kelly_green_heather", "label": "Kelly Green Heather", "hex": "#3f7963" },
    { "token": "classic_navy_heather", "label": "Classic Navy Heather", "hex": "#414956" }
+  ],
+  "tultex320": [
+   {"token": "black", "label": "Black", "hex": "#242424"},
+   {"token": "cantaloupe", "label": "Cantaloupe", "hex": "#f7ad82"},
+   {"token": "charcoal", "label": "Charcoal", "hex": "#464543"},
+   {"token": "heather_charcoal", "label": "Heather Charcoal", "hex": "#4d4d4d"},
+   {"token": "heather_denim", "label": "Heather Denim", "hex": "#47546b"},
+   {"token": "heather_graphite", "label": "Heather Graphite", "hex": "#3b3b41"},
+   {"token": "heather_grey", "label": "Heather Grey", "hex": "#b5b6b9"},
+   {"token": "heather_red", "label": "Heather Red", "hex": "#c34047"},
+   {"token": "navy", "label": "Navy", "hex": "#292d3c"},
+   {"token": "neo_mint", "label": "Neo Mint", "hex": "#c9eac5"},
+   {"token": "purist_blue", "label": "Purist Blue", "hex": "#a9d6dc"},
+   {"token": "red", "label": "Red", "hex": "#bc0b2c"},
+   {"token": "royal", "label": "Royal", "hex": "#1251ad"},
+   {"token": "white", "label": "White", "hex": "#f3f2f6"}
+  ],
+  "tultex340": [
+   {"token": "black", "label": "Black", "hex": "#242424"},
+   {"token": "cantaloupe", "label": "Cantaloupe", "hex": "#f7ad82"},
+   {"token": "charcoal", "label": "Charcoal", "hex": "#464543"},
+   {"token": "forest", "label": "Forest", "hex": "#28523b"},
+   {"token": "heather_charcoal", "label": "Heather Charcoal", "hex": "#4d4d4d"},
+   {"token": "heather_denim", "label": "Heather Denim", "hex": "#47546b"},
+   {"token": "heather_graphite", "label": "Heather Graphite", "hex": "#3b3b41"},
+   {"token": "heather_grey", "label": "Heather Grey", "hex": "#b5b6b9"},
+   {"token": "heather_red", "label": "Heather Red", "hex": "#c34047"},
+   {"token": "light_pink", "label": "Light Pink", "hex": "#e7bbc4"},
+   {"token": "maroon", "label": "Maroon", "hex": "#682d3b"},
+   {"token": "military_green", "label": "Military Green", "hex": "#646045"},
+   {"token": "navy", "label": "Navy", "hex": "#292d3c"},
+   {"token": "neo_mint", "label": "Neo Mint", "hex": "#c9eac5"},
+   {"token": "purist_blue", "label": "Purist Blue", "hex": "#a9d6dc"},
+   {"token": "purple", "label": "Purple", "hex": "#583288"},
+   {"token": "red", "label": "Red", "hex": "#bc0b2c"},
+   {"token": "royal", "label": "Royal", "hex": "#1251ad"},
+   {"token": "sand", "label": "Sand", "hex": "#95855a"},
+   {"token": "white", "label": "White", "hex": "#f3f2f6"}
   ]
  }
 }

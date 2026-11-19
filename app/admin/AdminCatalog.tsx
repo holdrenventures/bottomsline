@@ -1,6 +1,6 @@
 'use client';
 
-/* eslint-disable @next/next/no-img-element -- Admin previews use arbitrary Cloudinary URLs entered by the catalog manager. */
+/* eslint-disable @next/next/no-img-element -- Admin previews use existing R2 mockups or a custom image URL. */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes } from 'react';
@@ -35,16 +35,17 @@ type Product = {
 };
 type Filter = 'all' | 'live' | 'draft';
 type Notice = { text: string; tone: 'info' | 'success' | 'error' };
-type GarmentPresetId = 'tee' | 'tank' | 'sweatshirt' | 'hat' | 'custom';
+type GarmentPresetId = 'tee' | 'tank' | 'sweatshirt' | 'hoodie' | 'hat' | 'custom';
 type GarmentGenerator = { preset: GarmentPresetId; style: string; garment: string; sizes: string };
 
 const tokenKey = 'bl-admin-token';
 const DEFAULT_SIZES = 'S, M, L, XL, 2XL';
 const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL', '4XL', '5XL', 'ONE SIZE', 'OS'];
-const GARMENT_PRESETS: Array<{ id: GarmentPresetId; label: string; detail: string; style: string; sizes: string }> = [
-  { id: 'tee', label: 'T-shirt', detail: 'Standard size run', style: 'Tee', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
-  { id: 'tank', label: 'Tank', detail: 'Sleeveless option', style: 'Tank', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
-  { id: 'sweatshirt', label: 'Sweatshirt', detail: 'Crewneck or hoodie', style: 'Sweatshirt', sizes: 'S, M, L, XL, 2XL, 3XL' },
+const GARMENT_PRESETS: Array<{ id: GarmentPresetId; label: string; detail: string; style: string; sizes: string; garment?: string }> = [
+  { id: 'tee', label: 'T-shirt', detail: 'Standard size run', style: 'Tee', garment: 'tultex202', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
+  { id: 'tank', label: 'Tank', detail: 'Sleeveless option', style: 'Tank', garment: 'tultex105', sizes: 'XS, S, M, L, XL, 2XL, 3XL' },
+  { id: 'sweatshirt', label: 'Sweatshirt', detail: 'Tultex 340 crewneck', style: 'Sweatshirt', garment: 'tultex340', sizes: 'S, M, L, XL, 2XL, 3XL' },
+  { id: 'hoodie', label: 'Hoodie', detail: 'Tultex 320 pullover', style: 'Hoodie', garment: 'tultex320', sizes: 'S, M, L, XL, 2XL, 3XL' },
   { id: 'hat', label: 'Hat', detail: 'Starts as one size', style: 'Hat', sizes: 'One Size' },
   { id: 'custom', label: 'Custom', detail: 'Anything else', style: '', sizes: DEFAULT_SIZES },
 ];
@@ -113,7 +114,7 @@ function readinessChecks(p: Product) {
   return [
     { label: 'Name and URL', ok: Boolean(p.name.trim() && p.slug) },
     { label: 'Description', ok: Boolean(p.description?.trim()) },
-    { label: 'Catalog image', ok: Boolean(p.catalog_image?.trim()) },
+    { label: 'Homepage image', ok: Boolean(p.catalog_image?.trim() || p.product_colors.some((c) => c.active && c.mockup_url?.trim())) },
     { label: 'At least one colorway image', ok: p.product_colors.some((c) => c.active && c.mockup_url?.trim()) },
     { label: 'At least one sellable size in stock', ok: p.product_variants.some((v) => v.active && (v.inventory_quantity === null || v.inventory_quantity > 0)) },
   ];
@@ -338,11 +339,11 @@ export default function AdminCatalog() {
 
   function selectGarmentPreset(presetId: GarmentPresetId) {
     const preset = GARMENT_PRESETS.find((item) => item.id === presetId) ?? GARMENT_PRESETS[0];
-    setGenerator({ preset: preset.id, style: preset.style, garment: '', sizes: preset.sizes });
+    setGenerator({ preset: preset.id, style: preset.style, garment: preset.garment ?? '', sizes: preset.sizes });
   }
   function openGenerator(presetId: GarmentPresetId = 'tee') {
     const preset = GARMENT_PRESETS.find((item) => item.id === presetId) ?? GARMENT_PRESETS[0];
-    setGenerator({ preset: preset.id, style: preset.style, garment: '', sizes: preset.sizes });
+    setGenerator({ preset: preset.id, style: preset.style, garment: preset.garment ?? '', sizes: preset.sizes });
     setGeneratorOpen(true);
   }
   function addGenerated() {
@@ -399,6 +400,7 @@ export default function AdminCatalog() {
   const pricesDiffer = draft.product_variants.some((v) => v.price_cents !== draft.base_price_cents);
   const productGarments = rankByFrequency(draft.product_variants.map((v) => v.garment));
   const productStyles = rankByFrequency(draft.product_variants.map((v) => v.style));
+  const featuredColorways = draft.product_colors.filter((color) => color.active && color.mockup_url && draft.product_variants.some((variant) => variant.active && variant.style === (color.style || 'Tee') && (variant.inventory_quantity === null || variant.inventory_quantity > 0)));
   const hasDetails = Boolean(draft.material || draft.fit_notes || draft.care_instructions || draft.shipping_note || draft.size_guide_url);
 
   return (
@@ -510,10 +512,18 @@ export default function AdminCatalog() {
           </section>
 
           <section className="admin-section">
-            <h3>Catalog image</h3>
+            <h3>Homepage and shop image</h3>
+            <p className="admin-section__help">Choose which available garment and color represents this product on the homepage and shop. Other garment choices stay on its product page.</p>
             <div className="admin-image-field">
-              <label>Cloudinary image URL<input type="url" value={draft.catalog_image ?? ''} onChange={(event) => patch('catalog_image', event.target.value)} placeholder="https://res.cloudinary.com/…" /></label>
-              {draft.catalog_image ? <img src={draft.catalog_image} alt="Catalog preview" /> : <div className="admin-image-empty">No image yet</div>}
+              <label>Featured mockup
+                <select value={featuredColorways.some((color) => color.mockup_url === draft.catalog_image) ? draft.catalog_image ?? '' : draft.catalog_image ? '__custom__' : ''} onChange={(event) => { if (event.target.value !== '__custom__') patch('catalog_image', event.target.value); }}>
+                  <option value="">Use first available mockup</option>
+                  {featuredColorways.map((color) => <option key={color.id ?? color._key} value={color.mockup_url!}>{color.style || 'Tee'} · {color.color}</option>)}
+                  {draft.catalog_image && !featuredColorways.some((color) => color.mockup_url === draft.catalog_image) && <option value="__custom__">Current custom image</option>}
+                </select>
+              </label>
+              <label>Custom image URL <span className="admin-optional">optional</span><input type="url" value={draft.catalog_image ?? ''} onChange={(event) => patch('catalog_image', event.target.value)} placeholder="https://images.bottomslineclothing.com/…" /></label>
+              {draft.catalog_image ? <img src={draft.catalog_image} alt="Homepage image preview" /> : <div className="admin-image-empty">First available mockup</div>}
             </div>
           </section>
 

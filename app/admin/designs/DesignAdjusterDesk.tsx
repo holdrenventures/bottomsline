@@ -46,16 +46,16 @@ export default function DesignAdjusterDesk() {
   async function upload(file: File, slug: string) {
     const body = new FormData(); body.append('file', file); body.append('slug', slug);
     const response = await fetch('/api/admin/designs/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
-    const payload = await response.json() as { error?: string; assetSlug?: string };
-    if (!response.ok) throw new Error(payload.error || 'Cloudinary upload failed.');
-    return payload;
+    const payload = await response.json() as { error?: string; assetSlug?: string; artworkUrl?: string };
+    if (!response.ok || !payload.artworkUrl) throw new Error(payload.error || 'Artwork upload failed.');
+    return { artworkUrl: payload.artworkUrl, assetSlug: payload.assetSlug };
   }
 
   async function save(payload: unknown) {
     const response = await fetch('/api/admin/designs', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(payload),
     });
-    const result = await response.json() as { error?: string };
+    const result = await response.json() as { error?: string; mockupUrls?: Record<string, string> };
     if (!response.ok) throw new Error(result.error || 'Unable to save the design.');
     return result;
   }
@@ -63,10 +63,10 @@ export default function DesignAdjusterDesk() {
   async function loadSaved(productSlug: string, garment: string) {
     const query = new URLSearchParams({ productSlug, garment });
     const response = await fetch(`/api/admin/designs?${query}`, { headers: { Authorization: `Bearer ${token}` } });
-    const result = await response.json() as { error?: string; slug?: string; colors?: string[]; placements?: Record<string, { w: number; x: number; y: number; angle: number }> };
+    const result = await response.json() as { error?: string; slug?: string; colors?: string[]; placements?: Record<string, { w: number; x: number; y: number; angle: number; brightness: number }>; artworkUrl?: string };
     if (!response.ok) throw new Error(result.error || 'Unable to load saved mockups.');
     if (!result.slug || !result.colors || !result.placements) throw new Error('Saved mockups are incomplete.');
-    return { slug: result.slug, colors: result.colors, placements: result.placements };
+    return { slug: result.slug, colors: result.colors, placements: result.placements, artworkUrl: result.artworkUrl };
   }
 
   if (!token || !loaded) return <main className="admin-login"><form onSubmit={login}><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1><p>Place artwork separately on every shirt color.</p><label>Admin token<input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} /></label><button disabled={busy}>{busy ? 'Checking…' : 'Open adjuster'}</button><output role="status">{status}</output></form></main>;
@@ -74,7 +74,7 @@ export default function DesignAdjusterDesk() {
   return <main className="admin-shell design-desk-shell">
     <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1></div><div><a href="/admin">Product desk</a><a href="/admin/orders">Orders</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a></div></header>
     <section className="design-desk">
-      <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Make every color<br /><em>fit the shirt.</em></h2><p>Upload transparent artwork or load a saved product. Choose each garment color, then set its position, size, and angle independently before saving the mockups.</p></div>
+      <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Make every color<br /><em>fit the shirt.</em></h2><p>Upload transparent artwork or load a saved product. Choose each garment color, then set its position, size, tilt, and brightness independently before saving the mockups.</p></div>
       <DesignAdjuster products={products} onUpload={upload} onSave={save} onLoad={loadSaved} />
     </section>
   </main>;

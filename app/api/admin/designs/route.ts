@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 type Garment = keyof typeof GARMENTS;
 type Placement = { w: number; x: number; y: number; angle?: number; brightness?: number };
-type Input = { slug?: string; artworkUrl?: string; artworkUrls?: Record<string,string>; garment?: string; placement?: Placement; placements?: Record<string, Placement>; colors?: string[]; productSlug?: string | null };
+type Input = { slug?: string; artworkUrl?: string; artworkUrls?: Record<string,string>; garment?: string; placement?: Placement; placements?: Record<string, Placement>; colors?: string[]; productSlug?: string | null; replaceBlank?: boolean };
 type Assignment = { slug: string; artwork_url: string; placements: Record<string, Placement>; colors: string[] };
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -89,13 +89,18 @@ export async function POST(request: Request) {
       if (!await storage.head(url.slice(`${R2_ORIGIN}/`.length))) throw new Error('Uploaded artwork was not found in R2.');
     }
     const id = productSlug ? await productId(productSlug) : null;
+    let replaceExistingBlank = false;
     if (id) {
       const config = GARMENTS[garment];
       const variants = await supabaseAdmin(`product_variants?select=style,garment,active&product_id=eq.${id}`) as Array<{ style: string; garment: string | null; active: boolean }>;
       if (garment === 'hat' && variants.some((variant) => variant.active && variant.style !== 'Hat')) throw new Error('Hats must be a standalone product. Choose a hat-only product in Product Desk.');
       if (garment !== 'hat' && variants.some((variant) => variant.active && variant.style === 'Hat')) throw new Error('This is a standalone hat product. Choose an apparel product instead.');
       if (!variants.some((variant) => variant.active && variant.style === config.style && (variant.garment === config.model || (garment === 'tee' && !variant.garment)))) {
-        throw new Error(`Add ${config.style} sizes with blank ${config.model} in Product Desk before publishing this mockup.`);
+        const hasStyle = variants.some((variant) => variant.active && variant.style === config.style);
+        const oldModels = new Set(variants.filter((variant) => variant.active && variant.style === config.style).map((variant) => variant.garment || ''));
+        if (input.replaceBlank && garment !== 'hat' && hasStyle && oldModels.size === 1) replaceExistingBlank = true;
+        else if (hasStyle) throw new Error(`This product has ${config.style} sizes on another blank. Confirm replacement with ${config.model} in the editor before saving mockups.`);
+        else throw new Error(`Add ${config.style} sizes with blank ${config.model} in Product Desk before publishing this mockup.`);
       }
     }
 
@@ -123,6 +128,8 @@ export async function POST(request: Request) {
 
     if (id) {
       const config = GARMENTS[garment];
+      // Complete all Cloudinary renders first; failed renders leave the current sellable blank untouched.
+      if (replaceExistingBlank) await supabaseAdmin(`product_variants?product_id=eq.${id}&style=eq.${encodeURIComponent(config.style)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ garment: config.model }) });
       const rows = rendered.map(({ token, url }, index) => ({ product_id: id, color: palette.find((color) => color.token === token)!.label, style: config.style, garment: config.model, mockup_url: url, sort_order: index, active: true }));
       await supabaseAdmin('product_colors?on_conflict=product_id,color,style', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
       const existingColors = await supabaseAdmin(`product_colors?select=id,color&product_id=eq.${id}&style=eq.${encodeURIComponent(config.style)}&active=eq.true`) as Array<{ id: string; color: string }>;
@@ -135,6 +142,6 @@ export async function POST(request: Request) {
     return Response.json({ ok: true, slug, productId: id, colors: colors.length, mockups: rendered.length, mockupUrls: Object.fromEntries(rendered.map((item) => [item.token, item.url])) });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to save design.';
-    return Response.json({ error: message }, { status: /must|choose|outside|not found|upload|invalid|exceeds/i.test(message) ? 400 : 502 });
+    return Response.json({ error: message }, { status: /must|choose|outside|not found|upload|invalid|exceeds|confirm|add /i.test(message) ? 400 : 502 });
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import DesignAdjuster from './DesignAdjuster';
 import { GARMENTS, slugify } from '../../lib/blc-cloudinary';
+import { standardPriceCents } from '../../lib/standard-prices';
 
 type ProductSummary = { id: string; name: string; slug: string; active: boolean; product_variants: Array<{ style: string; garment: string | null; active: boolean }> };
 
@@ -49,10 +50,13 @@ export default function DesignAdjusterDesk() {
     if (!config) throw new Error('Choose a garment first.');
     const slug = slugify(input.name);
     if (!slug) throw new Error('Enter a product name with letters or numbers.');
+    const sizes = [...new Set(input.sizes)];
+    const priceFor = (size: string) => standardPriceCents(config.style, size) ?? input.priceCents;
+    const basePrice = Math.min(...sizes.map(priceFor));
     const response = await fetch('/api/admin/catalog', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name: input.name, slug, active: false, base_price_cents: input.priceCents, currency: 'usd',
-        product_variants: [...new Set(input.sizes)].map((size) => ({ style: config.style, garment: config.model, size, sku: `${slug}-${config.model}-${size.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, active: true, inventory_quantity: null, price_cents: input.priceCents })),
+      body: JSON.stringify({ name: input.name, slug, active: false, base_price_cents: basePrice, currency: 'usd',
+        product_variants: sizes.map((size) => ({ style: config.style, garment: config.model, size, sku: `${slug}-${config.model}-${size.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, active: true, inventory_quantity: null, price_cents: priceFor(size) })),
         product_colors: [], collection_ids: [],
       }),
     });

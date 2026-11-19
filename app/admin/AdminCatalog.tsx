@@ -7,6 +7,7 @@ import { variantKey } from '../lib/variant-combos.mjs';
 import ProductDetailImages, { type DetailImage } from './ProductDetailImages';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes } from 'react';
+import { standardPriceCents } from '../lib/standard-prices';
 
 type Collection = { id: string; name: string; slug: string; description: string | null; sort_order: number; active: boolean };
 type Variant = { id?: string; style: string; garment: string | null; size: string; sku: string; active: boolean; inventory_quantity: number | null; price_cents: number; _key?: string };
@@ -58,7 +59,7 @@ const productPath = (slug: string) => `/products/${slug}`;
 const emptyNotice: Notice = { text: '', tone: 'info' };
 
 const blankProduct = (): Product => ({
-  name: '', slug: '', editorial_descriptor: '', description: '', product_annotation: '', material: '', fit_notes: '', care_instructions: '', shipping_note: '', size_guide_url: '', base_price_cents: 3200, currency: 'usd', catalog_image: '',
+  name: '', slug: '', editorial_descriptor: '', description: '', product_annotation: '', material: '', fit_notes: '', care_instructions: '', shipping_note: '', size_guide_url: '', base_price_cents: 2500, currency: 'usd', catalog_image: '',
   active: false, featured: false, new_drop: false, product_variants: [], product_colors: [], product_collections: [], collection_ids: [],
 });
 
@@ -363,7 +364,7 @@ export default function AdminCatalog() {
     setGeneratorOpen(true);
   }
   function addGenerated() {
-    const added: Variant[] = newCombos.map((combo) => ({ ...combo, sku: '', active: true, inventory_quantity: null, price_cents: draft.base_price_cents, _key: uid() }));
+    const added: Variant[] = newCombos.map((combo) => ({ ...combo, sku: '', active: true, inventory_quantity: null, price_cents: standardPriceCents(combo.style, combo.size) ?? draft.base_price_cents, _key: uid() }));
     const style = generator.style.trim();
     const garment = generator.garment.trim();
     const hasMatchingColorway = draft.product_colors.some((color) => (color.style ?? 'Tee') === style && (color.garment ?? '') === garment);

@@ -1,5 +1,6 @@
 import type { CatalogColor, CatalogProduct, CatalogVariant, ProductCollection } from './products';
 import { storefrontImage } from '../lib/storefront-images';
+import { publicThanksgivingCopy } from '../lib/promo';
 
 type SupabaseCollection = {
   name: string;
@@ -125,6 +126,7 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
   // Fall back to the first colorway's mockup when catalog_image is empty.
   const firstColorMockup = colors.find((color) => color.active && color.mockupUrl)?.mockupUrl ?? null;
   const trimmedCatalog = storefrontImage(product.catalog_image);
+  const publicCopy = publicThanksgivingCopy(product.slug, product.description ?? '', product.shipping_note);
 
   return {
     id: product.id,
@@ -133,12 +135,12 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     price: product.base_price_cents / 100,
     currency: product.currency?.toLowerCase() || 'usd',
     editorialDescriptor: product.editorial_descriptor ?? 'Conversation Starter',
-    description: product.description ?? '',
+    description: publicCopy.description,
     productAnnotation: product.product_annotation,
     material: product.material,
     fitNotes: product.fit_notes,
     careInstructions: product.care_instructions,
-    shippingNote: product.shipping_note,
+    shippingNote: publicCopy.shippingNote,
     sizeGuideUrl: product.size_guide_url,
     collection: collections[0],
     collections,

@@ -5,7 +5,7 @@ import { SHOP_DESCRIPTION, SHOP_TITLE, pageMetadata } from '../lib/seo';
 import ShopCatalog from './ShopCatalog';
 
 type ShopPageProps = {
-  searchParams: Promise<{ collection?: string; q?: string; sort?: string }>;
+  searchParams: Promise<{ collection?: string; q?: string; sort?: string; style?: string }>;
 };
 
 export function generateMetadata(): Metadata {
@@ -30,7 +30,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           <p className="eyebrow"><span /> The full collection</p>
           <div><h1>Shop<br /><em>the line.</em></h1><p>Say it with your chest.</p></div>
         </section>
-        <ShopCatalog products={products} initialCollection={collectionFromParam(filters.collection)} initialQuery={filters.q ?? ''} initialSort={initialSort} />
+        <ShopCatalog products={products} initialCollection={collectionFromParam(filters.collection)} initialQuery={filters.q ?? ''} initialSort={initialSort} initialStyle={filters.style?.toLowerCase() === 'tee' ? 'tee' : null} />
       </main>
       <footer className="shop-footer"><div className="shell"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>End of the line. For now.</p></div></footer>
     </>

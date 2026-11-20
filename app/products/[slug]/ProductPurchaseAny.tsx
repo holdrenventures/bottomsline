@@ -10,6 +10,7 @@ import { isBlackFridayPromo, isChristmasDeliveryWindow } from '../../lib/promo';
 import { usePromoClock } from '../../lib/use-promo-window';
 import { styleName, variantIsAvailable } from '../product-selection';
 import ProductGuide from './ProductGuide';
+import { imageAttrs } from '../../lib/delivery-images';
 import { useProductHero } from './ProductHero';
 
 type PurchaseProduct = Pick<
@@ -118,7 +119,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
     <div className="purchase-controls">
       {!hero && heroImage && (
         <div className="purchase-hero">
-          <img src={heroImage} alt={heroAlt} />
+          <img src={heroImage} alt={heroAlt} {...imageAttrs(heroImage)} />
         </div>
       )}
 
@@ -159,7 +160,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
                 onClick={() => { setColorId(color.id); setAdded(false); }}
               >
                 {color.mockupUrl
-                  ? <img src={color.mockupUrl} alt={color.color} loading="lazy" />
+                  ? <img src={color.mockupUrl} alt={`${product.name} in ${color.color}`} {...imageAttrs(color.mockupUrl)} loading="lazy" />
                   : <span className="color-swatch__placeholder">{color.color.slice(0, 2).toUpperCase()}</span>}
                 <span className="color-swatch__label">{color.color}</span>
               </button>

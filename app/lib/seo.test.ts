@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { canonicalRedirectTarget } from './canonical-host.ts';
+import { storefrontPathRedirect } from './canonical-host.ts';
 import {
   BAG_DESCRIPTION,
   CHECKOUT_DESCRIPTION,
@@ -11,6 +12,9 @@ import {
   HOME_DESCRIPTION,
   SHOP_DESCRIPTION,
   canonicalUrl,
+  collectionStructuredData,
+  homeStructuredData,
+  notFoundMetadata,
   productAvailability,
   productMetaDescription,
   productStructuredData,
@@ -102,10 +106,19 @@ describe('canonical URLs', () => {
     assert.equal(canonicalRedirectTarget({ hostname: 'localhost', protocol: 'http', pathname: '/', search: '' }), null);
     assert.equal(canonicalRedirectTarget({ hostname: 'codex-ss3000-guide-correction-bottomsline.holdrenadam.workers.dev', protocol: 'https', pathname: '/', search: '' }), null);
   });
+
+  it('301s trailing slashes and collection query params without touching the style filter', () => {
+    assert.deepEqual(storefrontPathRedirect('/shop/', ''), { pathname: '/shop', search: '' });
+    assert.deepEqual(storefrontPathRedirect('/shop', '?collection=pride&style=tee'), { pathname: '/shop/pride', search: '?style=tee' });
+    assert.deepEqual(storefrontPathRedirect('/shop', '?collection=Support%20Local%20Bottoms&sort=name'), { pathname: '/shop/support-local-bottoms', search: '?sort=name' });
+    assert.equal(storefrontPathRedirect('/shop', '?style=tee'), null);
+    assert.deepEqual(storefrontPathRedirect('/shop', '?collection=nope'), { pathname: '/shop', search: '' });
+    assert.deepEqual(storefrontPathRedirect('/products/ho-ho-hole/', '?size=L'), { pathname: '/products/ho-ho-hole', search: '?size=L' });
+  });
 });
 
 describe('product schema', () => {
-  it('describes a $25 tee without claiming unknown stock', () => {
+  it('describes a $25 tee as in stock when inventory is not tracked', () => {
     const data = productStructuredData(product());
     assert.equal(data['@type'], 'Product');
     assert.equal(data.name, 'Support Local Bottoms');
@@ -113,13 +126,18 @@ describe('product schema', () => {
     assert.equal(data.offers['@type'], 'Offer');
     assert.equal(data.offers.price, '25.00');
     assert.equal(data.offers.priceCurrency, 'USD');
-    assert.equal(data.offers.availability, undefined);
-    assert.equal(productAvailability(product()), undefined);
+    assert.equal(data.offers.availability, 'https://schema.org/InStock');
+    assert.equal(productAvailability(product()), 'https://schema.org/InStock');
+    assert.equal(data.offers.shippingDetails.name, 'Free shipping on orders of $60+');
+    assert.equal(data.offers.shippingDetails.shippingRate.value, '0.00');
+    assert.match(data.offers.shippingDetails.shippingRate.description, /\$60/);
+    assert.equal(data.offers.hasMerchantReturnPolicy.merchantReturnDays, 30);
+    assert.match(data.offers.hasMerchantReturnPolicy.description, /size swaps/i);
+    assert.equal(data.offers.hasMerchantReturnPolicy.returnFees, 'https://schema.org/FreeReturn');
     assert.deepEqual(data.image[0], 'https://res.cloudinary.com/bihiyho3/image/upload/example.png');
     assert.equal(data.image[1], 'https://bottomslineclothing.com/holiday-mockups/example.png');
     assert.equal('aggregateRating' in data, false);
     assert.equal('review' in data, false);
-    assert.equal(JSON.stringify(data).includes('MerchantReturnPolicy'), false);
   });
 
   it('describes a $40 holiday sweatshirt and a real in-stock quantity', () => {
@@ -162,13 +180,72 @@ describe('product schema', () => {
     assert.equal(data.offers.price, '25.00');
   });
 
-  it('omits availability when any active variant has unknown inventory', () => {
+  it('treats a mix of counted and untracked sizes as in stock', () => {
     const mixed = product({
       variants: [
         { sku: 'tee-m', price: 25, active: true, inventoryQuantity: 2 },
         { sku: 'tee-l', price: 25, active: true, inventoryQuantity: null },
       ],
     });
-    assert.equal(productStructuredData(mixed).offers.availability, undefined);
+    assert.equal(productStructuredData(mixed).offers.availability, 'https://schema.org/InStock');
+  });
+
+  it('keeps holiday sweatshirts at $37 and reports real size and hoodie spreads', () => {
+    const sweatshirt = productStructuredData(product({
+      name: 'Hung Holiday Sweatshirt',
+      slug: 'hung-holiday-sweatshirt',
+      collection: 'Holiday',
+      price: 37,
+      variants: [{ sku: 'ss-m', price: 37, active: true, inventoryQuantity: null }],
+    }));
+    assert.equal(sweatshirt.offers.price, '37.00');
+    assert.equal(sweatshirt.offers.highPrice, undefined);
+
+    // House list: tees are $25, 2XL tees are $27, hoodies are $42. The schema
+    // reports those variant prices; it does not invent a higher number.
+    const spread = productStructuredData(product({
+      variants: [
+        { sku: 'tee-m', price: 25, active: true, inventoryQuantity: null },
+        { sku: 'tee-2xl', price: 27, active: true, inventoryQuantity: null },
+        { sku: 'hoodie-m', price: 42, active: true, inventoryQuantity: null },
+        { sku: 'old', price: 99, active: false, inventoryQuantity: 4 },
+      ],
+    }));
+    assert.equal(spread.offers.lowPrice, '25.00');
+    assert.equal(spread.offers.highPrice, '42.00');
+    assert.equal(spread.offers.offerCount, 3);
+  });
+
+  it('lists every collection the shop filter uses', () => {
+    const data = productStructuredData(product({
+      name: "I'll Be Homo for Christmas",
+      slug: 'ill-be-homo-for-christmas',
+      collection: 'Holiday',
+      collections: ['Holiday', 'Pride'],
+    }));
+    assert.equal(data.category, 'Holiday, Pride');
+  });
+
+  it('puts organization and website data on the homepage and an item list on a collection', () => {
+    const home = homeStructuredData();
+    assert.equal(home['@graph'][0]['@type'], 'Organization');
+    assert.equal(home['@graph'][1]['@type'], 'WebSite');
+    assert.match(home['@graph'][0].address.addressLocality, /Nashville/);
+    const shop = collectionStructuredData({
+      path: '/shop/pride',
+      name: 'Pride',
+      description: 'Pride apparel.',
+      products: [{ slug: 'tn-pride-flag', name: 'TN Pride Flag' }],
+    });
+    assert.equal(shop['@type'], 'CollectionPage');
+    assert.equal(shop.url, 'https://bottomslineclothing.com/shop/pride');
+    assert.equal(shop.mainEntity.itemListElement[0].url, 'https://bottomslineclothing.com/products/tn-pride-flag');
+  });
+
+  it('gives 404 pages their own title and no canonical', () => {
+    const metadata = notFoundMetadata();
+    assert.equal(metadata.title, 'Page not found — Bottom’s Line Clothing');
+    assert.equal(metadata.robots?.index, false);
+    assert.equal('alternates' in metadata, false);
   });
 });

@@ -283,8 +283,8 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .shop-catalog { padding-bottom:clamp(88px,10vw,150px); }
 .catalog-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:32px; padding-block:24px; border-bottom:1px solid var(--line); }
 .catalog-filters { display:flex; flex-wrap:wrap; gap:8px 18px; }
-.catalog-filters button { padding:6px 0; border:0; border-bottom:1px solid transparent; background:none; color:var(--muted); font:800 10px/1 var(--sans); letter-spacing:1.2px; text-transform:uppercase; cursor:pointer; }
-.catalog-filters button:hover,.catalog-filters button.is-active { color:var(--paper); border-color:var(--coral); }
+.catalog-filters a,.catalog-filters button { padding:6px 0; border:0; border-bottom:1px solid transparent; background:none; color:var(--muted); font:800 10px/1 var(--sans); letter-spacing:1.2px; text-transform:uppercase; text-decoration:none; cursor:pointer; }
+.catalog-filters a:hover,.catalog-filters a.is-active,.catalog-filters button:hover,.catalog-filters button.is-active { color:var(--paper); border-color:var(--coral); }
 .catalog-tools { display:flex; align-items:end; gap:20px; }
 .catalog-tools label { display:grid; gap:7px; }
 .catalog-tools label>span { color:var(--coral); font-size:8px; font-weight:900; letter-spacing:1.4px; text-transform:uppercase; }
@@ -335,7 +335,7 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .catalog-interlude__note .clothespin { top:-10px; left:50%; }
 .catalog-empty { display:grid; place-items:center; min-height:420px; text-align:center; }
 .catalog-empty p { font-family:var(--serif); font-size:clamp(36px,5vw,66px); font-style:italic; }
-.catalog-empty button { margin-top:22px; padding:11px 18px; border:1px solid var(--coral); background:none; color:var(--paper); font-size:9px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; cursor:pointer; }
+.catalog-empty button,.catalog-empty a { display:inline-block; margin-top:22px; padding:11px 18px; border:1px solid var(--coral); background:none; color:var(--paper); font-size:9px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase; text-decoration:none; cursor:pointer; }
 .shop-footer { padding-block:clamp(48px,5vw,76px); background:var(--coral); color:var(--ink); }
 .shop-footer>div { display:flex; align-items:end; justify-content:space-between; gap:30px; }
 .shop-footer>div>p:last-child { font-family:var(--serif); font-size:18px; font-style:italic; }

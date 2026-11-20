@@ -1,5 +1,6 @@
 import manifest from './cloudinary-image-manifest.json' with { type: 'json' };
 import { trimMockup } from './cloudinary.ts';
+import { optimizeDelivery } from './delivery-images.ts';
 
 type ImageManifest = {
   publicBase: string;
@@ -29,8 +30,8 @@ const rewrite = imageManifest.rewrite;
 export function storefrontImage(url: string | null | undefined): string | null {
   if (!url) return url ?? null;
   const direct = rewrite[url];
-  if (direct) return direct;
+  if (direct) return optimizeDelivery(direct);
   const trimmed = trimMockup(url);
-  if (trimmed && rewrite[trimmed]) return rewrite[trimmed];
-  return trimmed;
+  if (trimmed && rewrite[trimmed]) return optimizeDelivery(rewrite[trimmed]);
+  return optimizeDelivery(trimmed);
 }

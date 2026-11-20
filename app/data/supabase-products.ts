@@ -38,6 +38,7 @@ type SupabaseProduct = {
   featured: boolean;
   new_drop: boolean;
   created_at: string;
+  updated_at?: string;
   product_variants: Array<{
     id: string;
     sku: string;
@@ -145,7 +146,8 @@ function normalizeProduct(product: SupabaseProduct, index: number): CatalogProdu
     collection: collections[0],
     collections,
     catalogImage: trimmedCatalog ?? firstColorMockup,
-    galleryImages: product.gallery_images ?? [],
+    galleryImages: (product.gallery_images ?? []).map((image) => ({ ...image, url: storefrontImage(image.url) ?? image.url })),
+    updatedAt: product.updated_at ?? null,
     availableSizes: Array.from(new Set(variants.map((variant) => variant.size))),
     variants,
     colors,
@@ -175,7 +177,7 @@ export async function getSupabaseCatalogProducts(): Promise<CatalogProduct[] | n
   const select = [
     'id', 'name', 'slug', 'editorial_descriptor', 'description',
     'product_annotation', 'material', 'fit_notes', 'care_instructions', 'shipping_note', 'size_guide_url',
-    'base_price_cents', 'currency', 'catalog_image', 'gallery_images', 'active', 'featured', 'new_drop', 'created_at',
+    'base_price_cents', 'currency', 'catalog_image', 'gallery_images', 'active', 'featured', 'new_drop', 'created_at', 'updated_at',
     'product_variants(id,sku,style,garment,size,active,inventory_quantity,price_cents)',
     'product_collections(sort_order,collections(name,slug,active))',
     'product_colors(id,color,style,garment,mockup_url,sort_order,active)',

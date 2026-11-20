@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import { imageDimensions } from './delivery-images.ts';
+import { FREE_SHIPPING_MIN_CENTS } from './pricing.ts';
+import { SHIPS_IN_BUSINESS_DAYS, SIZE_SWAP_DAYS } from './promo.ts';
 
 export const SITE_ORIGIN = 'https://bottomslineclothing.com';
 export const SITE_NAME = 'Bottom’s Line Clothing';
@@ -8,11 +11,11 @@ export const DEFAULT_OG_ALT = 'Skip the Small Talk — Bottom’s Line Clothing'
 export const DESCRIPTION_MIN = 120;
 export const DESCRIPTION_MAX = 158;
 
-export const HOME_TITLE = 'Bottom’s Line Clothing — Skip the Small Talk';
-export const HOME_DESCRIPTION = 'Bottom’s Line Clothing makes conversation-starting apparel for people who would rather be honest than boring. Skip the small talk.';
+export const HOME_TITLE = 'Bottom’s Line — Queer Pride Apparel, Nashville';
+export const HOME_DESCRIPTION = 'Cheeky queer and gay pride apparel from Nashville. LGBTQ tees, tanks, and sweatshirts for people who’d rather be honest than boring. Skip the small talk.';
 
-export const SHOP_TITLE = 'Shop the Line — Bottom’s Line Clothing';
-export const SHOP_DESCRIPTION = 'Shop the Bottom’s Line collection: conversation-starting tees, tanks, and sweatshirts for people who would rather be honest than boring.';
+export const SHOP_TITLE = 'Shop Queer & LGBTQ Apparel — Bottom’s Line';
+export const SHOP_DESCRIPTION = 'Shop gay, queer, and pride apparel from Nashville. LGBTQ tees, tanks, and sweatshirts for people who’d rather be honest than boring.';
 
 export const CUSTOM_TITLE = 'Custom Shirts — Bottom’s Line Clothing';
 export const CUSTOM_DESCRIPTION = 'Customize a Bottom’s Line design or start from scratch. Team, crew, and group shirt orders are welcome, and I’ll be in touch.';
@@ -45,6 +48,7 @@ export type ProductSeoSource = {
   description: string;
   editorialDescriptor: string;
   collection: string;
+  collections?: string[] | null;
   price: number;
   currency?: string | null;
   catalogImage: string | null;
@@ -116,6 +120,16 @@ export function productMetaDescription(product: Pick<ProductSeoSource, 'name' | 
 
 type SocialImage = { url: string; alt: string; width?: number; height?: number };
 
+export const NOT_FOUND_TITLE = 'Page not found — Bottom’s Line Clothing';
+
+export function notFoundMetadata(): Metadata {
+  return {
+    title: NOT_FOUND_TITLE,
+    description: 'That page left the line. The shop is still open.',
+    robots: { index: false, follow: true },
+  };
+}
+
 export function pageMetadata(input: {
   title: string;
   description: string;
@@ -127,8 +141,9 @@ export function pageMetadata(input: {
   const index = input.index !== false;
   const url = canonicalUrl(input.path);
   const specificImage = absoluteAssetUrl(input.image);
+  const sized = imageDimensions(input.image) ?? (specificImage ? imageDimensions(specificImage) : null);
   const image: SocialImage = specificImage
-    ? { url: specificImage, alt: input.imageAlt || input.title }
+    ? { url: specificImage, alt: input.imageAlt || input.title, ...(sized ? { width: sized.width, height: sized.height } : {}) }
     : { url: new URL(DEFAULT_OG_IMAGE, SITE_ORIGIN).toString(), width: 1200, height: 630, alt: DEFAULT_OG_ALT };
   return {
     title: input.title,
@@ -163,14 +178,58 @@ function offerPrices(product: ProductSeoSource): number[] {
   return Number.isFinite(product.price) ? [product.price] : [];
 }
 
-// Only state availability when every active variant has a recorded quantity.
-// Unknown inventory stays out of the schema instead of being called "in stock".
-export function productAvailability(product: ProductSeoSource): 'https://schema.org/InStock' | 'https://schema.org/OutOfStock' | undefined {
+// Inventory is often untracked (null) because shirts are made to order. An active
+// variant is in stock unless every active variant is explicitly at zero.
+export function productAvailability(product: ProductSeoSource): 'https://schema.org/InStock' | 'https://schema.org/OutOfStock' {
+  if (product.draft || product.active === false) return 'https://schema.org/OutOfStock';
   const active = (product.variants ?? []).filter((variant) => variant.active);
-  if (!active.length) return undefined;
-  if (active.some((variant) => variant.inventoryQuantity === null)) return undefined;
-  if (active.some((variant) => (variant.inventoryQuantity ?? 0) > 0)) return 'https://schema.org/InStock';
-  return 'https://schema.org/OutOfStock';
+  if (active.length && active.every((variant) => variant.inventoryQuantity === 0)) return 'https://schema.org/OutOfStock';
+  return 'https://schema.org/InStock';
+}
+
+function productCategory(product: ProductSeoSource) {
+  const names = (product.collections?.length ? product.collections : [product.collection]).map((name) => name.trim()).filter(Boolean);
+  return [...new Set(names)].join(', ');
+}
+
+// Matches the banner and checkout rule: free shipping at $60+, free size swaps.
+function offerPolicies() {
+  const freeAt = (FREE_SHIPPING_MIN_CENTS / 100).toFixed(0);
+  const days = SHIPS_IN_BUSINESS_DAYS.match(/\d+/g)?.map(Number) ?? [];
+  const handlingMin = days[0] ?? 3;
+  const handlingMax = days[1] ?? handlingMin;
+  return {
+    shippingDetails: {
+      '@type': 'OfferShippingDetails',
+      name: `Free shipping on orders of $${freeAt}+`,
+      shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
+      shippingRate: {
+        '@type': 'MonetaryAmount',
+        value: '0.00',
+        currency: 'USD',
+        description: `Free shipping on US orders of $${freeAt} or more. Orders under $${freeAt} are quoted at checkout.`,
+      },
+      deliveryTime: {
+        '@type': 'ShippingDeliveryTime',
+        handlingTime: {
+          '@type': 'QuantitativeValue',
+          minValue: handlingMin,
+          maxValue: handlingMax,
+          unitCode: 'DAY',
+        },
+      },
+    },
+    hasMerchantReturnPolicy: {
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'US',
+      returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+      merchantReturnDays: SIZE_SWAP_DAYS,
+      returnMethod: 'https://schema.org/ReturnByMail',
+      returnFees: 'https://schema.org/FreeReturn',
+      refundType: 'https://schema.org/ExchangeRefund',
+      description: `Free size swaps within ${SIZE_SWAP_DAYS} days.`,
+    },
+  };
 }
 
 function productImages(product: ProductSeoSource): string[] {
@@ -196,6 +255,7 @@ export function productStructuredData(product: ProductSeoSource) {
   const colors = [...new Set((product.colors ?? []).filter((color) => color.active && color.color?.trim()).map((color) => color.color!.trim()))];
   const material = product.material?.trim();
 
+  const policies = offerPolicies();
   const offers = validCurrency && low !== null && high !== null
     ? low === high
       ? {
@@ -203,7 +263,8 @@ export function productStructuredData(product: ProductSeoSource) {
           url,
           priceCurrency: currency,
           price: low.toFixed(2),
-          ...(availability ? { availability } : {}),
+          availability,
+          ...policies,
         }
       : {
           '@type': 'AggregateOffer',
@@ -212,7 +273,8 @@ export function productStructuredData(product: ProductSeoSource) {
           lowPrice: low.toFixed(2),
           highPrice: high.toFixed(2),
           offerCount: prices.length,
-          ...(availability ? { availability } : {}),
+          availability,
+          ...policies,
         }
     : undefined;
 
@@ -226,7 +288,7 @@ export function productStructuredData(product: ProductSeoSource) {
     ...(images.length ? { image: images } : {}),
     ...(activeSkus.length === 1 ? { sku: activeSkus[0] } : {}),
     brand: { '@type': 'Brand', name: SITE_NAME },
-    category: product.collection,
+    category: productCategory(product),
     ...(colors.length ? { color: colors.length === 1 ? colors[0] : colors } : {}),
     ...(material ? { material } : {}),
     ...(offers ? { offers } : {}),
@@ -245,4 +307,70 @@ export function productPageMetadata(product: ProductSeoSource, priceLabel: strin
     image,
     imageAlt: product.name,
   });
+}
+
+export function homeStructuredData() {
+  const organizationId = `${SITE_ORIGIN}/#organization`;
+  const websiteId = `${SITE_ORIGIN}/#website`;
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': organizationId,
+        name: SITE_NAME,
+        url: SITE_ORIGIN,
+        logo: `${SITE_ORIGIN}/apple-touch-icon.png`,
+        image: `${SITE_ORIGIN}${DEFAULT_OG_IMAGE}`,
+        description: HOME_DESCRIPTION,
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'Nashville',
+          addressRegion: 'TN',
+          addressCountry: 'US',
+        },
+        sameAs: [
+          'https://www.instagram.com/thebottomslineclothing/',
+          'https://www.facebook.com/bottomslineclothing',
+        ],
+      },
+      {
+        '@type': 'WebSite',
+        '@id': websiteId,
+        url: SITE_ORIGIN,
+        name: SITE_NAME,
+        description: HOME_DESCRIPTION,
+        inLanguage: 'en-US',
+        publisher: { '@id': organizationId },
+      },
+    ],
+  };
+}
+
+export function collectionStructuredData(input: {
+  path: string;
+  name: string;
+  description: string;
+  products: Array<{ slug: string; name: string }>;
+}) {
+  const url = canonicalUrl(input.path);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': url,
+    name: input.name,
+    url,
+    description: input.description,
+    isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: input.products.length,
+      itemListElement: input.products.map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: canonicalUrl(`/products/${product.slug}`),
+        name: product.name,
+      })),
+    },
+  };
 }

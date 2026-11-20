@@ -2,23 +2,25 @@ import ProductDetailGallery from '../ProductDetailGallery';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
-import { getProductBySlug, productPriceLabel } from '../../data/products';
+import { getCatalogProducts, productPriceLabel } from '../../data/products';
 import { JsonLd } from '../../lib/JsonLd';
-import { productPageMetadata, productStructuredData } from '../../lib/seo';
+import { notFoundMetadata, productPageMetadata, productStructuredData } from '../../lib/seo';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
 import { defaultHeroImage } from '../product-selection';
 import { ProductHeroImage, ProductHeroProvider } from '../[slug]/ProductHero';
 import ProductPurchase from './ProductPurchase';
+import RelatedProducts from '../RelatedProducts';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const product = await getProductBySlug('support-local-bottoms');
-  if (!product) return { title: 'Not found — Bottom’s Line Clothing', robots: { index: false, follow: false } };
+  const product = (await getCatalogProducts()).find((item) => item.slug === 'support-local-bottoms');
+  if (!product) return notFoundMetadata();
   return productPageMetadata(product, productPriceLabel(product));
 }
 
 export default async function SupportLocalBottomsPage() {
-  const product = await getProductBySlug('support-local-bottoms');
+  const catalog = await getCatalogProducts();
+  const product = catalog.find((item) => item.slug === 'support-local-bottoms');
 
   if (!product) notFound();
   const productDetails = productDetailRows(product);
@@ -55,6 +57,7 @@ export default async function SupportLocalBottomsPage() {
         </section>
         </ProductHeroProvider>
 
+        <RelatedProducts product={product} catalog={catalog} />
         <section className="product-statement">
           <div className="shell"><p>Community support<br />looks good <em>on you.</em></p><span>Wear locally.</span></div>
         </section>

@@ -1,7 +1,10 @@
+import { cache } from 'react';
 import { getSupabaseCatalogProducts } from './supabase-products';
+import type { ProductCollection } from '../lib/collections';
 import { storefrontImage } from '../lib/storefront-images';
 
-export type ProductCollection = 'Support Local Bottoms' | 'Cruising' | 'Parodies' | 'Nashville' | 'Pride' | 'Holiday' | 'New Drops';
+export type { CatalogCollection, ProductCollection } from '../lib/collections';
+export { catalogCollections, collectionBySlug, collectionCopy, collectionFromParam, collectionPath, collectionSlug } from '../lib/collections';
 
 export type CatalogVariant = {
   id: string;
@@ -42,6 +45,7 @@ export type CatalogProduct = {
   sizeGuideUrl?: string | null;
   collection: ProductCollection;
   collections?: ProductCollection[];
+  updatedAt?: string | null;
   catalogImage: string | null;
   galleryImages?: Array<{url:string;alt:string}>;
   availableSizes: string[];
@@ -80,25 +84,14 @@ const mockProducts: CatalogProduct[] = [
 // came from Supabase or the local prototype catalog. Null means Supabase is not
 // configured, while an empty array means it is configured but has no live
 // products. Do not replace that intentional empty state with prototype data.
-export async function getCatalogProducts() {
+export const getCatalogProducts = cache(async function getCatalogProducts() {
   const products = await getSupabaseCatalogProducts();
   return products === null ? mockProducts : products;
-}
+});
 
 export async function getProductBySlug(slug: string) {
   const products = await getCatalogProducts();
   return products.find((product) => product.slug === slug) ?? null;
-}
-
-export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'Holiday', 'New Drops'] as const;
-
-export function collectionSlug(collection: string) {
-  return collection.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-export function collectionFromParam(value?: string) {
-  if (!value) return 'All' as const;
-  return catalogCollections.find((collection) => collectionSlug(collection) === collectionSlug(value)) ?? 'All';
 }
 
 export function productPriceLabel(product: CatalogProduct) {
@@ -109,4 +102,60 @@ export function productPriceLabel(product: CatalogProduct) {
   const minimum = Math.min(...prices);
   const maximum = Math.max(...prices);
   return minimum === maximum ? `$${minimum.toFixed(2)}` : `From $${minimum.toFixed(2)}`;
+}
+
+export type ShopCard = {
+  id: string;
+  name: string;
+  slug: string;
+  editorialDescriptor: string;
+  price: number;
+  priceLabel: string;
+  collection: ProductCollection;
+  collections: ProductCollection[];
+  catalogImage: string | null;
+  teeImage: string | null;
+  art: string[];
+  tone: CatalogProduct['tone'];
+  featured: boolean;
+  isNewDrop: boolean;
+  isPlaceholder?: boolean;
+  styles: string[];
+};
+
+function shopStyles(product: CatalogProduct) {
+  const styles = product.variants?.length
+    ? product.variants
+      .filter((variant) => variant.active && (variant.inventoryQuantity === null || variant.inventoryQuantity > 0))
+      .map((variant) => variant.style)
+    : product.colors.filter((color) => color.active).map((color) => color.style?.trim() || 'Tee');
+  return [...new Set(styles.filter(Boolean))];
+}
+
+// The shop grid only needs one thumbnail (plus a tee photo when ?style=tee is on).
+// Colorways, variants, and galleries stay on the product page.
+export function toShopCard(product: CatalogProduct): ShopCard {
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    editorialDescriptor: product.editorialDescriptor,
+    price: product.price,
+    priceLabel: productPriceLabel(product),
+    collection: product.collection,
+    collections: product.collections ?? [product.collection],
+    catalogImage: product.catalogImage,
+    teeImage: product.colors.find((color) => color.active && (color.style?.trim() || 'Tee').toLowerCase() === 'tee' && color.mockupUrl)?.mockupUrl ?? null,
+    art: product.art,
+    tone: product.tone,
+    featured: product.featured,
+    isNewDrop: product.isNewDrop,
+    isPlaceholder: product.isPlaceholder,
+    styles: shopStyles(product),
+  };
+}
+
+export function productsInCollection<T extends { collection: string; collections?: string[] | null }>(products: T[], collection: string) {
+  if (collection === 'All') return products;
+  return products.filter((product) => (product.collections ?? [product.collection]).some((name) => name === collection));
 }

@@ -13,7 +13,8 @@
     "deploy": "vinext build && wrangler deploy --config dist/server/wrangler.json",
     "deploy:built": "wrangler deploy --config dist/server/wrangler.json",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "archive:images": "node scripts/archive-cloudinary-images.mjs"
+    "archive:images": "node scripts/archive-cloudinary-images.mjs",
+    "images:optimize": "node scripts/optimize-delivery-images.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

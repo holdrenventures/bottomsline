@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import manifest from './cloudinary-image-manifest.json' with { type: 'json' };
+import delivery from './delivery-image-manifest.json' with { type: 'json' };
+import { existsSync } from 'node:fs';
 import { storefrontImage, STOREFRONT_IMAGE_BASE } from './storefront-images.ts';
 
 const rewrite = manifest.rewrite as Record<string, string>;
@@ -25,11 +27,25 @@ describe('storefront image archive', () => {
     assert.equal(storefrontImage(bare), rewrite[trimmed]);
   });
 
-  it('leaves images we do not host on Cloudinary alone', () => {
-    const local = 'https://bottomslineclothing.com/holiday-mockups/ho-ho-hole/black.png';
+  it('leaves images we do not have a delivery copy for alone', () => {
+    const local = 'https://bottomslineclothing.com/holiday-mockups/example.png';
     assert.equal(storefrontImage(local), local);
-    assert.equal(storefrontImage('/holiday-mockups/ho-ho-hole/black.png'), '/holiday-mockups/ho-ho-hole/black.png');
     assert.equal(storefrontImage(null), null);
+  });
+
+  it('serves resized webp copies for holiday mockups and editor pngs', () => {
+    const images = delivery.images as Record<string, { src: string; width: number; height: number }>;
+    const holiday = '/holiday-mockups/ho-ho-hole/black.png';
+    assert.ok(images[holiday], 'run scripts/optimize-delivery-images.mjs');
+    assert.equal(storefrontImage(holiday), images[holiday].src);
+    assert.equal(storefrontImage(`https://bottomslineclothing.com${holiday}`), images[holiday].src);
+    assert.match(images[holiday].src, /^\/opt\/[a-f0-9]+\.webp$/);
+    assert.equal(existsSync(new URL(`../../public${images[holiday].src}`, import.meta.url)), true);
+    assert.ok(images[holiday].width > 0 && images[holiday].height > 0);
+    const editor = Object.keys(images).find((key) => key.includes('/editor/mockups/') && key.endsWith('.png'));
+    assert.ok(editor);
+    assert.match(storefrontImage(editor) ?? '', /^\/opt\/[a-f0-9]+\.webp$/);
+    assert.equal(storefrontImage(editor)?.includes('.png'), false);
   });
 
   it('does not invent an archive for a Cloudinary URL outside the manifest', () => {

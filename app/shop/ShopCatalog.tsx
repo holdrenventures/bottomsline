@@ -1,10 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Clothespin, Shirt } from '../BrandVisuals';
-import { catalogCollections, productPriceLabel, type CatalogProduct } from '../data/products';
+import { catalogCollections, collectionPath, type ShopCard } from '../data/products';
+import { imageAttrs } from '../lib/delivery-images';
 import { pinShift, pinSlant } from '../lib/pin-shift';
-import { styleName, variantIsAvailable } from '../products/product-selection';
 
 function GarmentIcon({ style }: { style: string }) {
   const name = style.toLowerCase();
@@ -23,21 +24,14 @@ function GarmentIcon({ style }: { style: string }) {
   return <svg viewBox="0 0 32 33" fill="none" aria-hidden="true" focusable="false">{outline}</svg>;
 }
 
-function availableStyles(product: CatalogProduct) {
-  const styles = product.variants?.length
-    ? product.variants.filter(variantIsAvailable).map((variant) => variant.style)
-    : product.colors.filter((color) => color.active).map(styleName);
-  return [...new Set(styles.filter(Boolean))];
-}
-
 type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'name';
 
-function chunkProducts(products: CatalogProduct[], size: number) {
+function chunkProducts(products: ShopCard[], size: number) {
   return Array.from({ length: Math.ceil(products.length / size) }, (_, index) => products.slice(index * size, index * size + size));
 }
 
 type ShopCatalogProps = {
-  products: CatalogProduct[];
+  products: ShopCard[];
   initialCollection: (typeof catalogCollections)[number];
   initialQuery: string;
   initialSort: SortOption;
@@ -45,20 +39,20 @@ type ShopCatalogProps = {
 };
 
 export default function ShopCatalog({ products, initialCollection, initialQuery, initialSort, initialStyle }: ShopCatalogProps) {
-  const [collection, setCollection] = useState<(typeof catalogCollections)[number]>(initialCollection);
+  const collection = initialCollection;
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortOption>(initialSort);
   const [styleFilter, setStyleFilter] = useState(initialStyle);
 
   useEffect(() => {
     const params = new URLSearchParams();
-    if (collection !== 'All') params.set('collection', collection.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
     if (query.trim()) params.set('q', query.trim());
     if (sort !== 'featured') params.set('sort', sort);
     if (styleFilter) params.set('style', styleFilter);
     const search = params.toString();
-    window.history.replaceState(null, '', `/shop${search ? `?${search}` : ''}#catalog`);
-  }, [collection, query, sort, styleFilter]);
+    const path = window.location.pathname.replace(/\/+$/, '') || '/shop';
+    window.history.replaceState(null, '', `${path}${search ? `?${search}` : ''}#catalog`);
+  }, [query, sort, styleFilter]);
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -66,7 +60,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
       const productCollections = product.collections ?? [product.collection];
       const matchesCollection = collection === 'All' || productCollections.includes(collection);
       const matchesQuery = !normalizedQuery || `${product.name} ${productCollections.join(' ')} ${product.editorialDescriptor}`.toLowerCase().includes(normalizedQuery);
-      const matchesStyle = !styleFilter || availableStyles(product).some((style) => style.toLowerCase() === styleFilter);
+      const matchesStyle = !styleFilter || product.styles.some((style) => style.toLowerCase() === styleFilter);
       return matchesCollection && matchesQuery && matchesStyle;
     });
 
@@ -85,7 +79,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
     <section className="shop-catalog shell" id="catalog">
       <div className="catalog-controls">
         <div className="catalog-filters" role="group" aria-label="Filter products by collection">
-          {catalogCollections.map((option) => <button type="button" key={option} className={collection === option ? 'is-active' : ''} aria-pressed={collection === option} onClick={() => setCollection(option)}>{option}</button>)}
+          {catalogCollections.map((option) => <a key={option} href={collectionPath(option)} className={collection === option ? 'is-active' : ''} aria-current={collection === option ? 'page' : undefined}>{option}</a>)}
         </div>
         <div className="catalog-tools">
           <label className="catalog-search"><span>Search</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a shirt" /></label>
@@ -95,28 +89,26 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
 
       <div className="catalog-count"><span>{String(visibleProducts.length).padStart(2, '0')}</span> shirts on the line</div>
       {styleFilter && <button className="catalog-style-filter" type="button" onClick={() => setStyleFilter(null)}>Showing tees only <span aria-hidden="true">×</span><span className="sr-only">Clear tee filter</span></button>}
-      {visibleProducts.some((product) => availableStyles(product).length > 1) && <p className="catalog-style-key"><span className="catalog-style-key__sample" aria-hidden="true"><GarmentIcon style="Tank" /><GarmentIcon style="Hoodie" /></span><span>Garment outlines show the styles available for each design.</span></p>}
+      {visibleProducts.some((product) => product.styles.length > 1) && <p className="catalog-style-key"><span className="catalog-style-key__sample" aria-hidden="true"><GarmentIcon style="Tank" /><GarmentIcon style="Hoodie" /></span><span>Garment outlines show the styles available for each design.</span></p>}
 
       {rows.length ? rows.map((row, rowIndex) => (
         <div key={`${collection}-${query}-${sort}-${rowIndex}`}>
           <div className="catalog-line">
             {row.map((product, productIndex) => {
               const href = `/products/${product.slug}`;
-              const styles = availableStyles(product);
-              const catalogImage = styleFilter === 'tee'
-                ? product.colors.find((color) => color.active && styleName(color).toLowerCase() === 'tee' && color.mockupUrl)?.mockupUrl ?? product.catalogImage
-                : product.catalogImage;
+              const styles = product.styles;
+              const catalogImage = styleFilter === 'tee' ? product.teeImage ?? product.catalogImage : product.catalogImage;
               return (
                 <article className="catalog-product" style={{ '--catalog-rotate': `${[-0.7, 0.6, -0.25, 0.8][productIndex]}deg`, '--pin-shift': pinShift(product.slug), '--pin-slant': pinSlant(product.slug) } as CSSProperties} key={product.slug}>
                   <a className="catalog-product__visual" href={href} aria-label={`Shop ${product.name}${styles.length > 1 ? `, available in ${styles.join(', ')}` : ''}`}>
                     <Clothespin />
                     {product.isPlaceholder && <span className="catalog-product__placeholder">V1 placeholder</span>}
                     {catalogImage
-                      ? <img className="catalog-product__image" src={catalogImage} alt={product.name} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
+                      ? <img className="catalog-product__image" src={catalogImage} alt={product.name} {...imageAttrs(catalogImage)} loading={rowIndex === 0 ? 'eager' : 'lazy'} fetchPriority={rowIndex === 0 && productIndex === 0 ? 'high' : 'auto'} decoding="async" />
                       : <Shirt art={product.art} tone={product.tone} />}
                     {styles.length > 1 && <span className="catalog-product__styles" aria-hidden="true" title={`Available in ${styles.join(', ')}`}>{styles.map((style) => <span key={style} title={style}><GarmentIcon style={style} /></span>)}</span>}
                   </a>
-                  <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>
+                  <div className="catalog-product__meta"><p>{product.editorialDescriptor}</p><span>{product.priceLabel}</span></div>
                   <h2><a href={href}>{product.name}</a></h2>
                   <div className="catalog-product__action"><a href={href}>Read the shirt <span>↗</span></a></div>
                 </article>
@@ -130,7 +122,7 @@ export default function ShopCatalog({ products, initialCollection, initialQuery,
             </aside>
           )}
         </div>
-      )) : <div className="catalog-empty"><p>Nothing on that line.</p><button type="button" onClick={() => { setCollection('All'); setQuery(''); setStyleFilter(null); }}>Show everything</button></div>}
+      )) : <div className="catalog-empty"><p>Nothing on that line.</p>{query || styleFilter ? <button type="button" onClick={() => { setQuery(''); setStyleFilter(null); }}>Clear the search</button> : <Link href="/shop">Show everything</Link>}</div>}
     </section>
   );
 }

@@ -1,38 +1,17 @@
 import type { Metadata } from 'next';
-import SiteHeader from '../SiteHeader';
-import { collectionFromParam, getCatalogProducts } from '../data/products';
-import { SHOP_DESCRIPTION, SHOP_TITLE, pageMetadata } from '../lib/seo';
-import ShopCatalog from './ShopCatalog';
+import { ShopScreen, shopFilters, shopMetadata } from './ShopScreen';
 
 type ShopPageProps = {
   searchParams: Promise<{ collection?: string; q?: string; sort?: string; style?: string }>;
 };
 
 export function generateMetadata(): Metadata {
-  return pageMetadata({
-    title: SHOP_TITLE,
-    description: SHOP_DESCRIPTION,
-    path: '/shop',
-  });
+  return shopMetadata();
 }
 
-const validSorts = ['featured', 'newest', 'price-asc', 'price-desc', 'name'] as const;
-
 export default async function ShopPage({ searchParams }: ShopPageProps) {
-  const products = await getCatalogProducts();
   const filters = await searchParams;
-  const initialSort = validSorts.find((sort) => sort === filters.sort) ?? 'featured';
-  return (
-    <>
-      <SiteHeader />
-      <main className="shop-page">
-        <section className="shop-intro shell">
-          <p className="eyebrow"><span /> The full collection</p>
-          <div><h1>Shop<br /><em>the line.</em></h1><p>Say it with your chest.</p></div>
-        </section>
-        <ShopCatalog products={products} initialCollection={collectionFromParam(filters.collection)} initialQuery={filters.q ?? ''} initialSort={initialSort} initialStyle={filters.style?.toLowerCase() === 'tee' ? 'tee' : null} />
-      </main>
-      <footer className="shop-footer"><div className="shell"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>End of the line. For now.</p></div></footer>
-    </>
-  );
+  // ?collection= is redirected in proxy.ts. If it still arrives, the catalog
+  // stays on /shop and the canonical stays /shop. The style filter does too.
+  return <ShopScreen collection="All" {...shopFilters(filters)} />;
 }

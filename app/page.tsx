@@ -3,11 +3,13 @@ import type { Metadata } from 'next';
 import EmailSignup from './EmailSignup';
 import { Clothespin, Shirt } from './BrandVisuals';
 import SiteHeader from './SiteHeader';
-import { collectionSlug, getCatalogProducts, productPriceLabel } from './data/products';
+import { collectionPath, getCatalogProducts, productPriceLabel } from './data/products';
+import { imageAttrs } from './lib/delivery-images';
+import { JsonLd } from './lib/JsonLd';
 import { pinShift, pinSlant } from './lib/pin-shift';
 import { storefrontImage } from './lib/storefront-images';
 import { isBlackFridayPromo } from './lib/promo';
-import { HOME_DESCRIPTION, HOME_TITLE, pageMetadata } from './lib/seo';
+import { HOME_DESCRIPTION, HOME_TITLE, homeStructuredData, pageMetadata } from './lib/seo';
 
 export const metadata: Metadata = pageMetadata({
   title: HOME_TITLE,
@@ -33,7 +35,7 @@ function PinnedEditorial({ imageSrc, imageAlt = 'Bottom’s Line editorial snaps
       <Clothespin />
       <div className="pinned-editorial__image">
         {imageSrc ? (
-          <img src={imageSrc} alt={imageAlt} loading="lazy" decoding="async" />
+          <img src={imageSrc} alt={imageAlt} {...imageAttrs(imageSrc)} loading="lazy" decoding="async" />
         ) : (
           <div className="pinned-editorial__placeholder" aria-label="Future phone photo placeholder">
             <span className="pinned-editorial__ghost">BL</span>
@@ -72,6 +74,7 @@ export default async function Home() {
 
   return (
     <main>
+      <JsonLd data={homeStructuredData()} />
       <SiteHeader />
 
       <section className="hero shell" id="top">
@@ -79,13 +82,13 @@ export default async function Home() {
           <p className="eyebrow"><span /> Shirts for loud inside thoughts</p>
           <h1>Skip the<br /><em>Small Talk.</em></h1>
           <p className="hero__lead">Wear something worth talking about.</p>
-          <p className="hero__body">Bottom’s Line makes conversation-starting apparel for people who would rather be honest than boring.</p>
+          <p className="hero__body">Bottom’s Line makes conversation-starting queer apparel in Nashville for people who would rather be honest than boring.</p>
           <a className="button button--primary" href="/shop">Shop the collection <span aria-hidden="true">↗</span></a>
         </div>
         <div className="hero__visual">
           <span className="hero__line hero__line--holiday" aria-hidden="true"><Clothespin /></span>
           <span className="scribble scribble--top">GOOD FROM<br />EVERY ANGLE</span>
-          <img className="hero-shirt" src={storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png') ?? undefined} alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" fetchPriority="high" decoding="async" />
+          <img className="hero-shirt" src={storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png') ?? undefined} alt="Support Local Bottoms shirt hanging on the Bottom’s Line clothesline" {...imageAttrs(storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/v1790043735/ChatGPT_Image_Aug_27_2026_05_18_54_PM_3.png'))} fetchPriority="high" decoding="async" />
           <span className="scribble scribble--bottom">Wear responsibly.<br />Or don’t.</span>
         </div>
       </section>
@@ -104,7 +107,7 @@ export default async function Home() {
                 <a className="product-card__image" href={`/products/${product.slug}`} aria-label={`Shop ${product.name}`}>
                   <Clothespin />
                   <span className="product-card__number">{String(index + 1).padStart(2, '0')}</span>
-                  <div className="product-card__media">{product.catalogImage ? <img src={product.catalogImage} alt={product.name} loading="lazy" decoding="async" /> : <Shirt art={product.art} tone={product.tone} />}</div>
+                  <div className="product-card__media">{product.catalogImage ? <img src={product.catalogImage} alt={product.name} {...imageAttrs(product.catalogImage)} loading="lazy" decoding="async" /> : <Shirt art={product.art} tone={product.tone} />}</div>
                 </a>
                 <div className="product-card__meta"><p>{product.editorialDescriptor}</p><span>{productPriceLabel(product)}</span></div>
                 <h3>{product.name}</h3>
@@ -113,7 +116,7 @@ export default async function Home() {
             ))}
           </div>
         </div>
-        <a className="holiday-home__all" href="/shop?collection=holiday#catalog">See the whole holiday line <span aria-hidden="true">↗</span></a>
+        <a className="holiday-home__all" href={collectionPath('Holiday')}>See the whole holiday line <span aria-hidden="true">↗</span></a>
       </section>}
 
       {products.length > 0 && <section className="products shell section" id="shop">
@@ -128,7 +131,7 @@ export default async function Home() {
                 <a className="product-card__image" href={product.href || '/shop'} aria-label={`Shop ${product.name}`}>
                   <Clothespin />
                   <span className="product-card__number">0{index + 1}</span>
-                  <div className="product-card__media">{product.image ? <img src={product.image} alt={product.name} loading="lazy" decoding="async" /> : <Shirt art={product.art} tone={product.tone} />}</div>
+                  <div className="product-card__media">{product.image ? <img src={product.image} alt={product.name} {...imageAttrs(product.image)} loading="lazy" decoding="async" /> : <Shirt art={product.art} tone={product.tone} />}</div>
                 </a>
                 <div className="product-card__meta"><p>{product.label}</p><span>{product.price}</span></div>
                 <h3>{product.name}</h3>
@@ -164,7 +167,7 @@ export default async function Home() {
           <div className="section-heading section-heading--collections"><div><p className="eyebrow"><span /> Pick your poison</p><h2>Shop by<br /><em>mood.</em></h2></div><p>There’s a shirt for that.</p></div>
           <div className="collection-list">
             {collections.map((collection) => (
-              <a href={`/shop?collection=${collectionSlug(collection.name)}#catalog`} className="collection-row" key={collection.name}><span className="collection-row__number">{collection.number}</span><h3>{collection.name}</h3><p>{collection.note}</p><span className="collection-row__arrow" aria-hidden="true">↗</span></a>
+              <a href={collectionPath(collection.name)} className="collection-row" key={collection.name}><span className="collection-row__number">{collection.number}</span><h3>{collection.name}</h3><p>{collection.note}</p><span className="collection-row__arrow" aria-hidden="true">↗</span></a>
             ))}
           </div>
         </div>
@@ -183,7 +186,7 @@ export default async function Home() {
       <footer>
         <div className="shell footer__top">
           <p>Still here? You’re probably<br /><em>our kind of people.</em></p>
-          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href="/shop?collection=new-drops#catalog">New drops</a><a href="/custom-shirts">Custom</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
+          <div className="footer__links"><div><span>Browse</span><a href="/shop">Shop all</a><a href={collectionPath('New Drops')}>New drops</a><a href="/custom-shirts">Custom</a><a href="#story">Our deal</a></div><div><span>Follow</span><a href="https://www.instagram.com/thebottomslineclothing/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/bottomslineclothing" target="_blank" rel="noopener noreferrer">Facebook</a></div></div>
         </div>
         <div className="shell footer__bottom"><p className="wordmark wordmark--footer">BOTTOM’S <span>LINE</span></p><p>© 2026 Bottom’s Line Clothing <span>Made with poor judgment.</span></p></div>
       </footer>

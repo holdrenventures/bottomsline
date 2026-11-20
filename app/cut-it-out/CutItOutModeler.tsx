@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { CatalogProduct } from '../data/products';
+import { imageAttrs } from '../lib/delivery-images';
+
+type CutShirt = { slug: string; name: string; catalogImage: string | null };
 
 type Sleeves = 'none' | 'muscle' | 'drop-arm';
 type Extras = { scoop: boolean; vneck: boolean; slits: boolean; slashes: boolean };
@@ -121,7 +123,7 @@ function buildRecipe(sleeves: Sleeves, cropOn: boolean, drop: number, crop: numb
   return parts.length ? parts.join(' + ') : 'Original';
 }
 
-export default function CutItOutModeler({ products }: { products: CatalogProduct[] }) {
+export default function CutItOutModeler({ products }: { products: CutShirt[] }) {
   const [selectedSlug, setSelectedSlug] = useState<string>(products[0]?.slug ?? '');
   const [sleeves, setSleeves] = useState<Sleeves>('muscle');
   const [cropOn, setCropOn] = useState(false);
@@ -173,7 +175,7 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
               >
                 <span className="cut-picker__thumb">
                   {product.catalogImage
-                    ? <img src={product.catalogImage} alt="" loading="lazy" />
+                    ? <img src={product.catalogImage} alt={`${product.name} tee, available to preview a DIY cut`} {...imageAttrs(product.catalogImage)} loading="lazy" />
                     : <span className="cut-picker__ghost" aria-hidden="true">BL</span>}
                 </span>
                 <span className="cut-picker__name">{product.name}</span>
@@ -192,6 +194,7 @@ export default function CutItOutModeler({ products }: { products: CatalogProduct
                   className="cut-stage__image"
                   src={selected.catalogImage}
                   alt={`${selected.name} — ${recipe}`}
+                  {...imageAttrs(selected.catalogImage)}
                   style={{ clipPath, WebkitClipPath: clipPath }}
                 />
               )}

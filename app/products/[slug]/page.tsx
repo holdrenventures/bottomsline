@@ -2,21 +2,22 @@ import ProductDetailGallery from '../ProductDetailGallery';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Clothespin, ProductAnnotation, Shirt } from '../../BrandVisuals';
-import { getProductBySlug, productPriceLabel } from '../../data/products';
+import { getCatalogProducts, productPriceLabel } from '../../data/products';
 import { JsonLd } from '../../lib/JsonLd';
-import { productPageMetadata, productStructuredData } from '../../lib/seo';
+import { notFoundMetadata, productPageMetadata, productStructuredData } from '../../lib/seo';
 import SiteHeader from '../../SiteHeader';
 import { productDetailRows } from '../product-details';
 import { defaultHeroImage } from '../product-selection';
 import { ProductHeroImage, ProductHeroProvider } from './ProductHero';
 import ProductPurchaseAny from './ProductPurchaseAny';
+import RelatedProducts from '../RelatedProducts';
 
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
-  if (!product) return { title: 'Not found — Bottom’s Line Clothing', robots: { index: false, follow: false } };
+  const product = (await getCatalogProducts()).find((item) => item.slug === slug);
+  if (!product || slug === 'support-local-bottoms') return notFoundMetadata();
   return productPageMetadata(product, productPriceLabel(product));
 }
 
@@ -24,7 +25,8 @@ export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
   // Reserved: the hand-tuned Support Local Bottoms page owns this slug.
   if (slug === 'support-local-bottoms') notFound();
-  const product = await getProductBySlug(slug);
+  const catalog = await getCatalogProducts();
+  const product = catalog.find((item) => item.slug === slug);
   if (!product) notFound();
 
   const eyebrow = product.editorialDescriptor || 'Conversation Starter';
@@ -80,6 +82,7 @@ export default async function ProductPage({ params }: PageProps) {
         </section>
         </ProductHeroProvider>
 
+        <RelatedProducts product={product} catalog={catalog} />
         <section className="product-statement">
           <div className="shell"><p>Read the room.<br /><em>Then ignore it.</em></p><span>Wear responsibly.</span></div>
         </section>

@@ -122,7 +122,7 @@ export default async function CutItOutPage() {
     if (!product.catalogImage) return false;
     if (product.colors.length === 0) return true; // mock fallback keeps rendering
     return product.colors.some((color) => (color.style ?? '').toLowerCase().includes('tee'));
-  });
+  }).map((product) => ({ slug: product.slug, name: product.name, catalogImage: product.catalogImage }));
 
   const structuredData = buildStructuredData();
 

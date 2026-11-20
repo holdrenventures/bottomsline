@@ -4,7 +4,8 @@ export const PROMO_BANNER = '3 tees for $65 · Free shipping on $60+';
 export const SHIPS_IN_BUSINESS_DAYS = '3–5';
 export const BLACK_FRIDAY_BANNER = 'Black Friday: 3 tees for $65, shipped free · Through Cyber Monday';
 export const CHRISTMAS_BANNER = 'Order by Wed, Dec 16 for Christmas · Free shipping on $60+';
-export const AFTER_CHRISTMAS_CUTOFF_BANNER = 'Free shipping on $60+ · Free size swaps within 30 days';
+export const SIZE_SWAP_DAYS = 30;
+export const AFTER_CHRISTMAS_CUTOFF_BANNER = `Free shipping on $60+ · Free size swaps within ${SIZE_SWAP_DAYS} days`;
 
 // Central time is UTC−6 on both campaign boundaries in 2026.
 export const BLACK_FRIDAY_START = Date.UTC(2026, 10, 27, 6);

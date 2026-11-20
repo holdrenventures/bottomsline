@@ -1,5 +1,5 @@
 import type Stripe from 'stripe';
-import { normalizePromoCode, quote } from '../../lib/pricing';
+import { normalizePromoCode, quote, WOAKS10_CODE } from '../../lib/pricing';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient } from '../../lib/stripe';
 
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
 
     const rawPromoCode = typeof input.promoCode === 'string' ? input.promoCode.trim() : '';
     const promoCode = rawPromoCode ? normalizePromoCode(rawPromoCode) : null;
-    if (rawPromoCode) {
+    if (rawPromoCode && promoCode !== WOAKS10_CODE) {
       const codes = promoCode
         ? await supabaseAdmin(`email_signups?select=discount_code,redeemed_at&discount_code=eq.${encodeURIComponent(promoCode)}`) as SignupCodeRow[]
         : [];
@@ -155,6 +155,8 @@ export async function POST(request: Request) {
     const pricing = quote(
       trusted.map(({ selection, variant }) => ({ style: variant.style, unitCents: variant.price_cents, quantity: selection.quantity })),
       Boolean(promoCode),
+      Date.now(),
+      promoCode === WOAKS10_CODE ? 'woaks10' : 'welcome',
     );
     const appliedPromoCode = pricing.discountKind === 'welcome' ? promoCode : null;
 

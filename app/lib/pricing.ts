@@ -6,11 +6,13 @@ export const BUNDLE_SIZE = 3;
 export const BUNDLE_PRICE_CENTS = 6500;
 export const BUNDLE_STYLES = ['Tee'];
 export const WELCOME_PERCENT = 10;
+export const WOAKS10_CODE = 'WOAKS10';
 export const FREE_SHIPPING_MIN_CENTS = 6000;
 
 export type PricedLine = { style: string | null | undefined; unitCents: number; quantity: number };
 
-export type DiscountKind = 'bundle' | 'welcome';
+export type DiscountKind = 'bundle' | 'welcome' | 'woaks10';
+export type CodeKind = 'welcome' | 'woaks10';
 
 export type Quote = {
   subtotalCents: number;
@@ -19,8 +21,8 @@ export type Quote = {
   discountLabel: string | null;
   shippingCents: number;
   totalCents: number;
-  // True when a welcome code was offered but the bundle saved more.
-  welcomeCodeSkipped: boolean;
+  // True when a code was offered but the bundle saved more.
+  promoCodeSkipped: boolean;
 };
 
 export function isHeavyGarment(style: string | null | undefined) {
@@ -53,17 +55,18 @@ export function shippingCents(lines: PricedLine[], discountedSubtotalCents: numb
   return 1100 + 200 * (garments - 3);
 }
 
-export function quote(lines: PricedLine[], hasWelcomeCode: boolean, now = Date.now()): Quote {
+export function quote(lines: PricedLine[], hasPromoCode: boolean, now = Date.now(), codeKind: CodeKind = 'welcome'): Quote {
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitCents * line.quantity, 0);
   const bundle = isTeeBundleActive(now) ? bundleDiscountCents(lines) : 0;
-  const welcome = hasWelcomeCode ? Math.round((subtotalCents * WELCOME_PERCENT) / 100) : 0;
+  const codeDiscount = hasPromoCode ? Math.round((subtotalCents * WELCOME_PERCENT) / 100) : 0;
 
   // Best deal only — the two offers never stack.
-  const discountKind: DiscountKind | null = bundle === 0 && welcome === 0 ? null : bundle >= welcome ? 'bundle' : 'welcome';
-  const discountCents = discountKind === 'bundle' ? bundle : discountKind === 'welcome' ? welcome : 0;
+  const discountKind: DiscountKind | null = bundle === 0 && codeDiscount === 0 ? null : bundle >= codeDiscount ? 'bundle' : codeKind;
+  const discountCents = discountKind === 'bundle' ? bundle : discountKind ? codeDiscount : 0;
   const discountLabel = discountKind === 'bundle'
     ? `${BUNDLE_SIZE} tees for $${BUNDLE_PRICE_CENTS / 100}`
-    : discountKind === 'welcome' ? `${WELCOME_PERCENT}% off first order` : null;
+    : discountKind === 'welcome' ? `${WELCOME_PERCENT}% off first order`
+      : discountKind === 'woaks10' ? 'WOaks10 · 10% off' : null;
   const shipping = shippingCents(lines, subtotalCents - discountCents);
 
   return {
@@ -73,7 +76,7 @@ export function quote(lines: PricedLine[], hasWelcomeCode: boolean, now = Date.n
     discountLabel,
     shippingCents: shipping,
     totalCents: subtotalCents - discountCents + shipping,
-    welcomeCodeSkipped: hasWelcomeCode && discountKind === 'bundle',
+    promoCodeSkipped: hasPromoCode && discountKind === 'bundle',
   };
 }
 

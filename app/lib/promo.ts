@@ -1,6 +1,6 @@
 // Storefront promo + shipping copy, kept in one place so the banner and product
 // pages stay in sync with whatever checkout actually honors.
-export const PROMO_BANNER = '3 tees for $65 · Free shipping on $60+';
+export const PROMO_BANNER = 'Black Friday Nov 27–30 · Any 3 tees for $65, shipped free';
 export const SHIPS_IN_BUSINESS_DAYS = '3–5';
 export const BLACK_FRIDAY_BANNER = 'Black Friday: 3 tees for $65, shipped free · Through Cyber Monday';
 export const CHRISTMAS_BANNER = 'Order by Wed, Dec 16 for Christmas · Free shipping on $60+';
@@ -18,7 +18,7 @@ export function isBlackFridayPromo(now = Date.now()) {
 }
 
 export function isTeeBundleActive(now = Date.now()) {
-  return now < BLACK_FRIDAY_END;
+  return isBlackFridayPromo(now);
 }
 
 export function isChristmasDeliveryWindow(now = Date.now()) {

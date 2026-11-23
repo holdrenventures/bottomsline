@@ -38,8 +38,11 @@ test('four or five tees form one bundle and six form two', () => {
 });
 
 test('bundle pricing ends on Dec 1 while ordinary shipping and welcome codes remain', () => {
+  const beforeStart = priceQuote(tee(3, 2500), false, BLACK_FRIDAY_START - 1);
   const before = priceQuote(tee(3, 2500), false, BLACK_FRIDAY_END - 1);
   const after = priceQuote(tee(3, 2500), false, BLACK_FRIDAY_END);
+  assert.equal(beforeStart.totalCents, 7500);
+  assert.equal(beforeStart.discountKind, null);
   assert.equal(before.totalCents, 6500);
   assert.equal(after.totalCents, 7500);
   assert.equal(after.discountKind, null);

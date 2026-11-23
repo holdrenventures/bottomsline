@@ -10,6 +10,8 @@ test('Black Friday copy starts and ends at the Central time boundaries', () => {
   assert.equal(promoBanner(BLACK_FRIDAY_START), BLACK_FRIDAY_BANNER);
   assert.equal(promoBanner(BLACK_FRIDAY_END), CHRISTMAS_BANNER);
   assert.equal(promoBanner(BLACK_FRIDAY_START - 1), PROMO_BANNER);
+  assert.equal(isTeeBundleActive(BLACK_FRIDAY_START - 1), false);
+  assert.equal(isTeeBundleActive(BLACK_FRIDAY_START), true);
   assert.equal(isTeeBundleActive(BLACK_FRIDAY_END - 1), true);
   assert.equal(isTeeBundleActive(BLACK_FRIDAY_END), false);
 });

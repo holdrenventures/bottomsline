@@ -13,6 +13,7 @@ export function customerOrderSubject(order: EmailOrder) {
 
 export function customerOrderText(order: EmailOrder, items: EmailOrderItem[]) {
   const lines: string[] = [];
+  const pickup = order.shipping_address?.fulfillment_method === 'pickup';
   lines.push(`We got your order, ${order.customer_name ?? 'friend'}.`);
   lines.push('');
   lines.push(`Order #${shortSessionId(order.stripe_checkout_session_id)}`);
@@ -26,13 +27,15 @@ export function customerOrderText(order: EmailOrder, items: EmailOrderItem[]) {
   lines.push('');
   if (order.shipping_address) {
     const a = order.shipping_address;
-    lines.push('Shipping to:');
+    lines.push(pickup ? 'Davidson County pickup eligibility address:' : 'Shipping to:');
     if (order.customer_name) lines.push(order.customer_name);
     if (a.line1) lines.push([a.line1, a.line2].filter(Boolean).join(' '));
     if (a.city) lines.push([a.city, a.state, a.postal_code].filter(Boolean).join(', '));
     lines.push('');
   }
-  lines.push('We’ll email you again when your order ships.');
+  lines.push(pickup
+    ? 'Local pickup in 37207 is by appointment. We’ll reach out using your email or phone to schedule it and share the pickup details.'
+    : 'We’ll email you again when your order ships.');
   lines.push('');
   lines.push('— Bottom’s Line Clothing');
   lines.push('https://bottomslineclothing.com');
@@ -40,6 +43,7 @@ export function customerOrderText(order: EmailOrder, items: EmailOrderItem[]) {
 }
 
 export function customerOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
+  const pickup = order.shipping_address?.fulfillment_method === 'pickup';
   const orderRef = shortSessionId(order.stripe_checkout_session_id);
   const customerName = escapeHtml(order.customer_name ?? 'friend');
   const rows = items
@@ -62,7 +66,7 @@ export function customerOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
     ? `
       <tr>
         <td colspan="2" style="padding-top:28px;">
-          <div style="color:#6b6559;font-size:11px;text-transform:uppercase;letter-spacing:1.6px;font-weight:900;">Shipping to</div>
+          <div style="color:#6b6559;font-size:11px;text-transform:uppercase;letter-spacing:1.6px;font-weight:900;">${pickup ? 'Pickup eligibility address' : 'Shipping to'}</div>
           <div style="color:#141413;font-size:14px;line-height:1.5;margin-top:8px;">
             ${order.customer_name ? `${customerName}<br>` : ''}
             ${shipping.line1 ? `${escapeHtml([shipping.line1, shipping.line2].filter(Boolean).join(' '))}<br>` : ''}
@@ -94,7 +98,7 @@ export function customerOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
                 Thanks, ${customerName}.
               </div>
               <div style="font-size:16px;color:#4a4640;line-height:1.6;margin-top:12px;">
-                We got the order. You get another email the moment it ships. Order <strong style="color:#141413;">#${orderRef}</strong>.
+                ${pickup ? 'We’ll reach out to schedule your pickup in 37207 and share the pickup details.' : 'We got the order. You get another email the moment it ships.'} Order <strong style="color:#141413;">#${orderRef}</strong>.
               </div>
             </td>
           </tr>

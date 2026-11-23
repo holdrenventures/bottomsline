@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { normalizePromoCode, quote, WOAKS10_CODE } from '../../lib/pricing';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient } from '../../lib/stripe';
+import { cleanPickupAddress, verifyDavidsonCounty } from '../../lib/local-pickup';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,8 @@ type CheckoutInput = {
     quantity?: number;
   }>;
   promoCode?: string | null;
+  fulfillmentMethod?: 'shipping' | 'pickup';
+  pickupAddress?: unknown;
 };
 
 type ProductRow = {
@@ -74,6 +77,12 @@ export async function POST(request: Request) {
     if (!Array.isArray(input.items) || input.items.length < 1 || input.items.length > 25) {
       return badRequest('Your bag must contain between 1 and 25 selections.');
     }
+    if (input.fulfillmentMethod && !['shipping', 'pickup'].includes(input.fulfillmentMethod)) {
+      return badRequest('Choose shipping or local pickup.');
+    }
+    const isPickup = input.fulfillmentMethod === 'pickup';
+    const pickupAddress = isPickup ? cleanPickupAddress(input.pickupAddress) : null;
+    if (pickupAddress) await verifyDavidsonCounty(pickupAddress);
 
     const selections = input.items.map((item) => ({
       productId: item.productId?.trim() ?? '',
@@ -207,18 +216,28 @@ export async function POST(request: Request) {
           checkout_attempt_id: attemptId,
           discount_kind: pricing.discountKind ?? '',
           promo_code: appliedPromoCode ?? '',
+          fulfillment_method: isPickup ? 'pickup' : 'shipping',
+          ...(pickupAddress ? {
+            pickup_line1: pickupAddress.line1,
+            pickup_line2: pickupAddress.line2,
+            pickup_city: pickupAddress.city,
+            pickup_state: pickupAddress.state,
+            pickup_postal_code: pickupAddress.postal_code,
+          } : {}),
         },
         ...(coupon ? { discounts: [{ coupon: coupon.id }] } : {}),
-        shipping_options: [{
+        ...(!isPickup ? { shipping_options: [{
           shipping_rate_data: {
             type: 'fixed_amount',
             display_name: pricing.shippingCents === 0 ? 'Free standard shipping' : 'Standard shipping',
             fixed_amount: { amount: pricing.shippingCents, currency },
           },
-        }],
+        }] } : {}),
         payment_intent_data: { metadata: { checkout_attempt_id: attemptId } },
         billing_address_collection: 'auto',
-        shipping_address_collection: { allowed_countries: ['US'] },
+        ...(isPickup
+          ? { phone_number_collection: { enabled: true }, custom_text: { submit: { message: 'Pickup in 37207 is by appointment. We will contact you to schedule it.' } } }
+          : { shipping_address_collection: { allowed_countries: ['US'] } }),
         success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/bag`,
       }, { idempotencyKey: `bottoms-line-checkout-${attemptId}` });
@@ -297,7 +316,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Checkout is temporarily unavailable.';
-    const status = /available|invalid|quantity|currency/i.test(message) ? 400 : 500;
+    const status = /available|invalid|quantity|currency|Davidson County|pickup address|choose shipping/i.test(message) ? 400 : 500;
     if (status === 500) console.error('Checkout creation failed:', message);
     return Response.json({ error: status === 400 ? message : 'Checkout is temporarily unavailable.' }, { status });
   }

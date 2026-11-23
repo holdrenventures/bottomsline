@@ -113,18 +113,35 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
   }
 
   const shipping = session.collected_information?.shipping_details;
+  const isPickup = session.metadata?.fulfillment_method === 'pickup';
+  const contactEmail = session.customer_details?.email ?? session.customer_email ?? null;
+  const contactPhone = session.customer_details?.phone ?? null;
+  if (isPickup && (!contactEmail || !contactPhone || (session.total_details?.amount_shipping ?? 0) !== 0 ||
+    !session.metadata?.pickup_line1 || !session.metadata?.pickup_city || !session.metadata?.pickup_postal_code)) {
+    throw new Error('Pickup order is missing required contact, address, or free pickup details.');
+  }
   const paymentIntentId = typeof session.payment_intent === 'string'
     ? session.payment_intent
     : session.payment_intent?.id ?? null;
   const order = {
     stripe_checkout_session_id: session.id,
     stripe_payment_intent_id: paymentIntentId,
-    customer_email: session.customer_details?.email ?? session.customer_email ?? null,
+    customer_email: contactEmail,
     customer_name: shipping?.name ?? session.customer_details?.name ?? null,
-    shipping_address: shipping?.address ? {
+    shipping_address: isPickup ? {
+      line1: session.metadata!.pickup_line1,
+      line2: session.metadata!.pickup_line2 ?? null,
+      city: session.metadata!.pickup_city,
+      state: 'TN',
+      postal_code: session.metadata!.pickup_postal_code,
+      country: 'US',
+      fulfillment_method: 'pickup',
+      phone: contactPhone,
+    } : shipping?.address ? {
       line1: shipping.address.line1, line2: shipping.address.line2,
       city: shipping.address.city, state: shipping.address.state,
       postal_code: shipping.address.postal_code, country: shipping.address.country,
+      fulfillment_method: 'shipping', phone: null,
     } : null,
     payment_status: session.payment_status,
     currency: session.currency,

@@ -42,6 +42,14 @@ snapshots the validated selection, and sends the authoritative amounts to a
 hosted Checkout Session as inline price data. Browser names and prices are not
 trusted.
 
+For local pickup, the bag also submits a Davidson County street address. The
+Worker checks the Census geocoder's county result (Tennessee 47, Davidson 037)
+and matching ZIP before creating a pickup Checkout Session. Pickup costs $0;
+Stripe Checkout requires a phone number and email. The session records the
+eligibility address for the order receipt and Orders Desk. Pickup is scheduled
+after payment in 37207; the exact location is shared when arranging it. If the
+geocoder cannot confirm the address, the customer can choose shipping.
+
 Before testing Checkout:
 
 1. Apply `supabase/migrations/202609240001_checkout_attempts.sql` in the

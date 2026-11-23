@@ -7,14 +7,16 @@ import { escapeHtml, money, shortSessionId } from './types';
 export function storeOrderSubject(order: EmailOrder) {
   const amount = money(order.total_cents, order.currency);
   const who = order.customer_name ?? order.customer_email ?? 'a customer';
-  return `New order — ${amount} from ${who}`;
+  return `${order.shipping_address?.fulfillment_method === 'pickup' ? 'Schedule pickup' : 'New order'} — ${amount} from ${who}`;
 }
 
 export function storeOrderText(order: EmailOrder, items: EmailOrderItem[]) {
   const lines: string[] = [];
+  const pickup = order.shipping_address?.fulfillment_method === 'pickup';
   lines.push(`New order #${shortSessionId(order.stripe_checkout_session_id)} — ${money(order.total_cents, order.currency)}`);
   lines.push('');
   lines.push(`Customer: ${order.customer_name ?? '(unknown)'} <${order.customer_email ?? 'no email'}>`);
+  if (pickup) lines.push(`Phone: ${order.shipping_address?.phone ?? '(missing)'}`);
   lines.push('');
   lines.push('Items:');
   for (const item of items) {
@@ -24,7 +26,7 @@ export function storeOrderText(order: EmailOrder, items: EmailOrderItem[]) {
   lines.push('');
   if (order.shipping_address) {
     const a = order.shipping_address;
-    lines.push('Shipping to:');
+    lines.push(pickup ? 'LOCAL PICKUP — schedule in 37207. Davidson County eligibility address:' : 'Shipping to:');
     if (order.customer_name) lines.push(order.customer_name);
     if (a.line1) lines.push([a.line1, a.line2].filter(Boolean).join(' '));
     if (a.city) lines.push([a.city, a.state, a.postal_code].filter(Boolean).join(', '));
@@ -38,6 +40,7 @@ export function storeOrderText(order: EmailOrder, items: EmailOrderItem[]) {
 }
 
 export function storeOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
+  const pickup = order.shipping_address?.fulfillment_method === 'pickup';
   const orderRef = shortSessionId(order.stripe_checkout_session_id);
   const customerName = escapeHtml(order.customer_name ?? '(no name)');
   const customerEmail = escapeHtml(order.customer_email ?? '');
@@ -63,7 +66,8 @@ export function storeOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
     ? `
       <tr>
         <td colspan="2" style="padding-top:22px;color:#4a4640;font-size:13px;line-height:1.5;">
-          <div style="color:#6b6559;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:900;margin-bottom:6px;">Shipping</div>
+          <div style="color:#6b6559;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:900;margin-bottom:6px;">${pickup ? 'Schedule local pickup in 37207 · eligibility address' : 'Shipping'}</div>
+          ${pickup && shipping.phone ? `Phone: ${escapeHtml(shipping.phone)}<br>` : ''}
           ${order.customer_name ? `${customerName}<br>` : ''}
           ${shipping.line1 ? `${escapeHtml([shipping.line1, shipping.line2].filter(Boolean).join(' '))}<br>` : ''}
           ${shipping.city ? escapeHtml([shipping.city, shipping.state, shipping.postal_code].filter(Boolean).join(', ')) : ''}

@@ -7,12 +7,18 @@ export const BUNDLE_PRICE_CENTS = 6500;
 export const BUNDLE_STYLES = ['Tee'];
 export const WELCOME_PERCENT = 10;
 export const WOAKS10_CODE = 'WOAKS10';
+export const ENB15_CODE = 'ENB15';
+export const ENB15_PERCENT = 15;
 export const FREE_SHIPPING_MIN_CENTS = 6000;
 
 export type PricedLine = { style: string | null | undefined; unitCents: number; quantity: number };
 
-export type DiscountKind = 'bundle' | 'welcome' | 'woaks10';
-export type CodeKind = 'welcome' | 'woaks10';
+export type DiscountKind = 'bundle' | 'welcome' | 'woaks10' | 'enb15';
+export type CodeKind = 'welcome' | 'woaks10' | 'enb15';
+
+export function codeKindForPromoCode(code: string | null): CodeKind {
+  return code === ENB15_CODE ? 'enb15' : code === WOAKS10_CODE ? 'woaks10' : 'welcome';
+}
 
 export type Quote = {
   subtotalCents: number;
@@ -58,7 +64,8 @@ export function shippingCents(lines: PricedLine[], discountedSubtotalCents: numb
 export function quote(lines: PricedLine[], hasPromoCode: boolean, now = Date.now(), codeKind: CodeKind = 'welcome'): Quote {
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitCents * line.quantity, 0);
   const bundle = isTeeBundleActive(now) ? bundleDiscountCents(lines) : 0;
-  const codeDiscount = hasPromoCode ? Math.round((subtotalCents * WELCOME_PERCENT) / 100) : 0;
+  const codePercent = codeKind === 'enb15' ? ENB15_PERCENT : WELCOME_PERCENT;
+  const codeDiscount = hasPromoCode ? Math.round((subtotalCents * codePercent) / 100) : 0;
 
   // Best deal only — the two offers never stack.
   const discountKind: DiscountKind | null = bundle === 0 && codeDiscount === 0 ? null : bundle >= codeDiscount ? 'bundle' : codeKind;
@@ -66,7 +73,8 @@ export function quote(lines: PricedLine[], hasPromoCode: boolean, now = Date.now
   const discountLabel = discountKind === 'bundle'
     ? `${BUNDLE_SIZE} tees for $${BUNDLE_PRICE_CENTS / 100}`
     : discountKind === 'welcome' ? `${WELCOME_PERCENT}% off first order`
-      : discountKind === 'woaks10' ? 'WOaks10 · 10% off' : null;
+      : discountKind === 'woaks10' ? 'WOaks10 · 10% off'
+        : discountKind === 'enb15' ? 'ENB15 · 15% off' : null;
   const shipping = shippingCents(lines, subtotalCents - discountCents);
 
   return {

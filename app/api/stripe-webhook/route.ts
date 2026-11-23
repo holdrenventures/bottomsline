@@ -185,7 +185,7 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
 
   // Burn the welcome code only once payment lands, so abandoned checkouts keep it usable.
   const promoCode = session.metadata?.promo_code;
-  if (promoCode) {
+  if (promoCode && session.metadata?.discount_kind === 'welcome') {
     try {
       await supabaseAdmin(`email_signups?discount_code=eq.${encodeURIComponent(promoCode)}&redeemed_at=is.null`, {
         method: 'PATCH',

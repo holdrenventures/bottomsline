@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CART_UPDATED_EVENT, clearCart, readCart, removeCartItem, updateCartItem, type CartItem } from '../lib/cart';
 import { storefrontImage } from '../lib/storefront-images';
 import { trackMeta } from '../lib/meta-pixel';
-import { BUNDLE_SIZE, BUNDLE_STYLES, FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quote, WOAKS10_CODE } from '../lib/pricing';
+import { BUNDLE_SIZE, BUNDLE_STYLES, codeKindForPromoCode, ENB15_CODE, FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quote, WOAKS10_CODE } from '../lib/pricing';
 import { isTeeBundleActive } from '../lib/promo';
 import { usePromoClock } from '../lib/use-promo-window';
 
@@ -46,7 +46,7 @@ export default function BagClient() {
       items.map((item) => ({ style: item.style, unitCents: Math.round(item.unitPrice * 100), quantity: item.quantity })),
       Boolean(promoCode),
       now,
-      promoCode === WOAKS10_CODE ? 'woaks10' : 'welcome',
+      codeKindForPromoCode(promoCode),
     ),
     [items, promoCode, now],
   );
@@ -189,12 +189,14 @@ export default function BagClient() {
           />
         </label>
         <p>
-          {pickup
-            ? 'Free local pickup in 37207. Taxes are calculated at checkout.'
-            : pricing.promoCodeSkipped
+          {pricing.promoCodeSkipped
             ? promoCode === WOAKS10_CODE
               ? 'Your 3-tee deal beats WOaks10, so we’re using that. Discounts can’t be combined.'
+              : promoCode === ENB15_CODE
+                ? 'Your 3-tee deal saves more than ENB15, so we’re using that. Discounts can’t be combined.'
               : 'Your 3-tee deal beats 10% off, so we’re using that. Your code stays saved for next time.'
+            : pickup
+              ? 'Free local pickup in 37207. Taxes are calculated at checkout.'
             : toFreeShipping > 0
               ? `${money.format(toFreeShipping / 100)} away from free shipping.`
               : 'Free shipping unlocked. Taxes are calculated at checkout.'}

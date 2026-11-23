@@ -1,5 +1,5 @@
 import type Stripe from 'stripe';
-import { normalizePromoCode, quote, WOAKS10_CODE } from '../../lib/pricing';
+import { codeKindForPromoCode, ENB15_CODE, normalizePromoCode, quote, WOAKS10_CODE } from '../../lib/pricing';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient } from '../../lib/stripe';
 import { cleanPickupAddress, verifyDavidsonCounty } from '../../lib/local-pickup';
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
 
     const rawPromoCode = typeof input.promoCode === 'string' ? input.promoCode.trim() : '';
     const promoCode = rawPromoCode ? normalizePromoCode(rawPromoCode) : null;
-    if (rawPromoCode && promoCode !== WOAKS10_CODE) {
+    if (rawPromoCode && promoCode !== WOAKS10_CODE && promoCode !== ENB15_CODE) {
       const codes = promoCode
         ? await supabaseAdmin(`email_signups?select=discount_code,redeemed_at&discount_code=eq.${encodeURIComponent(promoCode)}`) as SignupCodeRow[]
         : [];
@@ -165,9 +165,9 @@ export async function POST(request: Request) {
       trusted.map(({ selection, variant }) => ({ style: variant.style, unitCents: variant.price_cents, quantity: selection.quantity })),
       Boolean(promoCode),
       Date.now(),
-      promoCode === WOAKS10_CODE ? 'woaks10' : 'welcome',
+      codeKindForPromoCode(promoCode),
     );
-    const appliedPromoCode = pricing.discountKind === 'welcome' ? promoCode : null;
+    const appliedPromoCode = pricing.discountKind && pricing.discountKind !== 'bundle' ? promoCode : null;
 
     const stripe = stripeClient();
     const attemptId = crypto.randomUUID();

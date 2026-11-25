@@ -5,6 +5,7 @@
 import ProductDesignWorkspace from './ProductDesignWorkspace';
 import { variantKey } from '../lib/variant-combos.mjs';
 import ProductDetailImages, { type DetailImage } from './ProductDetailImages';
+import AdminNav from './AdminNav';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, InputHTMLAttributes } from 'react';
 import { standardPriceCents } from '../lib/standard-prices';
@@ -166,6 +167,7 @@ export default function AdminCatalog() {
   const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(blankProduct()));
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [notice, setNotice] = useState<Notice>({ text: 'Enter the admin token to load the catalog.', tone: 'info' });
   const [busy, setBusy] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
@@ -290,12 +292,15 @@ export default function AdminCatalog() {
   const confirmDiscard = () => !dirty || window.confirm('You have unsaved changes. Discard them?');
 
   function pickProduct(product: Product) {
-    if (product.id === selectedId || !confirmDiscard()) return;
-    selectProduct(product); setNotice(emptyNotice);
+    if (product.id !== selectedId) {
+      if (!confirmDiscard()) return;
+      selectProduct(product); setNotice(emptyNotice);
+    }
+    setMobileView('detail');
   }
   function newProduct() {
     if (!confirmDiscard()) return;
-    startBlank(); setNotice({ text: 'New draft. Nothing is public until you switch it to Live and save.', tone: 'info' });
+    startBlank(); setMobileView('detail'); setNotice({ text: 'New draft. Nothing is public until you switch it to Live and save.', tone: 'info' });
   }
   function duplicateProduct() {
     if (!confirmDiscard()) return;
@@ -424,10 +429,10 @@ export default function AdminCatalog() {
   const hasDetails = Boolean(draft.material || draft.fit_notes || draft.care_instructions || draft.shipping_note || draft.size_guide_url);
 
   return (
-    <main className="admin-shell">
+    <main className={`admin-shell admin-mobile-${mobileView}`}>
       <header className="admin-header">
         <div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Product Desk</h1></div>
-        <div><a href="/admin/designs">Design adjuster</a><a href="/admin/orders">Orders desk</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a><button type="button" onClick={refresh} disabled={busy}>Refresh</button></div>
+        <div><AdminNav current="products" /><button type="button" onClick={refresh} disabled={busy}>Refresh</button></div>
       </header>
 
       {/* Shared suggestion lists for free-text fields */}
@@ -474,6 +479,7 @@ export default function AdminCatalog() {
         </aside>
 
         <form ref={formRef} className="admin-editor" onSubmit={save}>
+          <button type="button" className="admin-mobile-back" onClick={() => setMobileView('list')}>All products</button>
           <div className="admin-editor__top">
             <div>
               <p>{draft.id ? 'Edit product' : 'New product'} <span className={`admin-badge ${draft.active ? 'is-live' : 'is-draft'}`}>{draft.active ? 'Live' : 'Draft'}</span></p>
@@ -608,7 +614,7 @@ export default function AdminCatalog() {
                   {pricesDiffer && <button type="button" onClick={() => patchAllVariants({ price_cents: draft.base_price_cents })}>Set all to {`$${dollars(draft.base_price_cents)}`}</button>}
                 </div>
                 <div className="admin-table-wrap">
-                  <table className="admin-table">
+                  <table className="admin-table admin-variants-table">
                     <thead><tr><th>Product type</th><th>Blank / model</th><th>Size</th><th>SKU</th><th>Price</th><th>Stock</th><th>Sellable</th><th><span className="sr-only">Remove</span></th></tr></thead>
                     <tbody>
                       {draft.product_variants.map((variant, index) => {
@@ -650,7 +656,7 @@ export default function AdminCatalog() {
               <p className="admin-empty">No colorways yet.</p>
             ) : (
               <div className="admin-table-wrap">
-                <table className="admin-table">
+                <table className="admin-table admin-colors-table">
                   <thead><tr><th>Preview</th><th>Color</th><th>Style</th><th>Garment</th><th>Cloudinary mockup URL</th><th>Visible</th><th>Order</th><th><span className="sr-only">Remove</span></th></tr></thead>
                   <tbody>
                     {draft.product_colors.map((color, index) => {

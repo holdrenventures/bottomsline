@@ -1,0 +1,14 @@
+{
+  "id": "/admin",
+  "name": "Bottom’s Line Admin",
+  "short_name": "BL Admin",
+  "description": "Products, orders, and designs for Bottom’s Line.",
+  "start_url": "/admin/orders",
+  "scope": "/admin",
+  "display": "standalone",
+  "background_color": "#f2efe8",
+  "theme_color": "#101010",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

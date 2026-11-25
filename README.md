@@ -92,6 +92,10 @@ to an ignored `.dev.vars` file. The Product Desk intentionally has no link in
 the public navigation. For another security layer in production, protect
 `/admin*` and `/api/admin*` with Cloudflare Access.
 
+On iPhone, open `/admin/orders` in Safari, enter the admin token, then choose
+Share → Add to Home Screen. The shortcut opens Orders; its navigation also
+reaches Products and Designs. A new browser session may ask for the token again.
+
 Supabase is the only catalog and pricing source of truth. At checkout, the
 Worker reloads each saved variant and sends its trusted amount to Stripe as
 inline Checkout price data. Product Desk does not maintain a second catalog in

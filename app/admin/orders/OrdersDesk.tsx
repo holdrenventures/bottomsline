@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import AdminNav from '../AdminNav';
 
 type FulfillmentStatus = 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 type Address = { line1?: string | null; line2?: string | null; city?: string | null; state?: string | null; postal_code?: string | null; country?: string | null; fulfillment_method?: string | null; phone?: string | null };
@@ -51,6 +52,7 @@ export default function OrdersDesk() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [filter, setFilter] = useState<'all' | FulfillmentStatus>('all');
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [status, setStatus] = useState('Enter the admin token to load orders.');
   const [busy, setBusy] = useState(false);
   const selected = orders.find((order) => order.id === selectedId) ?? orders[0] ?? null;
@@ -125,15 +127,18 @@ export default function OrdersDesk() {
   }
 
   return (
-    <main className="admin-shell">
-      <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Orders Desk</h1></div><div><a href="/admin">Product desk</a><a href="/admin/designs">Design adjuster</a><a href="/shop" target="_blank">View shop ↗</a><button type="button" onClick={() => loadOrders()}>Refresh</button></div></header>
+    <main className={`admin-shell admin-mobile-${mobileView}`}>
+      <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Orders Desk</h1></div><div><AdminNav current="orders" /><button type="button" onClick={() => loadOrders()}>Refresh</button></div></header>
       <div className="admin-layout">
         <aside className="admin-sidebar orders-sidebar">
           <div className="admin-sidebar__tools"><select aria-label="Filter orders" value={filter} onChange={(event) => setFilter(event.target.value as 'all' | FulfillmentStatus)}><option value="all">All orders</option>{statuses.map((option) => <option key={option} value={option}>{option}</option>)}</select></div>
-          <nav>{visibleOrders.map((order) => <button type="button" key={order.id} className={selected?.id === order.id ? 'is-active' : ''} onClick={() => setSelectedId(order.id)}><span>{order.customer_name || order.customer_email || 'Customer'}</span><small>{dateTime(order.created_at)} · {money(order.total_cents, order.currency)}</small><small className={`order-status order-status--${order.fulfillment_status}`}>{order.fulfillment_status}</small></button>)}</nav>
+          <output className="admin-mobile-list-status" role="status">{status}</output>
+          <nav>{visibleOrders.map((order) => <button type="button" key={order.id} className={selected?.id === order.id ? 'is-active' : ''} onClick={() => { setSelectedId(order.id); setMobileView('detail'); }}><span>{order.customer_name || order.customer_email || 'Customer'}</span><small>{dateTime(order.created_at)} · {money(order.total_cents, order.currency)}</small><small className={`order-status order-status--${order.fulfillment_status}`}>{order.fulfillment_status}</small></button>)}</nav>
+          {!visibleOrders.length && <p className="admin-empty">{orders.length ? 'No orders match this filter.' : 'No orders yet.'}</p>}
         </aside>
 
         <section className="admin-editor orders-editor">
+          <button type="button" className="admin-mobile-back" onClick={() => setMobileView('list')}>All orders</button>
           <div className="admin-editor__top"><div><p>{selected ? `Order ${selected.id.slice(0, 8)}` : 'Orders'}</p><h2>{selected ? money(selected.total_cents, selected.currency) : 'Nothing here yet.'}</h2></div>{selected && <button type="button" className="admin-save" disabled={busy} onClick={save}>{busy ? 'Working…' : 'Save fulfillment'}</button>}</div>
           <output className="admin-status" role="status">{status}</output>
 
@@ -142,7 +147,7 @@ export default function OrdersDesk() {
 
             <section className="admin-section"><h3>Items</h3><div className="order-items">{selected.order_items.map((item) => <article key={item.id}><div><strong>{item.quantity} × {item.product_name}</strong><p>{[item.style, item.color, item.size].filter(Boolean).join(' / ')}</p><small>{item.sku}</small></div><b>{money(item.unit_price_cents * item.quantity, selected.currency)}</b></article>)}</div></section>
 
-            <section className="admin-section"><h3>Fulfillment</h3><div className="admin-fields admin-fields--two"><label>Status<select value={selected.fulfillment_status} onChange={(event) => patchSelected({ fulfillment_status: event.target.value as FulfillmentStatus })}>{statuses.map((option) => <option key={option} value={option}>{option}</option>)}</select></label><label>Carrier<input value={selected.carrier ?? ''} onChange={(event) => patchSelected({ carrier: event.target.value })} placeholder="USPS, UPS, FedEx…" /></label><label>Tracking number<input value={selected.tracking_number ?? ''} onChange={(event) => patchSelected({ tracking_number: event.target.value })} /></label><label>Tracking URL<input type="url" value={selected.tracking_url ?? ''} onChange={(event) => patchSelected({ tracking_url: event.target.value })} placeholder="https://…" /></label></div>{selected.tracking_url && <p className="order-tracking-link"><a href={selected.tracking_url} target="_blank" rel="noreferrer">Open tracking ↗</a></p>}</section>
+            <section className="admin-section"><h3>Fulfillment</h3><div className="admin-fields admin-fields--two"><label>Status<select value={selected.fulfillment_status} onChange={(event) => patchSelected({ fulfillment_status: event.target.value as FulfillmentStatus })}>{statuses.map((option) => <option key={option} value={option}>{option}</option>)}</select></label><label>Carrier<input value={selected.carrier ?? ''} onChange={(event) => patchSelected({ carrier: event.target.value })} placeholder="USPS, UPS, FedEx…" /></label><label>Tracking number<input value={selected.tracking_number ?? ''} onChange={(event) => patchSelected({ tracking_number: event.target.value })} /></label><label>Tracking URL<input type="url" value={selected.tracking_url ?? ''} onChange={(event) => patchSelected({ tracking_url: event.target.value })} placeholder="https://…" /></label></div>{selected.tracking_url && <p className="order-tracking-link"><a href={selected.tracking_url} target="_blank" rel="noreferrer">Open tracking ↗</a></p>}<button type="button" className="admin-save order-fulfillment-save" disabled={busy} onClick={save}>{busy ? 'Working…' : 'Save fulfillment'}</button></section>
 
             <section className="admin-section order-technical"><h3>Payment references</h3><p>Checkout: {selected.stripe_checkout_session_id}</p><p>Payment: {selected.stripe_payment_intent_id || 'Not returned'}</p><p>Placed: {dateTime(selected.created_at)}</p>{selected.fulfilled_at && <p>First fulfilled: {dateTime(selected.fulfilled_at)}</p>}</section>
           </>}

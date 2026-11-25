@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import DesignAdjuster from './DesignAdjuster';
+import AdminNav from '../AdminNav';
 import { GARMENTS, slugify } from '../../lib/blc-cloudinary';
 import { standardPriceCents } from '../../lib/standard-prices';
 
@@ -95,7 +96,7 @@ export default function DesignAdjusterDesk() {
   if (!token || !loaded) return <main className="admin-login"><form onSubmit={login}><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1><p>Place artwork separately on every shirt color.</p><label>Admin token<input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} /></label><button disabled={busy}>{busy ? 'Checking…' : 'Open adjuster'}</button><output role="status">{status}</output></form></main>;
 
   return <main className="admin-shell design-desk-shell">
-    <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1></div><div><a href="/admin">Product desk</a><a href="/admin/orders">Orders</a><a href="/shop" target="_blank" rel="noreferrer">View shop ↗</a></div></header>
+    <header className="admin-header"><div><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Design Adjuster</h1></div><div><AdminNav current="designs" /></div></header>
     <section className="design-desk">
       <div className="design-desk__intro"><p className="admin-kicker">Mockup production</p><h2>Make every color<br /><em>fit the shirt.</em></h2><p>Upload transparent artwork or load a saved product. Choose each garment color, then set its position, size, tilt, and brightness independently before saving the mockups.</p></div>
       <DesignAdjuster products={products} onUpload={upload} onSave={save} onLoad={loadSaved} onCreate={createProduct} />

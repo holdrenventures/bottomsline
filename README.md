@@ -96,6 +96,31 @@ On iPhone, open `/admin/orders` in Safari, enter the admin token, then choose
 Share → Add to Home Screen. The shortcut opens Orders; its navigation also
 reaches Products, Designs, and Discounts. A new browser session may ask for the token again.
 
+## Manual Printful drafts
+
+Migration `supabase/migrations/20261125234748_printful_manual_drafts.sql`
+was applied to the live Supabase project on 2026-11-25. In Printful, use a **Manual orders / API**
+store and create a private token for that store with `orders` and
+`sync_products/read` scopes. Save the token as the encrypted Worker secret
+`PRINTFUL_TOKEN` (`pnpm exec wrangler secret put PRINTFUL_TOKEN`). An account
+level token also needs `PRINTFUL_STORE_ID` as an encrypted Worker secret. Put
+the same values in ignored `.dev.vars` for local testing. Never expose the
+token through `NEXT_PUBLIC_*` or paste it into the admin page.
+
+On `/admin/orders`, search Printful products, choose a configured variant with
+the correct design file, blank, color, and size, and save a match for each
+store order item. A match is reused for later purchases of the same store
+variant and colorway. The **Create Printful draft** button appears only after
+every item has a match. It sends the shipping address and quantities to
+Printful with the store order UUID as `external_id`; it does not pass
+`confirm=1`, charge Printful, or change the store fulfillment status.
+Review the draft and confirm fulfillment in Printful separately. Pickup orders
+are blocked because they need an explicit shipping destination. If a request
+returns an uncertain result, use **Check Printful for existing draft** before
+any retry; the order remains locked until the result is reconciled.
+If Printful has no draft, verify that in its dashboard and use **Unlock after
+checking Printful**; an uncertain request cannot be unlocked for ten minutes.
+
 `/admin/discounts` uses the same admin token to create percentage or fixed-dollar
 codes, turn them on or off, and choose whether they combine with other eligible
 codes and the scheduled 3-tee offer. The usage count increases once a checkout

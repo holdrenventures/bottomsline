@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CART_UPDATED_EVENT, clearCart, readCart, removeCartItem, updateCartItem, type CartItem } from '../lib/cart';
 import { storefrontImage } from '../lib/storefront-images';
 import { trackMeta } from '../lib/meta-pixel';
-import { BUNDLE_SIZE, BUNDLE_STYLES, codeKindForPromoCode, ENB15_CODE, FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quote, WOAKS10_CODE } from '../lib/pricing';
+import { BUNDLE_SIZE, BUNDLE_STYLES, FREE_SHIPPING_MIN_CENTS, normalizePromoCode, quoteWithOffers, type DiscountOffer } from '../lib/pricing';
 import { isTeeBundleActive } from '../lib/promo';
 import { usePromoClock } from '../lib/use-promo-window';
 
@@ -22,6 +22,9 @@ export default function BagClient() {
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
   const [promoInput, setPromoInput] = useState('');
+  const [offers, setOffers] = useState<DiscountOffer[]>([]);
+  const [promoMessage, setPromoMessage] = useState('');
+  const [checkingCode, setCheckingCode] = useState(false);
   const [fulfillmentMethod, setFulfillmentMethod] = useState<'shipping' | 'pickup'>('shipping');
   const [pickupAddress, setPickupAddress] = useState({ line1: '', line2: '', city: '', postal_code: '' });
 
@@ -39,16 +42,14 @@ export default function BagClient() {
     };
   }, []);
 
-  const promoCode = normalizePromoCode(promoInput);
   // Preview only — the checkout Worker recomputes from catalog prices and validates the code.
   const pricing = useMemo(
-    () => quote(
+    () => quoteWithOffers(
       items.map((item) => ({ style: item.style, unitCents: Math.round(item.unitPrice * 100), quantity: item.quantity })),
-      Boolean(promoCode),
+      offers,
       now,
-      codeKindForPromoCode(promoCode),
     ),
-    [items, promoCode, now],
+    [items, offers, now],
   );
   const toFreeShipping = FREE_SHIPPING_MIN_CENTS - (pricing.subtotalCents - pricing.discountCents);
   const pickup = fulfillmentMethod === 'pickup';
@@ -65,7 +66,26 @@ export default function BagClient() {
     setItems(removeCartItem(index));
   }
 
+  async function addCode() {
+    if (offers.length >= 5) { setPromoMessage('You can add up to five codes.'); return; }
+    const code = normalizePromoCode(promoInput);
+    if (!code) { setPromoMessage('Enter a code of 4–32 letters, numbers, or hyphens.'); return; }
+    if (offers.some((offer) => offer.code === code)) { setPromoMessage('That code is already added.'); return; }
+    setCheckingCode(true); setPromoMessage('Checking code…');
+    try {
+      const response = await fetch('/api/discounts/resolve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codes: [code] }),
+      });
+      const result = await response.json() as { offers?: DiscountOffer[]; error?: string };
+      if (!response.ok || !result.offers?.[0]) throw new Error(result.error || 'Unable to check the code.');
+      setOffers((current) => [...current, result.offers![0]]);
+      setPromoInput(''); setPromoMessage(`${code} added.`); setCheckoutError('');
+    } catch (error) { setPromoMessage(error instanceof Error ? error.message : 'Unable to check the code.'); }
+    finally { setCheckingCode(false); }
+  }
+
   async function checkout() {
+    if (promoInput.trim()) { setCheckoutError('Tap Add code before checkout, or clear the code field.'); return; }
     setCheckingOut(true);
     setCheckoutError('');
     try {
@@ -79,7 +99,7 @@ export default function BagClient() {
             colorId: item.colorId ?? null,
             quantity: item.quantity,
           })),
-          promoCode: promoInput.trim() || null,
+          promoCodes: offers.map((offer) => offer.code),
           fulfillmentMethod,
           ...(pickup ? { pickupAddress } : {}),
         }),
@@ -170,38 +190,36 @@ export default function BagClient() {
         </div>}
         <dl className="bag-summary__lines">
           <div><dt>Subtotal</dt><dd>{money.format(pricing.subtotalCents / 100)}</dd></div>
-          {pricing.discountCents > 0 && (
-            <div className="bag-summary__discount"><dt>{pricing.discountLabel}</dt><dd>−{money.format(pricing.discountCents / 100)}</dd></div>
-          )}
+          {pricing.breakdown.map((discount) => <div className="bag-summary__discount" key={discount.code ?? 'bundle'}><dt>{discount.label}</dt><dd>−{money.format(discount.cents / 100)}</dd></div>)}
           <div><dt>{pickup ? 'Pickup' : 'Shipping'}</dt><dd>{displayedShippingCents === 0 ? 'Free' : money.format(displayedShippingCents / 100)}</dd></div>
         </dl>
-        {isTeeBundleActive(now) && pricing.discountKind === 'bundle' && <p className="bag-summary__bundle">{Math.floor(eligibleTees / BUNDLE_SIZE) > 1 ? `${Math.floor(eligibleTees / BUNDLE_SIZE)} sets of ` : ''}3 tees for $65 applied. {pickup ? 'Pickup is free.' : 'Shipped free.'}</p>}
+        {isTeeBundleActive(now) && pricing.bundleApplied && <p className="bag-summary__bundle">{Math.floor(eligibleTees / BUNDLE_SIZE) > 1 ? `${Math.floor(eligibleTees / BUNDLE_SIZE)} sets of ` : ''}3 tees for $65 applied. {pickup ? 'Pickup is free.' : 'Shipped free.'}</p>}
         {isTeeBundleActive(now) && teesTowardNextBundle > 0 && <p className="bag-summary__bundle">Add {BUNDLE_SIZE - teesTowardNextBundle} more {BUNDLE_SIZE - teesTowardNextBundle === 1 ? 'tee' : 'tees'} {eligibleTees >= BUNDLE_SIZE ? 'for another 3 for $65.' : pickup ? 'to get 3 for $65.' : 'to get 3 for $65, shipped free.'}</p>}
         <div><span>Total</span><strong>{money.format(displayedTotalCents / 100)}</strong></div>
-        <label className="bag-summary__promo">
-          <span>Promo code</span>
-          <input
+        <div className="bag-summary__promo">
+          <label htmlFor="bag-discount-code">Discount codes</label>
+          <div className="bag-summary__promo-entry"><input
+            id="bag-discount-code"
             value={promoInput}
-            onChange={(event) => { setPromoInput(event.target.value); setCheckoutError(''); }}
-            placeholder="QUIET-XXXXXX"
+            onChange={(event) => { setPromoInput(event.target.value); setPromoMessage(''); setCheckoutError(''); }}
+            onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void addCode(); } }}
+            placeholder="Enter a code"
             autoComplete="off"
             spellCheck={false}
-          />
-        </label>
+          /><button type="button" onClick={() => void addCode()} disabled={checkingCode || offers.length >= 5}>{checkingCode ? 'Checking…' : 'Add code'}</button></div>
+        </div>
+        {offers.length > 0 && <div className="bag-summary__codes">{offers.map((offer) => <span key={offer.code}>{offer.code}{pricing.skippedCodes.includes(offer.code) ? ' · not applied' : ''}<button type="button" aria-label={`Remove ${offer.code}`} onClick={() => { setOffers((current) => current.filter((entry) => entry.code !== offer.code)); setPromoMessage(''); }}>×</button></span>)}</div>}
+        {promoMessage && <p className="bag-summary__promo-message" role="status">{promoMessage}</p>}
         <p>
-          {pricing.promoCodeSkipped
-            ? promoCode === WOAKS10_CODE
-              ? 'Your 3-tee deal beats WOaks10, so we’re using that. Discounts can’t be combined.'
-              : promoCode === ENB15_CODE
-                ? 'Your 3-tee deal saves more than ENB15, so we’re using that. Discounts can’t be combined.'
-              : 'Your 3-tee deal beats 10% off, so we’re using that. Your code stays saved for next time.'
+          {pricing.skippedCodes.length
+            ? `The best available discount combination is shown above. ${pricing.skippedCodes.join(', ')} ${pricing.skippedCodes.length === 1 ? 'was' : 'were'} not applied.`
             : pickup
               ? 'Free local pickup in 37207. Taxes are calculated at checkout.'
             : toFreeShipping > 0
               ? `${money.format(toFreeShipping / 100)} away from free shipping.`
               : 'Free shipping unlocked. Taxes are calculated at checkout.'}
         </p>
-        <button type="button" disabled={checkingOut} onClick={checkout}>
+        <button type="button" disabled={checkingOut || checkingCode} onClick={checkout}>
           {checkingOut ? 'Opening checkout…' : 'Checkout'} <span>↗</span>
         </button>
         {checkoutError

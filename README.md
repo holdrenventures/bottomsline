@@ -94,7 +94,15 @@ the public navigation. For another security layer in production, protect
 
 On iPhone, open `/admin/orders` in Safari, enter the admin token, then choose
 Share → Add to Home Screen. The shortcut opens Orders; its navigation also
-reaches Products and Designs. A new browser session may ask for the token again.
+reaches Products, Designs, and Discounts. A new browser session may ask for the token again.
+
+`/admin/discounts` uses the same admin token to create percentage or fixed-dollar
+codes, turn them on or off, and choose whether they combine with other eligible
+codes and the scheduled 3-tee offer. The usage count increases once a checkout
+is paid; historical WOAKS10 and ENB15 uses were not attributed to codes in the
+old order records, so their counters start with this feature. Disabled codes
+keep their history. Apply `20261125222835_admin_discounts.sql` before deploying
+the corresponding Worker build.
 
 Supabase is the only catalog and pricing source of truth. At checkout, the
 Worker reloads each saved variant and sends its trusted amount to Stripe as

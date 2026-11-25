@@ -1,9 +1,10 @@
-type Tool = 'products' | 'orders' | 'designs';
+type Tool = 'products' | 'orders' | 'designs' | 'discounts';
 
 const tools: Array<{ id: Tool; href: string; label: string }> = [
   { id: 'products', href: '/admin', label: 'Products' },
   { id: 'orders', href: '/admin/orders', label: 'Orders' },
   { id: 'designs', href: '/admin/designs', label: 'Designs' },
+  { id: 'discounts', href: '/admin/discounts', label: 'Discounts' },
 ];
 
 export default function AdminNav({ current }: { current: Tool }) {

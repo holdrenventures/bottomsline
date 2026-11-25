@@ -13,6 +13,29 @@ export const FREE_SHIPPING_MIN_CENTS = 6000;
 
 export type PricedLine = { style: string | null | undefined; unitCents: number; quantity: number };
 
+export type DiscountOffer = {
+  id?: string;
+  code: string;
+  name: string;
+  kind: 'percent' | 'fixed';
+  value: number; // Percent as a whole number, or fixed amount in cents.
+  combinable: boolean;
+  source: 'managed' | 'welcome';
+};
+
+export type DiscountBreakdown = { label: string; cents: number; code: string | null };
+
+export type ManagedQuote = {
+  subtotalCents: number;
+  discountCents: number;
+  breakdown: DiscountBreakdown[];
+  appliedOffers: DiscountOffer[];
+  skippedCodes: string[];
+  bundleApplied: boolean;
+  shippingCents: number;
+  totalCents: number;
+};
+
 export type DiscountKind = 'bundle' | 'welcome' | 'woaks10' | 'enb15';
 export type CodeKind = 'welcome' | 'woaks10' | 'enb15';
 
@@ -59,6 +82,52 @@ export function shippingCents(lines: PricedLine[], discountedSubtotalCents: numb
   if (garments === 1) return 600;
   if (garments === 2) return 900;
   return 1100 + 200 * (garments - 3);
+}
+
+function offerSavings(offer: DiscountOffer, remainingCents: number) {
+  const savings = offer.kind === 'percent'
+    ? Math.round(remainingCents * offer.value / 100)
+    : offer.value;
+  return Math.min(remainingCents, Math.max(0, savings));
+}
+
+// Combinable codes apply in code order after the automatic tee deal. An
+// exclusive code competes against that whole combination; customers get the
+// larger saving. Checkout and the bag preview call this same calculation.
+export function quoteWithOffers(lines: PricedLine[], offers: DiscountOffer[], now = Date.now()): ManagedQuote {
+  const subtotalCents = lines.reduce((sum, line) => sum + line.unitCents * line.quantity, 0);
+  const bundle = isTeeBundleActive(now) ? bundleDiscountCents(lines) : 0;
+  const stackable = offers.filter((offer) => offer.combinable).sort((a, b) => a.code.localeCompare(b.code));
+  const stackedBreakdown: DiscountBreakdown[] = bundle > 0
+    ? [{ label: `${BUNDLE_SIZE} tees for $${BUNDLE_PRICE_CENTS / 100}`, cents: bundle, code: null }]
+    : [];
+  let remaining = subtotalCents - bundle;
+  for (const offer of stackable) {
+    const cents = offerSavings(offer, remaining);
+    if (cents > 0) { stackedBreakdown.push({ label: offer.name, cents, code: offer.code }); remaining -= cents; }
+  }
+  const stackedSavings = subtotalCents - remaining;
+  const bestExclusive = offers.filter((offer) => !offer.combinable)
+    .map((offer) => ({ offer, cents: offerSavings(offer, subtotalCents) }))
+    .sort((a, b) => b.cents - a.cents || a.offer.code.localeCompare(b.offer.code))[0];
+  const useExclusive = Boolean(bestExclusive && bestExclusive.cents > stackedSavings);
+  const breakdown: DiscountBreakdown[] = useExclusive
+    ? [{ label: bestExclusive!.offer.name, cents: bestExclusive!.cents, code: bestExclusive!.offer.code }]
+    : stackedBreakdown;
+  const appliedCodes = new Set(breakdown.map((entry) => entry.code).filter((code): code is string => Boolean(code)));
+  const appliedOffers = offers.filter((offer) => appliedCodes.has(offer.code));
+  const discountCents = breakdown.reduce((sum, entry) => sum + entry.cents, 0);
+  const bundleApplied = breakdown.some((entry) => entry.code === null);
+  // The scheduled tee offer promises free shipping even when combined codes
+  // lower the total below the normal $60 shipping threshold.
+  const shipping = bundleApplied ? 0 : shippingCents(lines, subtotalCents - discountCents);
+  return {
+    subtotalCents, discountCents, breakdown, appliedOffers,
+    skippedCodes: offers.filter((offer) => !appliedCodes.has(offer.code)).map((offer) => offer.code),
+    bundleApplied,
+    shippingCents: shipping,
+    totalCents: subtotalCents - discountCents + shipping,
+  };
 }
 
 export function quote(lines: PricedLine[], hasPromoCode: boolean, now = Date.now(), codeKind: CodeKind = 'welcome'): Quote {

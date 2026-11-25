@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizePromoCode, quote as priceQuote, WOAKS10_CODE } from './pricing.ts';
+import { normalizePromoCode, quote as priceQuote, quoteWithOffers, WOAKS10_CODE } from './pricing.ts';
 import { BLACK_FRIDAY_END, BLACK_FRIDAY_START } from './promo.ts';
 
 const quote = (lines, hasWelcomeCode) => priceQuote(lines, hasWelcomeCode, BLACK_FRIDAY_START);
@@ -87,4 +87,30 @@ test('shipping uses the discounted subtotal and heavy garment rate', () => {
   assert.equal(result.discountCents, 500);
   assert.equal(result.shippingCents, 900);
   assert.equal(result.totalCents, 5400);
+});
+
+const managed = (code, value, combinable = true) => ({ code, name: code, kind: 'percent', value, combinable, source: 'managed', id: code });
+
+test('combinable codes apply after the tee deal and keep its free shipping', () => {
+  const result = quoteWithOffers(tee(3, 2500), [managed('SAVE20', 20), managed('SAVE10', 10)], BLACK_FRIDAY_START);
+  assert.deepEqual(result.breakdown.map(({ code, cents }) => [code, cents]), [[null, 1000], ['SAVE10', 650], ['SAVE20', 1170]]);
+  assert.equal(result.discountCents, 2820);
+  assert.equal(result.shippingCents, 0);
+  assert.equal(result.totalCents, 4680);
+});
+
+test('exclusive code competes with the whole combinable group', () => {
+  const result = quoteWithOffers(tee(3, 2500), [managed('SAVE10', 10), managed('SOLO30', 30, false)], BLACK_FRIDAY_START);
+  assert.deepEqual(result.appliedOffers.map(({ code }) => code), ['SOLO30']);
+  assert.deepEqual(result.skippedCodes, ['SAVE10']);
+  assert.equal(result.bundleApplied, false);
+  assert.equal(result.discountCents, 2250);
+});
+
+test('fixed discounts stop at the remaining item subtotal', () => {
+  const fixed = { code: 'FREE', name: 'Free', kind: 'fixed', value: 5000, combinable: true, source: 'managed', id: 'free' };
+  const result = quoteWithOffers(tee(1, 2500), [fixed], BLACK_FRIDAY_END);
+  assert.equal(result.discountCents, 2500);
+  assert.equal(result.totalCents, 2500 + result.shippingCents - result.discountCents);
+  assert.ok(result.totalCents >= 0);
 });

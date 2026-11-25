@@ -1,5 +1,6 @@
 import type Stripe from 'stripe';
-import { codeKindForPromoCode, ENB15_CODE, normalizePromoCode, quote, WOAKS10_CODE } from '../../lib/pricing';
+import { quoteWithOffers } from '../../lib/pricing';
+import { InvalidDiscountCodeError, resolveDiscountCodes } from '../../lib/discounts-server';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient } from '../../lib/stripe';
 import { cleanPickupAddress, verifyDavidsonCounty } from '../../lib/local-pickup';
@@ -14,6 +15,7 @@ type CheckoutInput = {
     quantity?: number;
   }>;
   promoCode?: string | null;
+  promoCodes?: string[];
   fulfillmentMethod?: 'shipping' | 'pickup';
   pickupAddress?: unknown;
 };
@@ -36,11 +38,6 @@ type VariantRow = {
   active: boolean;
   inventory_quantity: number | null;
   price_cents: number;
-};
-
-type SignupCodeRow = {
-  discount_code: string;
-  redeemed_at: string | null;
 };
 
 type ColorRow = {
@@ -101,14 +98,8 @@ export async function POST(request: Request) {
       return badRequest('Each quantity must be between 1 and 9.');
     }
 
-    const rawPromoCode = typeof input.promoCode === 'string' ? input.promoCode.trim() : '';
-    const promoCode = rawPromoCode ? normalizePromoCode(rawPromoCode) : null;
-    if (rawPromoCode && promoCode !== WOAKS10_CODE && promoCode !== ENB15_CODE) {
-      const codes = promoCode
-        ? await supabaseAdmin(`email_signups?select=discount_code,redeemed_at&discount_code=eq.${encodeURIComponent(promoCode)}`) as SignupCodeRow[]
-        : [];
-      if (!codes[0] || codes[0].redeemed_at) return badRequest('That code is invalid or has already been used.');
-    }
+    const requestedCodes = input.promoCodes ?? (input.promoCode ? [input.promoCode] : []);
+    const offers = await resolveDiscountCodes(requestedCodes);
 
     const productIds = [...new Set(selections.map((item) => item.productId))];
     const variantIds = [...new Set(selections.map((item) => item.variantId))];
@@ -161,13 +152,13 @@ export async function POST(request: Request) {
     if (currencies.size !== 1) throw new Error('All bag items must use the same currency.');
     const currency = trusted[0].product.currency;
 
-    const pricing = quote(
+    const pricing = quoteWithOffers(
       trusted.map(({ selection, variant }) => ({ style: variant.style, unitCents: variant.price_cents, quantity: selection.quantity })),
-      Boolean(promoCode),
+      offers,
       Date.now(),
-      codeKindForPromoCode(promoCode),
     );
-    const appliedPromoCode = pricing.discountKind && pricing.discountKind !== 'bundle' ? promoCode : null;
+    const appliedWelcomeCode = pricing.appliedOffers.find((offer) => offer.source === 'welcome')?.code ?? null;
+    const appliedManaged = pricing.appliedOffers.filter((offer) => offer.source === 'managed');
 
     const stripe = stripeClient();
     const attemptId = crypto.randomUUID();
@@ -181,13 +172,13 @@ export async function POST(request: Request) {
       const origin = checkoutOrigin(request);
       // One single-use coupon per session carries the server-computed discount,
       // since Checkout accepts only one discount and we pick the best deal ourselves.
-      const coupon = pricing.discountCents > 0 && pricing.discountLabel
+      const coupon = pricing.discountCents > 0
         ? await stripe.coupons.create({
           amount_off: pricing.discountCents,
           currency,
           duration: 'once',
           max_redemptions: 1,
-          name: pricing.discountLabel,
+          name: pricing.breakdown.map((entry) => entry.label).join(' + ').slice(0, 100),
           metadata: { checkout_attempt_id: attemptId },
         })
         : null;
@@ -214,8 +205,9 @@ export async function POST(request: Request) {
         })),
         metadata: {
           checkout_attempt_id: attemptId,
-          discount_kind: pricing.discountKind ?? '',
-          promo_code: appliedPromoCode ?? '',
+          discount_kind: appliedWelcomeCode ? 'welcome' : appliedManaged.length ? 'managed' : pricing.bundleApplied ? 'bundle' : '',
+          promo_code: appliedWelcomeCode ?? appliedManaged[0]?.code ?? '',
+          discount_ids: appliedManaged.map((offer) => offer.id).join(','),
           fulfillment_method: isPickup ? 'pickup' : 'shipping',
           ...(pickupAddress ? {
             pickup_line1: pickupAddress.line1,
@@ -316,7 +308,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Checkout is temporarily unavailable.';
-    const status = /available|invalid|quantity|currency|Davidson County|pickup address|choose shipping/i.test(message) ? 400 : 500;
+    const status = error instanceof InvalidDiscountCodeError || /available|invalid|quantity|currency|Davidson County|pickup address|choose shipping/i.test(message) ? 400 : 500;
     if (status === 500) console.error('Checkout creation failed:', message);
     return Response.json({ error: status === 400 ? message : 'Checkout is temporarily unavailable.' }, { status });
   }

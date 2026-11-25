@@ -183,6 +183,17 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
   });
   await setAttemptStatus(attemptId, 'paid', session.id);
 
+  // Each paid session counts once per managed code, including webhook retries.
+  const discountIds = [...new Set((session.metadata?.discount_ids ?? '').split(',').filter(Boolean))];
+  if (discountIds.length) {
+    if (discountIds.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) throw new Error('Checkout has an invalid discount reference.');
+    await supabaseAdmin('discount_redemptions?on_conflict=discount_id,stripe_checkout_session_id', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify(discountIds.map((discount_id) => ({ discount_id, stripe_checkout_session_id: session.id }))),
+    });
+  }
+
   // Burn the welcome code only once payment lands, so abandoned checkouts keep it usable.
   const promoCode = session.metadata?.promo_code;
   if (promoCode && session.metadata?.discount_kind === 'welcome') {

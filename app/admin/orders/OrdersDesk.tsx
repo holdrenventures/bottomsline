@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import AdminNav from '../AdminNav';
+import PrintfulPanel from './PrintfulPanel';
 
 type FulfillmentStatus = 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 type Address = { line1?: string | null; line2?: string | null; city?: string | null; state?: string | null; postal_code?: string | null; country?: string | null; fulfillment_method?: string | null; phone?: string | null };
-type OrderItem = { id: string; product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number };
+type OrderItem = { id: string; variant_id: string; colorway_id: string | null; product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number };
+type PrintfulMapping = { variant_id: string; colorway_id: string; printful_sync_variant_id: number; printful_name: string };
 type Order = {
   id: string;
   stripe_checkout_session_id: string;
@@ -25,6 +27,9 @@ type Order = {
   tracking_number: string | null;
   tracking_url: string | null;
   fulfilled_at: string | null;
+  printful_draft_id: number | null;
+  printful_draft_state: string;
+  printful_draft_created_at: string | null;
   created_at: string;
   updated_at: string;
   order_items: OrderItem[];
@@ -50,6 +55,7 @@ export default function OrdersDesk() {
   const [token, setToken] = useState('');
   const [tokenInput, setTokenInput] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [mappings, setMappings] = useState<PrintfulMapping[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [filter, setFilter] = useState<'all' | FulfillmentStatus>('all');
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
@@ -71,8 +77,9 @@ export default function OrdersDesk() {
   async function loadOrders(accessToken = token, preferredId?: string) {
     setBusy(true); setStatus('Loading orders…');
     try {
-      const payload = await request<{ orders: Order[] }>('/api/admin/orders', {}, accessToken);
+      const payload = await request<{ orders: Order[]; mappings: PrintfulMapping[] }>('/api/admin/orders', {}, accessToken);
       setOrders(payload.orders);
+      setMappings(payload.mappings);
       setSelectedId(preferredId ?? selectedId ?? payload.orders[0]?.id ?? '');
       setStatus(payload.orders.length ? `${payload.orders.length} orders loaded.` : 'No orders yet.');
     } catch (error) {
@@ -122,6 +129,11 @@ export default function OrdersDesk() {
     finally { setBusy(false); }
   }
 
+  async function printfulChanged(message: string) {
+    await loadOrders(token, selected?.id);
+    setStatus(message);
+  }
+
   if (!token) {
     return <main className="admin-login"><form onSubmit={login}><p className="admin-kicker">Bottom’s Line / Internal</p><h1>Orders Desk</h1><p>Paid, packed, and eventually out the door.</p><label>Admin token<input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} /></label><button disabled={busy}>{busy ? 'Checking…' : 'Open orders'}</button><output role="status">{status}</output></form></main>;
   }
@@ -146,6 +158,8 @@ export default function OrdersDesk() {
             <section className="admin-section order-summary"><div><p className="admin-kicker">{selected.shipping_address?.fulfillment_method === 'pickup' ? 'Local pickup · schedule in 37207' : 'Customer'}</p><h3>{selected.customer_name || 'Name not supplied'}</h3><p>{selected.customer_email || 'Email not supplied'}</p>{selected.shipping_address?.phone && <p>Phone: {selected.shipping_address.phone}</p>}{selected.shipping_address?.fulfillment_method === 'pickup' && <p>Davidson County eligibility address:</p>}{addressLines(selected.shipping_address).map((line) => <p key={line}>{line}</p>)}</div><div><p className="admin-kicker">Payment</p><h3>{selected.payment_status}</h3><dl><div><dt>Subtotal</dt><dd>{money(selected.subtotal_cents, selected.currency)}</dd></div><div><dt>{selected.shipping_address?.fulfillment_method === 'pickup' ? 'Pickup' : 'Shipping'}</dt><dd>{money(selected.shipping_cents, selected.currency)}</dd></div><div><dt>Tax</dt><dd>{money(selected.tax_cents, selected.currency)}</dd></div><div><dt>Discount</dt><dd>−{money(selected.discount_cents, selected.currency)}</dd></div><div><dt>Total</dt><dd>{money(selected.total_cents, selected.currency)}</dd></div></dl></div></section>
 
             <section className="admin-section"><h3>Items</h3><div className="order-items">{selected.order_items.map((item) => <article key={item.id}><div><strong>{item.quantity} × {item.product_name}</strong><p>{[item.style, item.color, item.size].filter(Boolean).join(' / ')}</p><small>{item.sku}</small></div><b>{money(item.unit_price_cents * item.quantity, selected.currency)}</b></article>)}</div></section>
+
+            <PrintfulPanel key={selected.id} order={selected} mappings={mappings} token={token} onChanged={printfulChanged} />
 
             <section className="admin-section"><h3>Fulfillment</h3><div className="admin-fields admin-fields--two"><label>Status<select value={selected.fulfillment_status} onChange={(event) => patchSelected({ fulfillment_status: event.target.value as FulfillmentStatus })}>{statuses.map((option) => <option key={option} value={option}>{option}</option>)}</select></label><label>Carrier<input value={selected.carrier ?? ''} onChange={(event) => patchSelected({ carrier: event.target.value })} placeholder="USPS, UPS, FedEx…" /></label><label>Tracking number<input value={selected.tracking_number ?? ''} onChange={(event) => patchSelected({ tracking_number: event.target.value })} /></label><label>Tracking URL<input type="url" value={selected.tracking_url ?? ''} onChange={(event) => patchSelected({ tracking_url: event.target.value })} placeholder="https://…" /></label></div>{selected.tracking_url && <p className="order-tracking-link"><a href={selected.tracking_url} target="_blank" rel="noreferrer">Open tracking ↗</a></p>}<button type="button" className="admin-save order-fulfillment-save" disabled={busy} onClick={save}>{busy ? 'Working…' : 'Save fulfillment'}</button></section>
 

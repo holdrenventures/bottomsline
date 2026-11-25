@@ -38,6 +38,9 @@ Tracked migrations, in order:
     Cloudinary `catalog_image` / `mockup_url` into a `*_cloudinary` backup
     column and points the live column at the archived R2 WebP. Review and run
     it in the SQL editor. Roll back with `scripts/rollback-r2-catalog-images.sql`.
+11. `20261125234748_printful_manual_drafts.sql` — adds private variant/colorway
+    matches and an order-level Printful draft reference/state. Applied to the
+    live Supabase project on 2026-11-25, before deploying the Orders Desk action.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor

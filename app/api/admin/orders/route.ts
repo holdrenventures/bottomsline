@@ -35,10 +35,12 @@ export async function GET(request: Request) {
       'fulfillment_status', 'currency', 'subtotal_cents', 'discount_cents',
       'shipping_cents', 'tax_cents', 'total_cents', 'carrier',
       'tracking_number', 'tracking_url', 'fulfilled_at', 'created_at', 'updated_at',
-      'order_items(id,product_name,style,color,garment,size,sku,quantity,unit_price_cents)',
+      'printful_draft_id', 'printful_draft_state', 'printful_draft_created_at',
+      'order_items(id,product_name,style,color,garment,size,sku,quantity,unit_price_cents,variant_id,colorway_id)',
     ].join(',');
     const orders = await supabaseAdmin(`orders?select=${encodeURIComponent(select)}&order=created_at.desc&limit=100`);
-    return Response.json({ orders });
+    const mappings = await supabaseAdmin('printful_variant_mappings?select=variant_id,colorway_id,printful_sync_variant_id,printful_name');
+    return Response.json({ orders, mappings });
   } catch (error) {
     console.error('Orders Desk load failed:', error instanceof Error ? error.message : error);
     return Response.json({ error: 'Unable to load orders.' }, { status: 500 });

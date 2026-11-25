@@ -637,6 +637,10 @@ footer .wordmark--footer span, .shop-footer .wordmark--footer span { color:var(-
 .order-items p { margin:5px 0; color:#665f56; font-size:12px; }
 .order-items small,.order-technical p { color:#817a70; font:700 9px/1.5 var(--sans); letter-spacing:.5px; overflow-wrap:anywhere; }
 .order-items b { white-space:nowrap; font-size:13px; }
+.order-printful-preview { display:flex; flex-wrap:wrap; gap:12px; margin:12px 0; }
+.order-printful-preview figure { margin:0; width:88px; }
+.order-printful-preview img { display:block; width:88px; height:88px; object-fit:contain; background:#f4f0e9; border:1px solid #ded8cd; border-radius:4px; }
+.order-printful-preview figcaption { margin-top:3px; color:#665f56; font-size:11px; }
 .order-tracking-link { margin-top:18px; }
 .order-tracking-link a { color:#e74438; font-size:11px; font-weight:900; text-transform:uppercase; }
 .order-technical p { margin-top:7px; }

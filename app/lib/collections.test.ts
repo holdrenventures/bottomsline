@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { collectionCopy, collectionPath, collectionSlug } from './collections.ts';
+import { collectionCopy, collectionPath, collectionSlug, collectionsForProduct } from './collections.ts';
 import { DESCRIPTION_MAX, DESCRIPTION_MIN } from './seo.ts';
 import { relatedProducts } from './related.ts';
 import { latestSitemapDate, sitemapDate } from './sitemap-dates.ts';
@@ -19,7 +19,17 @@ describe('collection pages', () => {
       assert.ok(collection.intro.length > 0);
       assert.ok(collection.intro.length < 80);
     }
-    assert.equal(paths.size, 7);
+    assert.equal(paths.size, 8);
+    assert.equal(collectionPath('Hats'), '/shop/hats');
+  });
+
+  it('adds Hats from a hat style without dropping Pride or Nashville', () => {
+    assert.deepEqual(collectionsForProduct({ names: ['Pride', 'Nashville'], styles: ['Hat'] }), ['Pride', 'Nashville', 'Hats']);
+    assert.deepEqual(collectionsForProduct({ names: ['Pride'], styles: ['Tee'] }), ['Pride']);
+    assert.deepEqual(collectionsForProduct({ names: ['Pride'], styles: ['Heather'] }), ['Pride']);
+    assert.deepEqual(collectionsForProduct({ names: [], styles: ['Hat'] }), ['Hats']);
+    assert.deepEqual(collectionsForProduct({ names: ['Nope'], styles: ['Tee'] }), ['Support Local Bottoms']);
+    assert.deepEqual(collectionsForProduct({ names: ['Pride'], newDrop: true, styles: ['Hat'] }), ['Pride', 'New Drops', 'Hats']);
   });
 });
 

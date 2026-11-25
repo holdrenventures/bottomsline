@@ -1,4 +1,4 @@
-export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'Holiday', 'New Drops'] as const;
+export const catalogCollections = ['All', 'Support Local Bottoms', 'Cruising', 'Parodies', 'Nashville', 'Pride', 'Holiday', 'Hats', 'New Drops'] as const;
 
 export type CatalogCollection = (typeof catalogCollections)[number];
 export type ProductCollection = Exclude<CatalogCollection, 'All'>;
@@ -81,6 +81,15 @@ export const collectionCopy: CollectionCopy[] = [
     intro: 'Ugly-sweater energy, but make it gay.',
   },
   {
+    name: 'Hats',
+    title: 'Trucker Hats — Queer Apparel, Nashville',
+    description: 'Gay pride trucker hats from Nashville. Queer LGBTQ caps for people who’d rather skip the small talk. One size, and it already has an opinion.',
+    eyebrow: 'Brims with opinions',
+    h1: 'Hats',
+    h1Em: 'with opinions.',
+    intro: 'One size. Already decided.',
+  },
+  {
     name: 'New Drops',
     title: 'New Queer Drops — LGBTQ Apparel, Nashville',
     description: 'New gay and queer drops from Nashville, before the group chat catches on. Fresh LGBTQ pride apparel from Bottom’s Line. Skip the small talk.',
@@ -90,6 +99,25 @@ export const collectionCopy: CollectionCopy[] = [
     intro: 'Freshly inappropriate. You saw it here.',
   },
 ];
+
+export function isHatStyle(style: string | null | undefined) {
+  return /\bhats?\b/i.test(style ?? '');
+}
+
+export function collectionsForProduct(input: {
+  names: readonly string[];
+  newDrop?: boolean;
+  styles?: readonly (string | null | undefined)[];
+}): ProductCollection[] {
+  const supported = input.names.filter(isProductCollection);
+  if (input.newDrop && !supported.includes('New Drops')) supported.push('New Drops');
+  if (input.styles?.some((style) => isHatStyle(style)) && !supported.includes('Hats')) supported.push('Hats');
+  return supported.length ? supported : ['Support Local Bottoms'];
+}
+
+function isProductCollection(value: string): value is ProductCollection {
+  return value !== 'All' && (catalogCollections as readonly string[]).includes(value);
+}
 
 export function collectionBySlug(slug: string) {
   const normalized = collectionSlug(slug);

@@ -110,6 +110,7 @@ describe('canonical URLs', () => {
   it('301s trailing slashes and collection query params without touching the style filter', () => {
     assert.deepEqual(storefrontPathRedirect('/shop/', ''), { pathname: '/shop', search: '' });
     assert.deepEqual(storefrontPathRedirect('/shop', '?collection=pride&style=tee'), { pathname: '/shop/pride', search: '?style=tee' });
+    assert.deepEqual(storefrontPathRedirect('/shop', '?collection=hats&sort=name'), { pathname: '/shop/hats', search: '?sort=name' });
     assert.deepEqual(storefrontPathRedirect('/shop', '?collection=Support%20Local%20Bottoms&sort=name'), { pathname: '/shop/support-local-bottoms', search: '?sort=name' });
     assert.equal(storefrontPathRedirect('/shop', '?style=tee'), null);
     assert.deepEqual(storefrontPathRedirect('/shop', '?collection=nope'), { pathname: '/shop', search: '' });

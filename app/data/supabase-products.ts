@@ -1,4 +1,5 @@
 import type { CatalogColor, CatalogProduct, CatalogVariant, ProductCollection } from './products';
+import { collectionsForProduct } from '../lib/collections';
 import { storefrontImage } from '../lib/storefront-images';
 import { publicThanksgivingCopy } from '../lib/promo';
 
@@ -56,16 +57,6 @@ type SupabaseProduct = {
   product_colors: SupabaseColor[];
 };
 
-const supportedCollections: ProductCollection[] = [
-  'Support Local Bottoms',
-  'Cruising',
-  'Parodies',
-  'Nashville',
-  'Pride',
-  'Holiday',
-  'New Drops',
-];
-
 // Preferred size order for display; unknown sizes append at the end alphabetically.
 const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
 function sizeRank(size: string) {
@@ -73,19 +64,16 @@ function sizeRank(size: string) {
   return idx === -1 ? sizeOrder.length : idx;
 }
 
-function isProductCollection(value: string): value is ProductCollection {
-  return supportedCollections.includes(value as ProductCollection);
-}
-
 function productCollections(product: SupabaseProduct): ProductCollection[] {
   const names = [...product.product_collections]
     .sort((a, b) => a.sort_order - b.sort_order)
     .flatMap((link) => Array.isArray(link.collections) ? link.collections : link.collections ? [link.collections] : [])
     .map((collection) => collection.name);
+  const styles = product.product_variants.length
+    ? product.product_variants.map((variant) => variant.style)
+    : (product.product_colors ?? []).map((color) => color.style);
 
-  const supported = names.filter(isProductCollection);
-  if (product.new_drop && !supported.includes('New Drops')) supported.push('New Drops');
-  return supported.length ? supported : ['Support Local Bottoms'];
+  return collectionsForProduct({ names, newDrop: product.new_drop, styles });
 }
 
 function productArt(name: string) {

@@ -24,7 +24,8 @@ const collections = [
   { name: 'Nashville', number: '04', note: 'Bless your whole heart.' },
   { name: 'Pride', number: '05', note: 'Year-round behavior.' },
   { name: 'Holiday', number: '06', note: 'Seasonal misbehavior.' },
-  { name: 'New Drops', number: '07', note: 'Freshly inappropriate.' },
+  { name: 'Hats', number: '07', note: 'Brims with opinions.' },
+  { name: 'New Drops', number: '08', note: 'Freshly inappropriate.' },
 ];
 
 const originStoryImage = storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/l_designs:spread-legs-mugtl36x,fl_relative,w_0.3859,g_north,x_-0.0007,y_0.2681/e_trim/blanks/tultex202/202_navy_front.png') ?? undefined;

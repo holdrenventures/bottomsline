@@ -1,3 +1,4 @@
+import { invalidGalleryImages } from '../../../lib/gallery-images';
 import { uniqueVariantWrites } from '../../../lib/variant-combos.mjs';
 import { isAdminRequest, supabaseAdmin } from '../../../lib/supabase-admin';
 
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
   try {
     const input = await request.json() as ProductInput;
     const { name, slug, price, currency } = validateProduct(input);
-    if (input.gallery_images !== undefined && (!Array.isArray(input.gallery_images) || input.gallery_images.length > 8 || input.gallery_images.some((image) => typeof image.url !== 'string' || !/^https:\/\/images\.bottomslineclothing\.com\/product-details\/[a-f0-9]{64}\.(png|jpg|webp)$/.test(image.url) || typeof image.alt !== 'string' || image.alt.length > 500))) throw new Error('Gallery images must be uploaded photos with descriptions up to 500 characters.');
+    if (input.gallery_images !== undefined && invalidGalleryImages(input.gallery_images)) throw new Error('Gallery images must be uploaded photos with descriptions up to 500 characters.');
     if (input.id && input.active) {
       const archive = await supabaseAdmin('collections?select=id&slug=eq.admin-archive&limit=1') as Array<{id:string}>;
       if (archive[0]) {

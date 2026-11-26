@@ -36,19 +36,22 @@ export async function GET(request: Request) {
       'fulfillment_status', 'currency', 'subtotal_cents', 'discount_cents',
       'shipping_cents', 'tax_cents', 'total_cents', 'carrier',
       'tracking_number', 'tracking_url', 'fulfilled_at', 'created_at', 'updated_at',
+      'printful_draft_id', 'printful_draft_state', 'printful_draft_created_at',
     ].join(',');
-    const itemColumns = 'id,product_name,style,color,garment,size,sku,quantity,unit_price_cents';
-    const load = (items: string) => supabaseAdmin(
-      `orders?select=${encodeURIComponent(`${orderColumns},order_items(${items})`)}&order=created_at.desc&limit=100`,
-    );
+    const itemColumns = 'id,product_name,style,color,garment,size,sku,quantity,unit_price_cents,variant_id,colorway_id';
+    const load = (items: string) => Promise.all([
+      supabaseAdmin(`orders?select=${encodeURIComponent(`${orderColumns},order_items(${items})`)}&order=created_at.desc&limit=100`),
+      supabaseAdmin('printful_variant_mappings?select=variant_id,colorway_id,printful_sync_variant_id,printful_name'),
+    ]);
     let orders: unknown;
+    let mappings: unknown;
     try {
-      orders = await load(`${itemColumns},area_code`);
+      [orders, mappings] = await load(`${itemColumns},area_code`);
     } catch (error) {
       if (!missingAreaCodeColumn(error)) throw error;
-      orders = await load(itemColumns);
+      [orders, mappings] = await load(itemColumns);
     }
-    return Response.json({ orders });
+    return Response.json({ orders, mappings });
   } catch (error) {
     console.error('Orders Desk load failed:', error instanceof Error ? error.message : error);
     return Response.json({ error: 'Unable to load orders.' }, { status: 500 });

@@ -38,7 +38,10 @@ Tracked migrations, in order:
     Cloudinary `catalog_image` / `mockup_url` into a `*_cloudinary` backup
     column and points the live column at the archived R2 WebP. Review and run
     it in the SQL editor. Roll back with `scripts/rollback-r2-catalog-images.sql`.
-11. `202611260001_order_item_area_code.sql` — NOT applied yet. Adds a nullable
+11. `20261125234748_printful_manual_drafts.sql` — adds private variant/colorway
+    matches and an order-level Printful draft reference/state. Applied to the
+    live Supabase project on 2026-11-25, before deploying the Orders Desk action.
+12. `202611260001_order_item_area_code.sql` — NOT applied yet. Adds a nullable
     `area_code` text column (exactly three digits, or null) to
     `checkout_attempt_items` and `order_items`, and teaches
     `record_paid_checkout` to copy it onto the paid order line. Ordinary

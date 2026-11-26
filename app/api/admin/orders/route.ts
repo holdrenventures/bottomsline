@@ -1,3 +1,4 @@
+import { missingAreaCodeColumn } from '../../../lib/area-code';
 import { isAdminRequest, supabaseAdmin } from '../../../lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -29,15 +30,24 @@ export async function GET(request: Request) {
   if (!isAdminRequest(request)) return unauthorized();
 
   try {
-    const select = [
+    const orderColumns = [
       'id', 'stripe_checkout_session_id', 'stripe_payment_intent_id',
       'customer_email', 'customer_name', 'shipping_address', 'payment_status',
       'fulfillment_status', 'currency', 'subtotal_cents', 'discount_cents',
       'shipping_cents', 'tax_cents', 'total_cents', 'carrier',
       'tracking_number', 'tracking_url', 'fulfilled_at', 'created_at', 'updated_at',
-      'order_items(id,product_name,style,color,garment,size,sku,quantity,unit_price_cents)',
     ].join(',');
-    const orders = await supabaseAdmin(`orders?select=${encodeURIComponent(select)}&order=created_at.desc&limit=100`);
+    const itemColumns = 'id,product_name,style,color,garment,size,sku,quantity,unit_price_cents';
+    const load = (items: string) => supabaseAdmin(
+      `orders?select=${encodeURIComponent(`${orderColumns},order_items(${items})`)}&order=created_at.desc&limit=100`,
+    );
+    let orders: unknown;
+    try {
+      orders = await load(`${itemColumns},area_code`);
+    } catch (error) {
+      if (!missingAreaCodeColumn(error)) throw error;
+      orders = await load(itemColumns);
+    }
     return Response.json({ orders });
   } catch (error) {
     console.error('Orders Desk load failed:', error instanceof Error ? error.message : error);

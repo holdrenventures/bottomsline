@@ -1,6 +1,12 @@
 import 'server-only';
+import { areaCodeDetail } from '../area-code';
 import type { EmailOrder, EmailOrderItem } from './types';
 import { escapeHtml, money, shortSessionId } from './types';
+
+function itemDetail(item: EmailOrderItem) {
+  const code = areaCodeDetail(item.area_code);
+  return [item.color, item.style, item.size, code].filter(Boolean).join(' · ');
+}
 
 // Owner notification. Light background for dark-mode compatibility.
 
@@ -20,8 +26,7 @@ export function storeOrderText(order: EmailOrder, items: EmailOrderItem[]) {
   lines.push('');
   lines.push('Items:');
   for (const item of items) {
-    const colorPart = item.color ? `${item.color} · ` : '';
-    lines.push(`- ${item.product_name} — ${colorPart}${item.style} · ${item.size} × ${item.quantity}  (SKU ${item.sku})  ${money(item.unit_price_cents * item.quantity, order.currency)}`);
+    lines.push(`- ${item.product_name} — ${itemDetail(item)} × ${item.quantity}  (SKU ${item.sku})  ${money(item.unit_price_cents * item.quantity, order.currency)}`);
   }
   lines.push('');
   if (order.shipping_address) {
@@ -47,13 +52,14 @@ export function storeOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
 
   const rows = items
     .map((item) => {
-      const colorPart = item.color ? `${escapeHtml(item.color)} · ` : '';
       const lineTotal = money(item.unit_price_cents * item.quantity, order.currency);
+      const code = areaCodeDetail(item.area_code);
       return `
         <tr>
           <td style="padding:12px 0;border-top:1px solid #e5e1d8;color:#141413;font-size:14px;line-height:1.5;">
             <div style="font-weight:900;">${escapeHtml(item.product_name)}</div>
-            <div style="color:#6b6559;font-size:12.5px;margin-top:3px;">${colorPart}${escapeHtml(item.style)} · Size ${escapeHtml(item.size)} · Qty ${item.quantity}</div>
+            ${code ? `<div style="color:#141413;font-size:16px;font-weight:900;letter-spacing:.12em;margin-top:4px;">Print ${escapeHtml(code)}</div>` : ''}
+            <div style="color:#6b6559;font-size:12.5px;margin-top:3px;">${item.color ? `${escapeHtml(item.color)} · ` : ''}${escapeHtml(item.style)} · Size ${escapeHtml(item.size)} · Qty ${item.quantity}</div>
             <div style="color:#6b6559;font-size:12px;margin-top:3px;font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;">SKU <span style="color:#141413;">${escapeHtml(item.sku)}</span></div>
           </td>
           <td style="padding:12px 0;border-top:1px solid #e5e1d8;color:#141413;font-size:14px;text-align:right;white-space:nowrap;vertical-align:top;">${lineTotal}</td>

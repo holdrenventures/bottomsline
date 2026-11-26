@@ -38,6 +38,14 @@ Tracked migrations, in order:
     Cloudinary `catalog_image` / `mockup_url` into a `*_cloudinary` backup
     column and points the live column at the archived R2 WebP. Review and run
     it in the SQL editor. Roll back with `scripts/rollback-r2-catalog-images.sql`.
+11. `202611260001_order_item_area_code.sql` — NOT applied yet. Adds a nullable
+    `area_code` text column (exactly three digits, or null) to
+    `checkout_attempt_items` and `order_items`, and teaches
+    `record_paid_checkout` to copy it onto the paid order line. Ordinary
+    products leave it null. Apply it in the SQL editor before deploying the
+    Worker that reads the column, and before running
+    `scripts/insert-area-code-hats.sql`. That insert keeps `products.active`
+    false.
 
 Catalog data was loaded on 2026-09-21 from the Airtable workbook via a set of
 one-shot SQL scripts run in the Supabase SQL editor

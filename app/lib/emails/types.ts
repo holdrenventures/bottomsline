@@ -26,6 +26,7 @@ export type EmailOrderItem = {
   sku: string;
   quantity: number;
   unit_price_cents: number;
+  area_code?: string | null;
 };
 
 export function money(cents: number, currency: string) {

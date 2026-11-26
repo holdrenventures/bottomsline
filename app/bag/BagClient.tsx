@@ -98,6 +98,7 @@ export default function BagClient() {
             variantId: item.variantId,
             colorId: item.colorId ?? null,
             quantity: item.quantity,
+            ...(item.areaCode ? { areaCode: item.areaCode } : {}),
           })),
           promoCodes: offers.map((offer) => offer.code),
           fulfillmentMethod,
@@ -148,13 +149,14 @@ export default function BagClient() {
         {items.map((item, index) => {
           const mockup = storefrontImage(item.colorMockup);
           return (
-          <article className="bag-item" key={`${item.productId}-${item.variantId}-${item.colorId}-${item.size}-${index}`}>
+          <article className="bag-item" key={`${item.productId}-${item.variantId}-${item.colorId}-${item.size}-${item.areaCode ?? ''}-${index}`}>
             <a className="bag-item__visual" href={`/products/${item.slug}`} aria-label={`View ${item.name}`}>
               {mockup
                 ? <img src={mockup} alt="" />
                 : <span>{item.name.split(/\s+/).slice(0, 3).join('\n')}</span>}
             </a>
             <div className="bag-item__copy">
+              {item.areaCode && <p className="bag-item__area">Area code {item.areaCode}</p>}
               <p>{itemDetails(item)}</p>
               <h2><a href={`/products/${item.slug}`}>{item.name}</a></h2>
               <button type="button" onClick={() => remove(index)}>Remove</button>

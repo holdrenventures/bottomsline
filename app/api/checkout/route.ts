@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { AreaCodeError, areaCodeForCheckout, checkoutLineDescription } from '../../lib/area-code';
 import { quoteWithOffers } from '../../lib/pricing';
 import { InvalidDiscountCodeError, resolveDiscountCodes } from '../../lib/discounts-server';
 import { supabaseAdmin } from '../../lib/supabase-admin';
@@ -13,6 +14,7 @@ type CheckoutInput = {
     variantId?: string | null;
     colorId?: string | null;
     quantity?: number;
+    areaCode?: unknown;
   }>;
   promoCode?: string | null;
   promoCodes?: string[];
@@ -86,6 +88,7 @@ export async function POST(request: Request) {
       variantId: item.variantId?.trim() ?? '',
       colorId: item.colorId?.trim() || null,
       quantity: Number(item.quantity),
+      areaCode: item.areaCode,
     }));
 
     if (selections.some((item) => !uuidPattern.test(item.productId) || !uuidPattern.test(item.variantId))) {
@@ -133,8 +136,9 @@ export async function POST(request: Request) {
       if (color?.style && color.style !== variant.style) {
         throw new Error(`The selected style for ${product.name} is no longer available.`);
       }
+      const areaCode = areaCodeForCheckout(product.slug, selection.areaCode);
 
-      return { selection, product, variant, color };
+      return { selection, product, variant, color, areaCode };
     });
 
     const quantityByVariant = new Map<string, number>();
@@ -186,18 +190,24 @@ export async function POST(request: Request) {
         mode: 'payment',
         client_reference_id: attemptId,
         integration_identifier: `bottoms_line_${randomLetters()}`,
-        line_items: trusted.map(({ selection, product, variant, color }, index) => ({
+        line_items: trusted.map(({ selection, product, variant, color, areaCode }, index) => ({
           price_data: {
             currency,
             unit_amount: variant.price_cents,
             product_data: {
               name: product.name,
-              description: [variant.style, color?.color, variant.size].filter(Boolean).join(' / '),
+              description: checkoutLineDescription({
+                style: variant.style,
+                color: color?.color,
+                size: variant.size,
+                areaCode,
+              }),
               metadata: {
                 checkout_attempt_id: attemptId,
                 line_index: String(index),
                 product_id: product.id,
                 variant_id: variant.id,
+                ...(areaCode ? { area_code: areaCode } : {}),
               },
             },
           },
@@ -262,7 +272,7 @@ export async function POST(request: Request) {
           throw new Error('Stripe line items do not match the authoritative catalog snapshot.');
         }
 
-        const { selection, product, variant, color } = trustedItem;
+        const { selection, product, variant, color, areaCode } = trustedItem;
         snapshots[index] = {
           checkout_attempt_id: attemptId,
           sort_order: index,
@@ -278,10 +288,20 @@ export async function POST(request: Request) {
           quantity: selection.quantity,
           unit_price_cents: variant.price_cents,
           stripe_price_id: price.id,
+          // Omitted on ordinary lines so a cart with no personalized hat does
+          // not mention the column. PostgREST then writes the same row it did before.
+          ...(areaCode ? { area_code: areaCode } : {}),
         };
       }
       if (snapshots.some((snapshot) => !snapshot)) {
         throw new Error('Stripe did not return every authoritative catalog line.');
+      }
+      // A mixed bag has to send area_code on every row. PostgREST bulk insert
+      // expects the same keys, and a missing key must be an explicit null.
+      if (trusted.some((item) => item.areaCode)) {
+        for (const snapshot of snapshots) {
+          if (snapshot && snapshot.area_code == null) snapshot.area_code = null;
+        }
       }
 
       await supabaseAdmin('checkout_attempt_items', {
@@ -308,7 +328,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Checkout is temporarily unavailable.';
-    const status = error instanceof InvalidDiscountCodeError || /available|invalid|quantity|currency|Davidson County|pickup address|choose shipping/i.test(message) ? 400 : 500;
+    const status = error instanceof InvalidDiscountCodeError || error instanceof AreaCodeError || /available|invalid|quantity|currency|Davidson County|pickup address|choose shipping/i.test(message) ? 400 : 500;
     if (status === 500) console.error('Checkout creation failed:', message);
     return Response.json({ error: status === 400 ? message : 'Checkout is temporarily unavailable.' }, { status });
   }

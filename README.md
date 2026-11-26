@@ -37,10 +37,18 @@ Variables and Secrets settings.
 ## Stripe Checkout
 
 The browser submits only product, variant, colorway, and quantity identifiers
-to `POST /api/checkout`. The Worker reloads active catalog rows from Supabase,
-snapshots the validated selection, and sends the authoritative amounts to a
-hosted Checkout Session as inline price data. Browser names and prices are not
-trusted.
+to `POST /api/checkout`. Personalized area-code hats also submit `areaCode`
+(exactly three digits). The Worker reloads active catalog rows from Supabase,
+checks the code against the product slug, snapshots the validated selection,
+and sends the authoritative amounts to a hosted Checkout Session as inline
+price data. The area code is copied onto the Stripe line description and
+metadata, then onto the order line. Browser names and prices are not trusted.
+Other products omit the field and check out as before.
+
+Apply `supabase/migrations/202611260001_order_item_area_code.sql` before
+deploying the Worker that reads `area_code`. The two hat rows in
+`scripts/insert-area-code-hats.sql` stay `active = false` until that migration
+is in place and the listings are ready.
 
 For local pickup, the bag also submits a Davidson County street address. The
 Worker checks the Census geocoder's county result (Tennessee 47, Davidson 037)

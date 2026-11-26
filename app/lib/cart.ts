@@ -1,3 +1,5 @@
+import { isAreaCode } from './area-code.ts';
+
 export type CartItem = {
   productId: string;
   variantId: string | null;
@@ -14,28 +16,35 @@ export type CartItem = {
   colorMockup?: string | null;
   style?: string | null;
   garment?: string | null;
+  // Three digits, only on personalized hats. Different codes are different lines.
+  areaCode?: string | null;
 };
 
 export const CART_STORAGE_KEY = 'bottoms-line-cart-v1';
 export const CART_UPDATED_EVENT = 'bottoms-line-bag-updated';
 
+export function parseStoredCart(parsed: unknown): CartItem[] {
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((item): item is CartItem => {
+    if (!item || typeof item !== 'object') return false;
+    const candidate = item as CartItem;
+    const areaCode = candidate.areaCode;
+    return typeof candidate.productId === 'string'
+      && typeof candidate.slug === 'string'
+      && typeof candidate.name === 'string'
+      && typeof candidate.size === 'string'
+      && Number.isFinite(candidate.unitPrice)
+      && Number.isInteger(candidate.quantity)
+      && candidate.quantity > 0
+      && (areaCode == null || isAreaCode(areaCode));
+  });
+}
+
 export function readCart(): CartItem[] {
   try {
     const stored = window.localStorage.getItem(CART_STORAGE_KEY);
     if (!stored) return [];
-    const parsed = JSON.parse(stored) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is CartItem => Boolean(
-      item
-      && typeof item === 'object'
-      && typeof (item as CartItem).productId === 'string'
-      && typeof (item as CartItem).slug === 'string'
-      && typeof (item as CartItem).name === 'string'
-      && typeof (item as CartItem).size === 'string'
-      && Number.isFinite((item as CartItem).unitPrice)
-      && Number.isInteger((item as CartItem).quantity)
-      && (item as CartItem).quantity > 0,
-    ));
+    return parseStoredCart(JSON.parse(stored) as unknown);
   } catch {
     return [];
   }
@@ -47,20 +56,26 @@ export function writeCart(cart: CartItem[]) {
   return cart;
 }
 
-export function addCartItem(nextItem: CartItem) {
-  const cart = readCart();
-  // Same product + size + exact colorway folds into one line. A tee and tank
-  // remain distinct even when they share the same color name.
-  const existing = cart.find((item) =>
-    item.productId === nextItem.productId
+export function cartLinesMatch(item: CartItem, nextItem: CartItem) {
+  // Same product + size + colorway + area code folds into one line. A tee and
+  // tank stay distinct when they share a color name. Two hats with different
+  // area codes stay distinct even when every other field matches.
+  return item.productId === nextItem.productId
     && (item.variantId ?? null) === (nextItem.variantId ?? null)
     && item.size === nextItem.size
     && (item.colorId ?? null) === (nextItem.colorId ?? null)
     && (item.style ?? null) === (nextItem.style ?? null)
-  );
-  if (existing) existing.quantity += nextItem.quantity;
-  else cart.push(nextItem);
-  return writeCart(cart);
+    && (item.areaCode ?? null) === (nextItem.areaCode ?? null);
+}
+
+export function withCartItem(cart: CartItem[], nextItem: CartItem) {
+  const existing = cart.find((item) => cartLinesMatch(item, nextItem));
+  if (!existing) return [...cart, nextItem];
+  return cart.map((item) => item === existing ? { ...item, quantity: item.quantity + nextItem.quantity } : item);
+}
+
+export function addCartItem(nextItem: CartItem) {
+  return writeCart(withCartItem(readCart(), nextItem));
 }
 
 export function updateCartItem(index: number, quantity: number) {

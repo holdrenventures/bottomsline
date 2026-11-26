@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { CatalogColor, CatalogProduct } from '../../data/products';
+import { areaCodeTreatment, parseAreaCode, type AreaCodeTreatment } from '../../lib/area-code';
 import { addCartItem } from '../../lib/cart';
 import { trackMeta } from '../../lib/meta-pixel';
 import { SHIPS_IN_BUSINESS_DAYS } from '../../lib/promo';
@@ -20,6 +21,15 @@ type PurchaseProduct = Pick<
 
 function slugify(input: string) {
   return input.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'color';
+}
+
+function AreaCodePreview({ treatment, value }: { treatment: AreaCodeTreatment; value: string }) {
+  const digits = [0, 1, 2].map((index) => value[index] ?? '');
+  return (
+    <div className={`area-code-preview area-code-preview--${treatment}`} aria-hidden="true">
+      {digits.map((digit, index) => <span key={index} className={digit ? 'is-set' : ''}>{digit || '–'}</span>)}
+    </div>
+  );
 }
 
 export default function ProductPurchaseAny({ product }: { product: PurchaseProduct }) {
@@ -57,6 +67,9 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
   const [size, setSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [areaCode, setAreaCode] = useState('');
+  const treatment = areaCodeTreatment(product.slug);
+  const cleanAreaCode = parseAreaCode(areaCode);
 
   const sizesForStyle = useMemo(() => {
     if (!hasConfiguredVariants) return product.availableSizes;
@@ -80,15 +93,17 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
     () => sellableVariants.find((variant) => variant.style === style && variant.size === size) ?? null,
     [sellableVariants, size, style],
   );
+  const areaCodeReady = !treatment || Boolean(cleanAreaCode);
   const selectionReady = Boolean(
     size
+    && areaCodeReady
     && (!hasConfiguredVariants || selectedVariant)
     && (!displayColors.length || selectedColor),
   );
   const selectedPrice = selectedVariant?.price ?? product.price;
 
   function addToBag() {
-    if (!size || !selectionReady) return;
+    if (!size || !selectionReady || (treatment && !cleanAreaCode)) return;
     const composedSku = selectedColor
       ? `blc-${product.slug}-${slugify(styleName(selectedColor))}-${slugify(selectedColor.color)}-${size.toLowerCase()}`
       : null;
@@ -107,6 +122,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       colorMockup: selectedColor?.mockupUrl ?? null,
       style: selectedVariant?.style ?? (selectedColor ? styleName(selectedColor) : style),
       garment: selectedVariant?.garment ?? selectedColor?.garment ?? null,
+      ...(treatment && cleanAreaCode ? { areaCode: cleanAreaCode } : {}),
     });
     if (composedSku && typeof console !== 'undefined') {
       // Recorded on the client for now; the Worker will re-derive this at checkout.
@@ -145,6 +161,33 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
             ))}
           </div>
         </fieldset>
+      )}
+
+      {treatment && (
+        <div className="area-code-field">
+          <AreaCodePreview treatment={treatment} value={areaCode} />
+          <label htmlFor="area-code">Your area code</label>
+          <input
+            id="area-code"
+            name="area-code"
+            inputMode="numeric"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={3}
+            pattern="[0-9]{3}"
+            placeholder="615"
+            aria-invalid={areaCode.length > 0 && !cleanAreaCode}
+            aria-describedby="area-code-note"
+            value={areaCode}
+            onChange={(event) => {
+              setAreaCode(event.target.value.replace(/\D/g, '').slice(0, 3));
+              setAdded(false);
+            }}
+          />
+          <p id="area-code-note">Your area code here. The photo shows 615 as a sample. We print the three digits you enter{treatment === 'trans' ? ', in trans pride stripes — light blue, pink, and white' : ', in the same rainbow block numerals'}.</p>
+        </div>
       )}
 
       {colorsForStyle.length > 0 && (
@@ -195,7 +238,7 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
         </div>
         <button className="add-to-bag" type="button" disabled={!selectionReady} onClick={addToBag}>
           {added
-            ? `Added — ${selectedColor ? `${styleName(selectedColor)} · ${selectedColor.color} · ` : ''}${size} × ${quantity}`
+            ? `Added — ${selectedColor ? `${styleName(selectedColor)} · ${selectedColor.color} · ` : ''}${size}${cleanAreaCode ? ` · ${cleanAreaCode}` : ''} × ${quantity}`
             : `Add to bag — $${selectedPrice.toFixed(2)}`} <span aria-hidden="true">↗</span>
         </button>
       </div>
@@ -203,6 +246,8 @@ export default function ProductPurchaseAny({ product }: { product: PurchaseProdu
       <p className={`purchase-note ${added ? 'purchase-note--success' : ''}`} role="status">
         {added
           ? 'Excellent judgment. It’s in the bag.'
+          : treatment && !areaCodeReady
+            ? 'Enter a 3-digit area code. We can’t print a guess.'
           : selectionReady
             ? 'Ready when you are.'
             : size && !selectedVariant && hasConfiguredVariants

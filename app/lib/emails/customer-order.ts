@@ -1,4 +1,5 @@
 import 'server-only';
+import { areaCodeDetail } from '../area-code';
 import type { EmailOrder, EmailOrderItem } from './types';
 import { escapeHtml, money, shortSessionId } from './types';
 
@@ -19,8 +20,9 @@ export function customerOrderText(order: EmailOrder, items: EmailOrderItem[]) {
   lines.push(`Order #${shortSessionId(order.stripe_checkout_session_id)}`);
   lines.push('');
   for (const item of items) {
+    const code = areaCodeDetail(item.area_code);
     const colorPart = item.color ? `${item.color} · ` : '';
-    lines.push(`- ${item.product_name} — ${colorPart}${item.style} · ${item.size} × ${item.quantity}  ${money(item.unit_price_cents * item.quantity, order.currency)}`);
+    lines.push(`- ${item.product_name} — ${colorPart}${item.style} · ${item.size}${code ? ` · ${code}` : ''} × ${item.quantity}  ${money(item.unit_price_cents * item.quantity, order.currency)}`);
   }
   lines.push('');
   lines.push(`Total: ${money(order.total_cents, order.currency)}`);
@@ -49,11 +51,13 @@ export function customerOrderHtml(order: EmailOrder, items: EmailOrderItem[]) {
   const rows = items
     .map((item) => {
       const colorPart = item.color ? `${escapeHtml(item.color)} · ` : '';
+      const code = areaCodeDetail(item.area_code);
       const lineTotal = money(item.unit_price_cents * item.quantity, order.currency);
       return `
         <tr>
           <td style="padding:16px 0;border-top:1px solid #e5e1d8;color:#141413;font-size:15px;line-height:1.5;">
             <div style="font-weight:900;letter-spacing:.2px;">${escapeHtml(item.product_name)}</div>
+            ${code ? `<div style="font-weight:900;letter-spacing:.12em;margin-top:4px;">${escapeHtml(code)}</div>` : ''}
             <div style="color:#6b6559;font-size:13px;margin-top:3px;">${colorPart}${escapeHtml(item.style)} · Size ${escapeHtml(item.size)} · Qty ${item.quantity}</div>
           </td>
           <td style="padding:16px 0;border-top:1px solid #e5e1d8;color:#141413;font-size:15px;text-align:right;white-space:nowrap;vertical-align:top;">${lineTotal}</td>

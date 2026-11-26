@@ -6,7 +6,7 @@ import PrintfulPanel from './PrintfulPanel';
 
 type FulfillmentStatus = 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 type Address = { line1?: string | null; line2?: string | null; city?: string | null; state?: string | null; postal_code?: string | null; country?: string | null; fulfillment_method?: string | null; phone?: string | null };
-type OrderItem = { id: string; variant_id: string; colorway_id: string | null; product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number };
+type OrderItem = { id: string; variant_id: string; colorway_id: string | null; product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number; area_code?: string | null };
 type PrintfulMapping = { variant_id: string; colorway_id: string; printful_sync_variant_id: number; printful_name: string };
 type Order = {
   id: string;
@@ -157,7 +157,7 @@ export default function OrdersDesk() {
           {selected && <>
             <section className="admin-section order-summary"><div><p className="admin-kicker">{selected.shipping_address?.fulfillment_method === 'pickup' ? 'Local pickup · schedule in 37207' : 'Customer'}</p><h3>{selected.customer_name || 'Name not supplied'}</h3><p>{selected.customer_email || 'Email not supplied'}</p>{selected.shipping_address?.phone && <p>Phone: {selected.shipping_address.phone}</p>}{selected.shipping_address?.fulfillment_method === 'pickup' && <p>Davidson County eligibility address:</p>}{addressLines(selected.shipping_address).map((line) => <p key={line}>{line}</p>)}</div><div><p className="admin-kicker">Payment</p><h3>{selected.payment_status}</h3><dl><div><dt>Subtotal</dt><dd>{money(selected.subtotal_cents, selected.currency)}</dd></div><div><dt>{selected.shipping_address?.fulfillment_method === 'pickup' ? 'Pickup' : 'Shipping'}</dt><dd>{money(selected.shipping_cents, selected.currency)}</dd></div><div><dt>Tax</dt><dd>{money(selected.tax_cents, selected.currency)}</dd></div><div><dt>Discount</dt><dd>−{money(selected.discount_cents, selected.currency)}</dd></div><div><dt>Total</dt><dd>{money(selected.total_cents, selected.currency)}</dd></div></dl></div></section>
 
-            <section className="admin-section"><h3>Items</h3><div className="order-items">{selected.order_items.map((item) => <article key={item.id}><div><strong>{item.quantity} × {item.product_name}</strong><p>{[item.style, item.color, item.size].filter(Boolean).join(' / ')}</p><small>{item.sku}</small></div><b>{money(item.unit_price_cents * item.quantity, selected.currency)}</b></article>)}</div></section>
+            <section className="admin-section"><h3>Items</h3><div className="order-items">{selected.order_items.map((item) => <article key={item.id}><div><strong>{item.quantity} × {item.product_name}</strong>{item.area_code && <p className="order-items__print">Print area code {item.area_code}</p>}<p>{[item.style, item.color, item.size].filter(Boolean).join(' / ')}</p><small>{item.sku}</small></div><b>{money(item.unit_price_cents * item.quantity, selected.currency)}</b></article>)}</div></section>
 
             <PrintfulPanel key={selected.id} order={selected} mappings={mappings} token={token} onChanged={printfulChanged} />
 

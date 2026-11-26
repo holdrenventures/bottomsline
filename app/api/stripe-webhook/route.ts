@@ -1,4 +1,5 @@
 import type Stripe from 'stripe';
+import { missingAreaCodeColumn } from '../../lib/area-code';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 import { stripeClient, stripeWebhookSecret } from '../../lib/stripe';
 import { sendEmail, orderNotificationRecipient } from '../../lib/email';
@@ -27,6 +28,7 @@ type AttemptItemRow = {
   quantity: number;
   unit_price_cents: number;
   stripe_price_id: string;
+  area_code: string | null;
 };
 
 async function setAttemptStatus(
@@ -82,9 +84,7 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
   }
   if (attempt.currency !== session.currency) throw new Error('Checkout currency does not match its saved attempt.');
 
-  const attemptItems = await supabaseAdmin(
-    `checkout_attempt_items?select=product_id,variant_id,colorway_id,product_name,style,color,garment,size,sku,quantity,unit_price_cents,stripe_price_id&checkout_attempt_id=eq.${encodeURIComponent(attemptId)}&order=sort_order.asc`,
-  ) as AttemptItemRow[];
+  const attemptItems = await loadAttemptItems(attemptId);
   if (!attemptItems.length) throw new Error('Checkout attempt has no items.');
 
   const lineItems = await allLineItems(stripe, session.id);
@@ -165,6 +165,7 @@ async function recordPaidSession(event: Stripe.Event, eventSession: Stripe.Check
     quantity: item.quantity,
     unit_price_cents: item.unit_price_cents,
     stripe_price_id: item.stripe_price_id,
+    area_code: item.area_code,
   }));
   if (orderItems.some((item) => !item.stripe_line_item_id)) {
     throw new Error('Unable to reconcile a Stripe line item.');
@@ -233,6 +234,21 @@ type OrderShape = {
   total_cents: number;
 };
 
+const attemptItemColumns = 'product_id,variant_id,colorway_id,product_name,style,color,garment,size,sku,quantity,unit_price_cents,stripe_price_id';
+
+async function loadAttemptItems(attemptId: string): Promise<AttemptItemRow[]> {
+  const path = `checkout_attempt_items?checkout_attempt_id=eq.${encodeURIComponent(attemptId)}&order=sort_order.asc&select=`;
+  try {
+    return await supabaseAdmin(`${path}${attemptItemColumns},area_code`) as AttemptItemRow[];
+  } catch (error) {
+    // Deployed ahead of the migration: ordinary orders still record. Personalized
+    // hats are inserted inactive, so no paid line can be missing its code yet.
+    if (!missingAreaCodeColumn(error)) throw error;
+    const rows = await supabaseAdmin(`${path}${attemptItemColumns}`) as Array<Omit<AttemptItemRow, 'area_code'>>;
+    return rows.map((row) => ({ ...row, area_code: null }));
+  }
+}
+
 /**
  * Atomically claim the notification right for an order so email delivery
  * happens exactly once even if Stripe redelivers the webhook. The claim is a
@@ -242,7 +258,7 @@ type OrderShape = {
 async function notifyOrder(
   sessionId: string,
   order: OrderShape,
-  orderItems: Array<{ product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number }>,
+  orderItems: Array<{ product_name: string; style: string; color: string | null; garment: string | null; size: string; sku: string; quantity: number; unit_price_cents: number; area_code?: string | null }>,
 ) {
   const claimedRows = await supabaseAdmin(
     `orders?stripe_checkout_session_id=eq.${encodeURIComponent(sessionId)}&notified_at=is.null&select=id`,
@@ -267,6 +283,7 @@ async function notifyOrder(
     sku: item.sku,
     quantity: item.quantity,
     unit_price_cents: item.unit_price_cents,
+    area_code: item.area_code ?? null,
   }));
 
   // Customer confirmation — only send if we actually have an email address.

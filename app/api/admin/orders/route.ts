@@ -1,3 +1,4 @@
+import { missingAreaCodeColumn } from '../../../lib/area-code';
 import { isAdminRequest, supabaseAdmin } from '../../../lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -29,17 +30,27 @@ export async function GET(request: Request) {
   if (!isAdminRequest(request)) return unauthorized();
 
   try {
-    const select = [
+    const orderColumns = [
       'id', 'stripe_checkout_session_id', 'stripe_payment_intent_id',
       'customer_email', 'customer_name', 'shipping_address', 'payment_status',
       'fulfillment_status', 'currency', 'subtotal_cents', 'discount_cents',
       'shipping_cents', 'tax_cents', 'total_cents', 'carrier',
       'tracking_number', 'tracking_url', 'fulfilled_at', 'created_at', 'updated_at',
       'printful_draft_id', 'printful_draft_state', 'printful_draft_created_at',
-      'order_items(id,product_name,style,color,garment,size,sku,quantity,unit_price_cents,variant_id,colorway_id)',
     ].join(',');
-    const orders = await supabaseAdmin(`orders?select=${encodeURIComponent(select)}&order=created_at.desc&limit=100`);
-    const mappings = await supabaseAdmin('printful_variant_mappings?select=variant_id,colorway_id,printful_sync_variant_id,printful_name');
+    const itemColumns = 'id,product_name,style,color,garment,size,sku,quantity,unit_price_cents,variant_id,colorway_id';
+    const load = (items: string) => Promise.all([
+      supabaseAdmin(`orders?select=${encodeURIComponent(`${orderColumns},order_items(${items})`)}&order=created_at.desc&limit=100`),
+      supabaseAdmin('printful_variant_mappings?select=variant_id,colorway_id,printful_sync_variant_id,printful_name'),
+    ]);
+    let orders: unknown;
+    let mappings: unknown;
+    try {
+      [orders, mappings] = await load(`${itemColumns},area_code`);
+    } catch (error) {
+      if (!missingAreaCodeColumn(error)) throw error;
+      [orders, mappings] = await load(itemColumns);
+    }
     return Response.json({ orders, mappings });
   } catch (error) {
     console.error('Orders Desk load failed:', error instanceof Error ? error.message : error);

@@ -62,10 +62,104 @@ export type CatalogProduct = {
 
 const standardSizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 
+const hatColorways = [
+  ['Black/ White', 'black-white'],
+  ['Navy/ White', 'navy-white'],
+  ['Heather/ Black', 'heather-black'],
+  ['Red', 'red'],
+  ['Pink', 'pink'],
+] as const;
+
+// Local preview of the two draft hats. Production rows come from the insert
+// script, not from this list. Photos are the fixed 615 hats, with a note on
+// the product page that the printed numerals are the customer's area code.
+function areaCodeHat(input: {
+  id: string;
+  variantId: string;
+  name: string;
+  slug: string;
+  editorialDescriptor: string;
+  description: string;
+  imageSlug: string;
+  catalogFile?: string;
+  gallery: string[];
+  tone: CatalogProduct['tone'];
+}): CatalogProduct {
+  const base = `https://images.bottomslineclothing.com/hats/${input.imageSlug}`;
+  return {
+    id: input.id,
+    name: input.name,
+    slug: input.slug,
+    price: 35,
+    editorialDescriptor: input.editorialDescriptor,
+    description: input.description,
+    productAnnotation: 'The photo shows 615 as a sample. Your area code goes here.',
+    material: 'Yupoong 6606 — polyester/foam front, mesh back.',
+    fitNotes: 'Yupoong 6606 retro trucker. One size, adjustable snapback.',
+    careInstructions: 'Spot clean only. Do not machine wash, bleach, or tumble dry. Air dry if needed.',
+    collection: 'Pride',
+    collections: ['Pride', 'Hats'],
+    catalogImage: `${base}/${input.catalogFile ?? 'heather-black'}.webp`,
+    galleryImages: input.gallery.map((file) => ({
+      url: `${base}/${file}.webp`,
+      alt: `${input.name}, sample numerals. Your area code is printed instead. ${file.replace(/-/g, ' ')} view.`,
+    })),
+    availableSizes: ['One Size'],
+    variants: [{
+      id: input.variantId,
+      sku: input.slug.toUpperCase(),
+      style: 'Hat',
+      garment: 'yupoong6606',
+      size: 'One Size',
+      price: 35,
+      inventoryQuantity: null,
+      active: true,
+    }],
+    colors: hatColorways.map(([color, file], index) => ({
+      id: `${input.id.slice(0, -2)}${String(index + 11).padStart(2, '0')}`,
+      color,
+      style: 'Hat',
+      garment: 'yupoong6606',
+      mockupUrl: `${base}/${file}.webp`,
+      sortOrder: index,
+      active: true,
+    })),
+    active: true,
+    draft: false,
+    featured: false,
+    isNewDrop: false,
+    art: ['YOUR', 'AREA', 'CODE'],
+    tone: input.tone,
+  };
+}
+
 // LOCAL FALLBACK CATALOG — used for development and previews until the Worker
 // has Supabase credentials and live product rows. Never add secrets here.
 // Placeholder records demonstrate how the shop behaves at catalog scale.
 const mockProducts: CatalogProduct[] = [
+  areaCodeHat({
+    id: 'a1111111-1111-4111-8111-111111111101',
+    variantId: 'a1111111-1111-4111-8111-111111111102',
+    name: 'Your Area Code Rainbow Trucker Hat',
+    slug: 'your-area-code-rainbow-trucker-hat',
+    editorialDescriptor: 'Bring Your Own Digits',
+    description: 'Your three digits, in the same rainbow block numerals as the 615 Pride hat. Enter the area code before it goes in the bag. Yupoong 6606 trucker, one size, mesh back.',
+    imageSlug: '615-pride-trucker-hat',
+    gallery: ['navy-white-right-front', 'navy-white-back', 'navy-white-right', 'black-white-right-front', 'heather-black-right-front', 'red-right-front', 'pink-right-front', 'heather-black-back'],
+    tone: 'coral',
+  }),
+  areaCodeHat({
+    id: 'a2222222-2222-4222-8222-222222222201',
+    variantId: 'a2222222-2222-4222-8222-222222222202',
+    name: 'Your Area Code Trans Pride Trucker Hat',
+    slug: 'your-area-code-trans-pride-trucker-hat',
+    editorialDescriptor: 'Trans Pride, Your Digits',
+    description: 'Your three digits in trans pride stripes — light blue, pink, and white — same block numerals as the 615 Trans Pride hat. Enter the area code before it goes in the bag. Yupoong 6606 trucker, one size, mesh back.',
+    imageSlug: '615-trans-pride-trucker-hat',
+    catalogFile: 'navy-white',
+    gallery: ['navy-white-back', 'heather-black-back', 'red-back', 'pink-back'],
+    tone: 'cream',
+  }),
   { id:'prod_mock_001', name:'Support Local Bottoms', slug:'support-local-bottoms', price:32, editorialDescriptor:'Community Outreach', description:'A public service announcement. Support locally.', collection:'Support Local Bottoms', catalogImage: storefrontImage('https://res.cloudinary.com/bihiyho3/image/upload/e_background_removal/v1787869598/ChatGPT_Image_Aug_27_2026_05_18_54_PM_1.png'), availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, art:['SUPPORT','LOCAL','BOTTOMS'], tone:'coral' },
   { id:'prod_mock_002', name:'Cum Dump', slug:'cum-dump', price:32, editorialDescriptor:'Advanced Placement', description:'Product description pending.', collection:'Cruising', catalogImage:null, availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, art:['CUM','DUMP'], tone:'cream' },
   { id:'prod_mock_003', name:'Buss-ee’s', slug:'buss-ees', price:34, editorialDescriptor:'Roadside Attraction', description:'Product description pending.', collection:'Parodies', catalogImage:null, availableSizes:standardSizes, colors:[], active:true, draft:false, featured:true, isNewDrop:false, art:['BUSS','EE’S'], tone:'charcoal' },
